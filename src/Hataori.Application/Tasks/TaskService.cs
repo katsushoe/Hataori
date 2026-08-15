@@ -35,9 +35,14 @@ public sealed class TaskService
 
     public async Task<HataoriTask> HeartbeatAsync(string taskId, string currentWork, int progressPercent, CancellationToken cancellationToken)
     {
+        return await HeartbeatAsync(taskId, currentWork, progressPercent, null, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<HataoriTask> HeartbeatAsync(string taskId, string currentWork, int progressPercent, string? message, CancellationToken cancellationToken)
+    {
         var task = await GetRequiredAsync(taskId, cancellationToken).ConfigureAwait(false);
         task.Heartbeat(currentWork, progressPercent, _timeProvider.GetUtcNow());
-        await _repository.UpdateAsync(task, "heartbeat", cancellationToken).ConfigureAwait(false);
+        await _repository.UpdateAsync(task, "heartbeat", message, cancellationToken).ConfigureAwait(false);
         return task;
     }
 

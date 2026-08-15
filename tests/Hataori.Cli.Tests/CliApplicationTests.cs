@@ -20,24 +20,43 @@ public sealed class CliApplicationTests : IDisposable
     public async Task RunAsync_TaskLifecycle_PersistsAndReturnsJson()
     {
         (await RunAsync("task", "start", "--database", _databasePath, "--id", "task-1", "--name", "実装", "--agent", "codex")).ExitCode.Should().Be(0);
-        (await RunAsync("task", "heartbeat", "--database", _databasePath, "--id", "task-1", "--current-work", "CLI実装", "--progress", "50")).ExitCode.Should().Be(0);
-        (await RunAsync("task", "complete", "--database", _databasePath, "--id", "task-1", "--result", "成功")).ExitCode.Should().Be(0);
+        (await RunAsync("task", "heartbeat", "task-1", "--database", _databasePath, "--current-work", "CLI実装", "--progress", "50", "--message", "半分完了")).ExitCode.Should().Be(0);
+        (await RunAsync("task", "complete", "task-1", "--database", _databasePath, "--message", "成功")).ExitCode.Should().Be(0);
 
-        var response = await RunAsync("task", "get", "--database", _databasePath, "--id", "task-1");
+        var response = await RunAsync("task", "get", "task-1", "--database", _databasePath, "--json");
 
         response.ExitCode.Should().Be(0);
         using var document = JsonDocument.Parse(response.Output);
-        document.RootElement.GetProperty("status").GetString().Should().Be("completed");
-        document.RootElement.GetProperty("progress_percent").GetInt32().Should().Be(100);
+        document.RootElement.GetProperty("task").GetProperty("status").GetString().Should().Be("completed");
+        document.RootElement.GetProperty("task").GetProperty("progress_percent").GetInt32().Should().Be(100);
+        document.RootElement.GetProperty("history").EnumerateArray().Should().Contain(item => item.GetProperty("message").GetString() == "半分完了");
+        document.RootElement.GetProperty("relations").GetArrayLength().Should().Be(0);
     }
 
     [Fact]
     public async Task RunAsync_MissingTask_ReturnsNotFound()
     {
-        var response = await RunAsync("task", "get", "--database", _databasePath, "--id", "missing");
+        var response = await RunAsync("task", "get", "missing", "--database", _databasePath);
 
         response.ExitCode.Should().Be(4);
         response.Error.Should().Contain("not found");
+    }
+
+    [Fact]
+    public async Task RunAsync_TaskList_DefaultsToActiveAndAllFlagIncludesCompleted()
+    {
+        (await RunAsync("task", "start", "--database", _databasePath, "--id", "active", "--name", "Active", "--agent", "codex")).ExitCode.Should().Be(0);
+        (await RunAsync("task", "start", "--database", _databasePath, "--id", "done", "--name", "Done", "--agent", "codex")).ExitCode.Should().Be(0);
+        (await RunAsync("task", "complete", "done", "--database", _databasePath, "--message", "完了")).ExitCode.Should().Be(0);
+
+        var active = await RunAsync("task", "list", "--database", _databasePath);
+        var all = await RunAsync("task", "list", "--database", _databasePath, "--all", "--json");
+
+        using var activeDocument = JsonDocument.Parse(active.Output);
+        using var allDocument = JsonDocument.Parse(all.Output);
+        activeDocument.RootElement.GetArrayLength().Should().Be(1);
+        activeDocument.RootElement[0].GetProperty("task_id").GetString().Should().Be("active");
+        allDocument.RootElement.GetArrayLength().Should().Be(2);
     }
 
     [Fact]
@@ -151,6 +170,15 @@ public sealed class CliApplicationTests : IDisposable
         response.ExitCode.Should().Be(0);
         using var document = JsonDocument.Parse(response.Output);
         document.RootElement.GetProperty("version").GetString().Should().NotBeNullOrWhiteSpace();
+    }
+
+    [Fact]
+    public async Task RunAsync_TaskHelp_ReturnsWithoutDatabaseConfiguration()
+    {
+        var response = await RunAsync("task", "--help");
+
+        response.ExitCode.Should().Be(0);
+        response.Output.Should().Contain("hataori task");
     }
 
     public void Dispose()
