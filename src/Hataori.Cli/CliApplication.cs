@@ -67,6 +67,10 @@ public static class CliApplication
             {
                 result = await ExecuteDatabaseCommandAsync(args, cancellationToken).ConfigureAwait(false);
             }
+            else if (string.Equals(args[0], "service", StringComparison.OrdinalIgnoreCase))
+            {
+                result = await ExecuteServiceAsync(args, cancellationToken).ConfigureAwait(false);
+            }
             else
             {
                 result = await ExecuteServerAsync(args[0], ParseOptions(args.Skip(1)), cancellationToken).ConfigureAwait(false);
@@ -119,6 +123,19 @@ public static class CliApplication
             await error.WriteLineAsync(exception.Message).ConfigureAwait(false);
             return 1;
         }
+    }
+
+    private static async Task<object> ExecuteServiceAsync(string[] args, CancellationToken cancellationToken)
+    {
+        if (args.Length < 2)
+        {
+            throw new ArgumentException("Usage: hataori service <install|uninstall|start|stop|restart|status> [options]");
+        }
+
+        var options = ParseOptions(args.Skip(2));
+        var serviceName = Optional(options, "name") ?? "Hataori";
+        var manager = new WindowsServiceManager(new SystemProcessRunner());
+        return await manager.ExecuteAsync(args[1], serviceName, Optional(options, "server"), cancellationToken).ConfigureAwait(false);
     }
 
     private static bool IsDatabaseCommand(string command) =>
@@ -313,5 +330,5 @@ public static class CliApplication
     private static bool IsHelpCommand(IReadOnlyList<string> args) => args[0].Equals("help", StringComparison.OrdinalIgnoreCase) || args[0].Equals("--help", StringComparison.OrdinalIgnoreCase);
     private static bool IsVersionCommand(IReadOnlyList<string> args) => args[0].Equals("version", StringComparison.OrdinalIgnoreCase) || args[0].Equals("--version", StringComparison.OrdinalIgnoreCase);
     private static string GetVersion() => typeof(CliApplication).Assembly.GetName().Version?.ToString() ?? "unknown";
-    private static string GetHelpText() => "Usage: hataori <start|stop|restart|status|task|agent|conversation|queue|db|version|help> [command] [options]";
+    private static string GetHelpText() => "Usage: hataori <start|stop|restart|status|service|task|agent|conversation|queue|db|version|help> [command] [options]";
 }
