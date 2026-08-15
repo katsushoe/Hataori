@@ -14,6 +14,23 @@ public sealed class ServerFoundationTests
     }
 
     [Fact]
+    public void Validate_NonLoopbackMcpHost_ReturnsFailure()
+    {
+        var options = new ServerOptions
+        {
+            DatabasePath = "data/hataori.db",
+            ControlPipeName = "hataori-test",
+            McpHost = "0.0.0.0",
+            McpPort = 45440,
+            McpPath = "/mcp",
+        };
+
+        var result = new ServerOptionsValidator().Validate(null, options);
+
+        result.Failed.Should().BeTrue();
+    }
+
+    [Fact]
     public void ResolveDatabasePath_RelativePath_UsesApplicationDirectory()
     {
         var baseDirectory = Path.Combine(Path.GetTempPath(), "hataori-server-test");
