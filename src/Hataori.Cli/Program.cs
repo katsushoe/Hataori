@@ -1,2 +1,3 @@
-﻿// See https://aka.ms/new-console-template for more information
-Console.WriteLine("Hello, World!");
+﻿using Hataori.Cli;
+
+return await CliApplication.RunAsync(args, Console.Out, Console.Error, CancellationToken.None);

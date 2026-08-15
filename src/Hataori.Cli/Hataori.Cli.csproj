@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Hataori.Application\Hataori.Application.csproj" />
+    <ProjectReference Include="..\Hataori.Infrastructure\Hataori.Infrastructure.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
