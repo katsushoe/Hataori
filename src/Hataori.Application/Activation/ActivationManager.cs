@@ -23,6 +23,7 @@ public sealed class ActivationManager
     private readonly IReadOnlyDictionary<string, IAgentDriver> _drivers;
     private readonly TimeProvider _timeProvider;
     private readonly IItogurumaClient _itoguruma;
+    private readonly ReplyRetryManager _replyRetries;
 
     public ActivationManager(
         IMessageQueueRepository messageQueue,
@@ -31,7 +32,8 @@ public sealed class ActivationManager
         AgentRunService runs,
         IEnumerable<IAgentDriver> drivers,
         TimeProvider timeProvider,
-        IItogurumaClient itoguruma)
+        IItogurumaClient itoguruma,
+        ReplyRetryManager replyRetries)
     {
         _messageQueue = messageQueue;
         _conversationMutex = conversationMutex;
@@ -40,6 +42,7 @@ public sealed class ActivationManager
         _drivers = drivers.ToDictionary(driver => driver.AgentType, StringComparer.OrdinalIgnoreCase);
         _timeProvider = timeProvider;
         _itoguruma = itoguruma;
+        _replyRetries = replyRetries;
     }
 
     public async Task<ActivationResult?> ProcessNextAsync(ActivationRequest request, CancellationToken cancellationToken)
@@ -107,15 +110,28 @@ public sealed class ActivationManager
                 await _sessions.RegisterAsync(message.ConversationId, message.AgentId, result.NativeSessionId, cancellationToken).ConfigureAwait(false);
             }
 
-            var replyMessageId = await _itoguruma.ReplyAsync(
-                message.SenderAgentId,
-                result.FinalMessage,
-                message.ConversationId,
-                message.MessageId,
-                ReplyIdempotencyKey.Create(message.MessageId),
-                cancellationToken).ConfigureAwait(false);
-            await _messageQueue.MarkRespondedAsync(message.MessageId, _timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
-            return new ActivationResult(message.MessageId, runId, replyMessageId, true, null);
+            try
+            {
+                var replyMessageId = await _itoguruma.ReplyAsync(
+                    message.SenderAgentId,
+                    result.FinalMessage,
+                    message.ConversationId,
+                    message.MessageId,
+                    ReplyIdempotencyKey.Create(message.MessageId),
+                    cancellationToken).ConfigureAwait(false);
+                await _messageQueue.MarkRespondedAsync(message.MessageId, replyMessageId, _timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+                return new ActivationResult(message.MessageId, runId, replyMessageId, true, null);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception exception)
+            {
+                await _replyRetries.ScheduleInitialFailureAsync(
+                    message.MessageId, exception.Message, _timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+                return new ActivationResult(message.MessageId, runId, null, false, exception.Message);
+            }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {

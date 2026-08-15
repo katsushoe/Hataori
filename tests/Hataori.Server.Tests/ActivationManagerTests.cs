@@ -102,7 +102,8 @@ public sealed class ActivationManagerTests : IDisposable
 
         result!.Succeeded.Should().BeFalse();
         (await fixture.Runs.ListAsync(AgentRunStatus.Completed, "codex", CancellationToken.None)).Should().ContainSingle();
-        (await fixture.Queue.GetProcessingStatusAsync("message-4", CancellationToken.None)).Should().Be(MessageProcessingStatus.Failed);
+        (await fixture.Queue.GetProcessingStatusAsync("message-4", CancellationToken.None)).Should().Be(MessageProcessingStatus.Running);
+        (await fixture.Queue.GetDueReplyRetriesAsync(DateTimeOffset.UtcNow.AddMinutes(1), 10, CancellationToken.None)).Should().ContainSingle();
         (await fixture.Sessions.GetAsync("conversation-1", "codex", CancellationToken.None))!.Status.Should().Be(ConversationSessionStatus.Idle);
     }
 
@@ -131,7 +132,11 @@ public sealed class ActivationManagerTests : IDisposable
         var itoguruma = Substitute.For<IItogurumaClient>();
         itoguruma.ReplyAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns("reply-1");
-        var manager = new ActivationManager(queue, new ConversationMutex(), sessions, runs, [driver], TimeProvider.System, itoguruma);
+        var retryManager = new ReplyRetryManager(
+            queue,
+            itoguruma,
+            new ReplyRetrySettings(5, TimeSpan.FromSeconds(5), TimeSpan.FromMinutes(5), 20));
+        var manager = new ActivationManager(queue, new ConversationMutex(), sessions, runs, [driver], TimeProvider.System, itoguruma, retryManager);
         return new Fixture(manager, queue, sessions, runs, driver, itoguruma);
     }
 
