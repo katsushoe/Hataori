@@ -9,7 +9,7 @@ namespace Hataori.Infrastructure.Runs;
 /// </summary>
 public sealed class SystemAgentProcessManager(TimeProvider timeProvider) : IAgentProcessManager
 {
-    public Task<IAgentProcess> StartAsync(AgentProcessStartRequest request, CancellationToken cancellationToken)
+    public async Task<IAgentProcess> StartAsync(AgentProcessStartRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentException.ThrowIfNullOrWhiteSpace(request.FileName);
@@ -29,6 +29,7 @@ public sealed class SystemAgentProcessManager(TimeProvider timeProvider) : IAgen
             CreateNoWindow = true,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
+            RedirectStandardInput = request.StandardInput is not null,
         };
         foreach (var argument in request.Arguments)
         {
@@ -42,6 +43,7 @@ public sealed class SystemAgentProcessManager(TimeProvider timeProvider) : IAgen
 
         var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
         var startedAtUtc = timeProvider.GetUtcNow();
+        SystemAgentProcess? agentProcess = null;
         try
         {
             if (!process.Start())
@@ -49,11 +51,26 @@ public sealed class SystemAgentProcessManager(TimeProvider timeProvider) : IAgen
                 throw new InvalidOperationException($"Process '{request.FileName}' could not be started.");
             }
 
-            return Task.FromResult<IAgentProcess>(new SystemAgentProcess(process, startedAtUtc, request.MaxCapturedCharacters, timeProvider));
+            agentProcess = new SystemAgentProcess(process, startedAtUtc, request.MaxCapturedCharacters, timeProvider);
+            if (request.StandardInput is not null)
+            {
+                await process.StandardInput.WriteAsync(request.StandardInput.AsMemory(), cancellationToken).ConfigureAwait(false);
+                process.StandardInput.Close();
+            }
+
+            return agentProcess;
         }
         catch
         {
-            process.Dispose();
+            if (agentProcess is not null)
+            {
+                await agentProcess.DisposeAsync().ConfigureAwait(false);
+            }
+            else
+            {
+                process.Dispose();
+            }
+
             throw;
         }
     }
@@ -122,6 +139,7 @@ public sealed class SystemAgentProcessManager(TimeProvider timeProvider) : IAgen
                 await _process.WaitForExitAsync().ConfigureAwait(false);
             }
 
+            await Task.WhenAll(_standardOutput, _standardError).ConfigureAwait(false);
             _process.Dispose();
         }
 

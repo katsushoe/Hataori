@@ -39,4 +39,19 @@ public sealed class SystemAgentProcessManagerTests
         result.StandardOutput.Should().HaveLength(10);
         result.StandardOutputTruncated.Should().BeTrue();
     }
+
+    [Fact]
+    public async Task StartAsync_WithStandardInput_WritesAndClosesInputStream()
+    {
+        var manager = new SystemAgentProcessManager(TimeProvider.System);
+        var request = new AgentProcessStartRequest(
+            "cmd.exe", ["/d", "/s", "/c", "more"], Directory.GetCurrentDirectory(),
+            new Dictionary<string, string?>(), 1024, "hello");
+
+        await using var process = await manager.StartAsync(request, CancellationToken.None);
+        var result = await process.WaitForExitAsync(CancellationToken.None);
+
+        result.ExitCode.Should().Be(0);
+        result.StandardOutput.Should().Contain("hello");
+    }
 }
