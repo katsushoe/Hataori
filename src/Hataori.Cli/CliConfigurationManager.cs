@@ -77,6 +77,7 @@ public sealed class CliConfigurationManager
         Add(errors, new ClaudeCodeDriverOptionsValidator().Validate(null, Bind<ClaudeCodeDriverOptions>(configuration, ClaudeCodeDriverOptions.SectionName)));
         Add(errors, new ActivationOptionsValidator().Validate(null, Bind<ActivationOptions>(configuration, ActivationOptions.SectionName)));
         Add(errors, new ReplyRetryOptionsValidator().Validate(null, Bind<ReplyRetryOptions>(configuration, ReplyRetryOptions.SectionName)));
+        Add(errors, new FileLogOptionsValidator().Validate(null, Bind<FileLogOptions>(configuration, FileLogOptions.SectionName)));
         return errors;
     }
 

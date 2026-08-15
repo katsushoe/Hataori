@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using Hataori.Application.Itoguruma;
 using Hataori.Application.Messages;
 using Hataori.Application.Sessions;
@@ -21,6 +21,19 @@ using ModelContextProtocol.Server;
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions { Args = args, ContentRootPath = AppContext.BaseDirectory });
 builder.Configuration.AddJsonFile("hataori.json", optional: false, reloadOnChange: true);
 builder.Configuration.AddEnvironmentVariables("HATAORI_");
+var startupFileLogOptions = builder.Configuration.GetRequiredSection(FileLogOptions.SectionName).Get<FileLogOptions>()
+    ?? throw new InvalidOperationException("File logging configuration is missing.");
+var fileLogValidation = new FileLogOptionsValidator().Validate(null, startupFileLogOptions);
+if (fileLogValidation.Failed)
+{
+    throw new InvalidOperationException(string.Join(" ", fileLogValidation.Failures));
+}
+
+if (startupFileLogOptions.Enabled)
+{
+    builder.Logging.AddProvider(new FileLoggerProvider(startupFileLogOptions, AppContext.BaseDirectory));
+}
+
 var startupOptions = builder.Configuration.GetRequiredSection(ServerOptions.SectionName).Get<ServerOptions>()
     ?? throw new InvalidOperationException("Server configuration is missing.");
 builder.WebHost.ConfigureKestrel(options => options.Listen(IPAddress.Parse(startupOptions.McpHost), startupOptions.McpPort));
@@ -49,6 +62,10 @@ builder.Services.AddOptions<ReplyRetryOptions>()
     .Bind(builder.Configuration.GetRequiredSection(ReplyRetryOptions.SectionName))
     .ValidateOnStart();
 builder.Services.AddSingleton<IValidateOptions<ReplyRetryOptions>, ReplyRetryOptionsValidator>();
+builder.Services.AddOptions<FileLogOptions>()
+    .Bind(builder.Configuration.GetRequiredSection(FileLogOptions.SectionName))
+    .ValidateOnStart();
+builder.Services.AddSingleton<IValidateOptions<FileLogOptions>, FileLogOptionsValidator>();
 builder.Services.AddSingleton<IItogurumaClient>(services => new McpItogurumaClient(
     services.GetRequiredService<IOptions<ItogurumaClientOptions>>().Value,
     services.GetRequiredService<ILoggerFactory>()));
