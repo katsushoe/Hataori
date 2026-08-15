@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Hataori.Application.Sessions;
 using Hataori.Application.Tasks;
 using Hataori.Core.Runs;
 using Hataori.Core.Sessions;
@@ -298,53 +299,110 @@ public static class CliApplication
             throw new ArgumentException($"Usage: hataori {args[0]} <command> [options]");
         }
 
-        var options = ParseOptions(args.Skip(2));
+        var hasPositional = args.Length > 2 && !args[2].StartsWith("--", StringComparison.Ordinal);
+        var positional = hasPositional ? args[2] : null;
+        var options = ParseOptions(args.Skip(hasPositional ? 3 : 2));
         var databasePath = GetDatabasePath(options);
         var connectionString = new SqliteConnectionStringBuilder { DataSource = databasePath, ForeignKeys = true }.ToString();
         return args[0].ToLowerInvariant() switch
         {
-            "agent" => await ExecuteAgentAsync(args[1], options, connectionString, cancellationToken).ConfigureAwait(false),
-            "conversation" => await ExecuteConversationAsync(args[1], options, connectionString, cancellationToken).ConfigureAwait(false),
-            "queue" => await ExecuteQueueAsync(args[1], options, connectionString, cancellationToken).ConfigureAwait(false),
+            "agent" => await ExecuteAgentAsync(args[1], positional, options, connectionString, cancellationToken).ConfigureAwait(false),
+            "conversation" => await ExecuteConversationAsync(args[1], positional, options, connectionString, cancellationToken).ConfigureAwait(false),
+            "queue" => await ExecuteQueueAsync(args[1], positional, options, connectionString, cancellationToken).ConfigureAwait(false),
             "db" => await CliDatabaseDiagnostics.ExecuteAsync(args[1], databasePath, cancellationToken).ConfigureAwait(false),
             _ => throw new ArgumentException($"Unknown command '{args[0]}'."),
         };
     }
 
-    private static async Task<object> ExecuteAgentAsync(string command, IReadOnlyDictionary<string, string> options, string connectionString, CancellationToken cancellationToken)
+    private static async Task<object> ExecuteAgentAsync(string command, string? positional, IReadOnlyDictionary<string, string> options, string connectionString, CancellationToken cancellationToken)
     {
-        if (!command.Equals("runs", StringComparison.OrdinalIgnoreCase))
+        var repository = new SqliteAgentRunRepository(connectionString);
+        await repository.InitializeAsync(cancellationToken).ConfigureAwait(false);
+        if (command.Equals("runs", StringComparison.OrdinalIgnoreCase))
+        {
+            return await repository.ListAsync(ParseRunStatus(Optional(options, "status")), Optional(options, "agent"), cancellationToken).ConfigureAwait(false);
+        }
+
+        if (!command.Equals("list", StringComparison.OrdinalIgnoreCase) && !command.Equals("status", StringComparison.OrdinalIgnoreCase))
         {
             throw new ArgumentException($"Unknown agent command '{command}'.");
         }
 
-        var repository = new SqliteAgentRunRepository(connectionString);
-        await repository.InitializeAsync(cancellationToken).ConfigureAwait(false);
-        return await repository.ListAsync(ParseRunStatus(Optional(options, "status")), Optional(options, "agent"), cancellationToken).ConfigureAwait(false);
-    }
-
-    private static async Task<object> ExecuteConversationAsync(string command, IReadOnlyDictionary<string, string> options, string connectionString, CancellationToken cancellationToken)
-    {
-        if (!command.Equals("list", StringComparison.OrdinalIgnoreCase))
+        var configuration = LoadConfiguration(options);
+        var activation = configuration.GetRequiredSection(ActivationOptions.SectionName).Get<ActivationOptions>() ?? new ActivationOptions();
+        var running = await repository.ListAsync(AgentRunStatus.Running, null, cancellationToken).ConfigureAwait(false);
+        var summaries = new[]
         {
-            throw new ArgumentException($"Unknown conversation command '{command}'.");
+            CreateAgentSummary("codex", configuration.GetSection(CodexDriverOptions.SectionName).Exists(), activation, running),
+            CreateAgentSummary("claude-code", configuration.GetSection(ClaudeCodeDriverOptions.SectionName).Exists(), activation, running),
+        };
+        if (command.Equals("status", StringComparison.OrdinalIgnoreCase))
+        {
+            var agentId = positional ?? Required(options, "agent");
+            return summaries.FirstOrDefault(item => item.AgentId.Equals(agentId, StringComparison.OrdinalIgnoreCase))
+                ?? throw new KeyNotFoundException($"Agent '{agentId}' was not found.");
         }
 
+        return summaries;
+    }
+
+    private static AgentSummary CreateAgentSummary(string agentId, bool configured, ActivationOptions activation, IReadOnlyList<AgentRun> running) =>
+        new(agentId, configured, running.Count(run => run.AgentId.Equals(agentId, StringComparison.OrdinalIgnoreCase)), activation.MaxConcurrentRuns.GetValueOrDefault(agentId));
+
+    private static async Task<object> ExecuteConversationAsync(string command, string? positional, IReadOnlyDictionary<string, string> options, string connectionString, CancellationToken cancellationToken)
+    {
         var repository = new SqliteConversationSessionRepository(connectionString);
         await repository.InitializeAsync(cancellationToken).ConfigureAwait(false);
-        return await repository.ListAsync(ParseSessionStatus(Optional(options, "status")), Optional(options, "agent"), cancellationToken).ConfigureAwait(false);
-    }
-
-    private static async Task<object> ExecuteQueueAsync(string command, IReadOnlyDictionary<string, string> options, string connectionString, CancellationToken cancellationToken)
-    {
-        if (!command.Equals("list", StringComparison.OrdinalIgnoreCase))
+        if (command.Equals("list", StringComparison.OrdinalIgnoreCase))
         {
-            throw new ArgumentException($"Unknown queue command '{command}'.");
+            return await repository.ListAsync(ParseSessionStatus(Optional(options, "status")), Optional(options, "agent"), cancellationToken).ConfigureAwait(false);
         }
 
+        var conversationId = positional ?? Required(options, "conversation");
+        var agentId = Required(options, "agent");
+        var service = new ConversationSessionService(repository, TimeProvider.System);
+        if (command.Equals("get", StringComparison.OrdinalIgnoreCase))
+        {
+            return await service.GetAsync(conversationId, agentId, cancellationToken).ConfigureAwait(false)
+                ?? throw new KeyNotFoundException($"Conversation '{conversationId}/{agentId}' was not found.");
+        }
+
+        if (command.Equals("reset", StringComparison.OrdinalIgnoreCase))
+        {
+            return await service.InvalidateAsync(conversationId, agentId, cancellationToken).ConfigureAwait(false);
+        }
+
+        throw new ArgumentException($"Unknown conversation command '{command}'.");
+    }
+
+    private static async Task<object> ExecuteQueueAsync(string command, string? positional, IReadOnlyDictionary<string, string> options, string connectionString, CancellationToken cancellationToken)
+    {
         var repository = new SqliteMessageQueueRepository(connectionString);
         await repository.InitializeAsync(cancellationToken).ConfigureAwait(false);
-        return await repository.ListAsync(Optional(options, "agent"), cancellationToken).ConfigureAwait(false);
+        if (command.Equals("list", StringComparison.OrdinalIgnoreCase))
+        {
+            return await repository.ListAsync(Optional(options, "agent"), cancellationToken).ConfigureAwait(false);
+        }
+
+        var messageId = positional ?? Required(options, "message");
+        if (command.Equals("get", StringComparison.OrdinalIgnoreCase))
+        {
+            return await repository.GetQueuedAsync(messageId, cancellationToken).ConfigureAwait(false)
+                ?? throw new KeyNotFoundException($"Queued message '{messageId}' was not found.");
+        }
+
+        if (command.Equals("retry", StringComparison.OrdinalIgnoreCase))
+        {
+            return await repository.RetryAsync(messageId, DateTimeOffset.UtcNow, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (command.Equals("cancel", StringComparison.OrdinalIgnoreCase))
+        {
+            await repository.CancelQueuedAsync(messageId, DateTimeOffset.UtcNow, cancellationToken).ConfigureAwait(false);
+            return new { message_id = messageId, status = "cancelled" };
+        }
+
+        throw new ArgumentException($"Unknown queue command '{command}'.");
     }
 
     private static async Task<object> ExecuteServerAsync(string command, IReadOnlyDictionary<string, string> options, CancellationToken cancellationToken)
@@ -480,4 +538,5 @@ public static class CliApplication
     private static string GetHelpText() => "Usage: hataori <start|stop|restart|status|service|task|agent|conversation|queue|db|config|itoguruma|mcp|doctor|version|help> [command] [options]";
 
     private sealed record DoctorCheck(string Name, bool Ok, string? Error, bool Skipped = false);
+    private sealed record AgentSummary(string AgentId, bool Enabled, int Running, int MaxRuns);
 }
