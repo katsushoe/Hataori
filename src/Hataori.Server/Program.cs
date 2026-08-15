@@ -2,10 +2,12 @@ using System.Net;
 using Hataori.Application.Itoguruma;
 using Hataori.Application.Messages;
 using Hataori.Application.Sessions;
+using Hataori.Application.Runs;
 using Hataori.Application.Tasks;
 using Hataori.Infrastructure.Itoguruma;
 using Hataori.Infrastructure.Messages;
 using Hataori.Infrastructure.Sessions;
+using Hataori.Infrastructure.Runs;
 using Hataori.Infrastructure.Tasks;
 using Hataori.Server;
 using Microsoft.Data.Sqlite;
@@ -57,10 +59,19 @@ builder.Services.AddSingleton<IConversationSessionRepository>(services =>
     var connectionString = new SqliteConnectionStringBuilder { DataSource = path, ForeignKeys = true }.ToString();
     return new SqliteConversationSessionRepository(connectionString);
 });
+builder.Services.AddSingleton<IAgentRunRepository>(services =>
+{
+    var options = services.GetRequiredService<IOptions<ServerOptions>>().Value;
+    var path = ServerPaths.ResolveDatabasePath(options.DatabasePath, AppContext.BaseDirectory);
+    var connectionString = new SqliteConnectionStringBuilder { DataSource = path, ForeignKeys = true }.ToString();
+    return new SqliteAgentRunRepository(connectionString);
+});
 builder.Services.AddSingleton<IConversationMutex, ConversationMutex>();
+builder.Services.AddSingleton<IAgentProcessManager, SystemAgentProcessManager>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<TaskService>();
 builder.Services.AddSingleton<ConversationSessionService>();
+builder.Services.AddSingleton<AgentRunService>();
 builder.Services.AddSingleton<ControlCommandHandler>();
 builder.Services.AddHostedService<HataoriServerWorker>();
 builder.Services.AddHostedService<ItogurumaConnectionWorker>();
