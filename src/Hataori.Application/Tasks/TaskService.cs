@@ -49,6 +49,57 @@ public sealed class TaskService
         return task;
     }
 
+    public Task<IReadOnlyList<HataoriTask>> ListAsync(HataoriTaskStatus? status, string? agentId, CancellationToken cancellationToken)
+    {
+        return _repository.ListAsync(status, agentId, cancellationToken);
+    }
+
+    public Task<IReadOnlyList<TaskHistoryEntry>> GetHistoryAsync(string taskId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(taskId);
+        return _repository.GetHistoryAsync(taskId, cancellationToken);
+    }
+
+    public Task<IReadOnlyList<TaskRelation>> GetRelationsAsync(string taskId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(taskId);
+        return _repository.GetRelationsAsync(taskId, cancellationToken);
+    }
+
+    public async Task AddRelationAsync(string taskId, string relatedTaskId, string relationType, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(taskId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(relatedTaskId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(relationType);
+        await GetRequiredAsync(taskId, cancellationToken).ConfigureAwait(false);
+        await GetRequiredAsync(relatedTaskId, cancellationToken).ConfigureAwait(false);
+        await _repository.AddRelationAsync(new TaskRelation(taskId, relatedTaskId, relationType), cancellationToken).ConfigureAwait(false);
+    }
+
+    public Task<HataoriTask> CancelAsync(string taskId, string? result, CancellationToken cancellationToken)
+    {
+        return EndAsync(taskId, HataoriTaskStatus.Cancelled, "cancelled", result, cancellationToken);
+    }
+
+    public Task<HataoriTask> FailAsync(string taskId, string result, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(result);
+        return EndAsync(taskId, HataoriTaskStatus.Failed, "failed", result, cancellationToken);
+    }
+
+    public Task<HataoriTask> ExpireAsync(string taskId, CancellationToken cancellationToken)
+    {
+        return EndAsync(taskId, HataoriTaskStatus.Expired, "expired", null, cancellationToken);
+    }
+
+    private async Task<HataoriTask> EndAsync(string taskId, HataoriTaskStatus status, string eventType, string? result, CancellationToken cancellationToken)
+    {
+        var task = await GetRequiredAsync(taskId, cancellationToken).ConfigureAwait(false);
+        task.End(status, result, _timeProvider.GetUtcNow());
+        await _repository.UpdateAsync(task, eventType, cancellationToken).ConfigureAwait(false);
+        return task;
+    }
+
     private async Task<HataoriTask> GetRequiredAsync(string taskId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(taskId);

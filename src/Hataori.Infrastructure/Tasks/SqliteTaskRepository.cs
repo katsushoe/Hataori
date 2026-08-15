@@ -45,6 +45,16 @@ public sealed class SqliteTaskRepository : ITaskRepository
                 progress_percent INTEGER NOT NULL,
                 FOREIGN KEY(task_id) REFERENCES tasks(task_id)
             );
+            CREATE TABLE IF NOT EXISTS task_relations (
+                task_id TEXT NOT NULL,
+                related_task_id TEXT NOT NULL,
+                relation_type TEXT NOT NULL,
+                PRIMARY KEY(task_id, related_task_id, relation_type),
+                FOREIGN KEY(task_id) REFERENCES tasks(task_id),
+                FOREIGN KEY(related_task_id) REFERENCES tasks(task_id)
+            );
+            CREATE INDEX IF NOT EXISTS ix_tasks_status_agent ON tasks(status, agent_id);
+            CREATE INDEX IF NOT EXISTS ix_task_history_task_id ON task_history(task_id, history_id);
             """;
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
@@ -79,10 +89,31 @@ public sealed class SqliteTaskRepository : ITaskRepository
             return null;
         }
 
-        return HataoriTask.Restore(
-            reader.GetString(0), reader.GetString(1), reader.GetString(2), GetNullableString(reader, 3), GetNullableString(reader, 4),
-            Enum.Parse<HataoriTaskStatus>(reader.GetString(5), true), reader.GetString(6), reader.GetString(7), reader.GetInt32(8),
-            ParseDate(reader.GetString(9)), ParseDate(reader.GetString(10)), reader.IsDBNull(11) ? null : ParseDate(reader.GetString(11)), GetNullableString(reader, 12));
+        return ReadTask(reader);
+    }
+
+    public async Task<IReadOnlyList<HataoriTask>> ListAsync(HataoriTaskStatus? status, string? agentId, CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT task_id, task_name, agent_id, conversation_id, origin_message_id, status, summary, current_work, progress_percent, started_at_utc, last_activity_at_utc, completed_at_utc, result
+            FROM tasks
+            WHERE ($status IS NULL OR status = $status) AND ($agent_id IS NULL OR agent_id = $agent_id)
+            ORDER BY started_at_utc DESC, task_id;
+            """;
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        command.Parameters.AddWithValue("$status", status is null ? DBNull.Value : status.Value.ToString().ToLowerInvariant());
+        command.Parameters.AddWithValue("$agent_id", string.IsNullOrWhiteSpace(agentId) ? DBNull.Value : agentId);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        var tasks = new List<HataoriTask>();
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            tasks.Add(ReadTask(reader));
+        }
+
+        return tasks;
     }
 
     public async Task UpdateAsync(HataoriTask task, string eventType, CancellationToken cancellationToken)
@@ -95,6 +126,58 @@ public sealed class SqliteTaskRepository : ITaskRepository
         await UpsertTaskAsync(connection, transaction, task, cancellationToken).ConfigureAwait(false);
         await InsertHistoryAsync(connection, transaction, task, eventType, cancellationToken).ConfigureAwait(false);
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<IReadOnlyList<TaskHistoryEntry>> GetHistoryAsync(string taskId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(taskId);
+        const string sql = "SELECT history_id, task_id, created_at_utc, event_type, message, progress_percent FROM task_history WHERE task_id = $task_id ORDER BY history_id;";
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        command.Parameters.AddWithValue("$task_id", taskId);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        var history = new List<TaskHistoryEntry>();
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            history.Add(new TaskHistoryEntry(reader.GetInt64(0), reader.GetString(1), ParseDate(reader.GetString(2)), reader.GetString(3), reader.GetString(4), reader.GetInt32(5)));
+        }
+
+        return history;
+    }
+
+    public async Task AddRelationAsync(TaskRelation relation, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(relation);
+        const string sql = "INSERT INTO task_relations (task_id, related_task_id, relation_type) VALUES ($task_id, $related_task_id, $relation_type) ON CONFLICT DO NOTHING;";
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        command.Parameters.AddWithValue("$task_id", relation.TaskId);
+        command.Parameters.AddWithValue("$related_task_id", relation.RelatedTaskId);
+        command.Parameters.AddWithValue("$relation_type", relation.RelationType);
+        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<IReadOnlyList<TaskRelation>> GetRelationsAsync(string taskId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(taskId);
+        const string sql = "SELECT task_id, related_task_id, relation_type FROM task_relations WHERE task_id = $task_id OR related_task_id = $task_id ORDER BY task_id, related_task_id, relation_type;";
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        command.Parameters.AddWithValue("$task_id", taskId);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        var relations = new List<TaskRelation>();
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            relations.Add(new TaskRelation(reader.GetString(0), reader.GetString(1), reader.GetString(2)));
+        }
+
+        return relations;
     }
 
     private static async Task UpsertTaskAsync(SqliteConnection connection, System.Data.Common.DbTransaction transaction, HataoriTask task, CancellationToken cancellationToken)
@@ -143,6 +226,10 @@ public sealed class SqliteTaskRepository : ITaskRepository
     }
 
     private static string? GetNullableString(SqliteDataReader reader, int ordinal) => reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
+    private static HataoriTask ReadTask(SqliteDataReader reader) => HataoriTask.Restore(
+        reader.GetString(0), reader.GetString(1), reader.GetString(2), GetNullableString(reader, 3), GetNullableString(reader, 4),
+        Enum.Parse<HataoriTaskStatus>(reader.GetString(5), true), reader.GetString(6), reader.GetString(7), reader.GetInt32(8),
+        ParseDate(reader.GetString(9)), ParseDate(reader.GetString(10)), reader.IsDBNull(11) ? null : ParseDate(reader.GetString(11)), GetNullableString(reader, 12));
     private static string FormatDate(DateTimeOffset value) => value.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
     private static DateTimeOffset ParseDate(string value) => DateTimeOffset.ParseExact(value, "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
 }

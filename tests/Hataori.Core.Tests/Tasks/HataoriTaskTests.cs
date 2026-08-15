@@ -56,6 +56,20 @@ public sealed class HataoriTaskTests
         act.Should().Throw<InvalidOperationException>();
     }
 
+    [Theory]
+    [InlineData(HataoriTaskStatus.Cancelled)]
+    [InlineData(HataoriTaskStatus.Failed)]
+    [InlineData(HataoriTaskStatus.Expired)]
+    public void End_ValidTerminalStatus_UpdatesStatus(HataoriTaskStatus status)
+    {
+        var task = CreateTask();
+
+        task.End(status, "終了", DateTimeOffset.UtcNow);
+
+        task.Status.Should().Be(status);
+        task.CompletedAtUtc.Should().NotBeNull();
+    }
+
     private static HataoriTask CreateTask()
     {
         return HataoriTask.Start("task-1", "実装", "codex", null, null, "概要", "開始", DateTimeOffset.UtcNow);
