@@ -1,4 +1,4 @@
-using Hataori.Core.Tasks;
+﻿using Hataori.Core.Tasks;
 
 namespace Hataori.Application.Tasks;
 
@@ -52,6 +52,12 @@ public sealed class TaskService
     public Task<IReadOnlyList<HataoriTask>> ListAsync(HataoriTaskStatus? status, string? agentId, CancellationToken cancellationToken)
     {
         return _repository.ListAsync(status, agentId, cancellationToken);
+    }
+
+    public Task<HataoriTask?> GetAsync(string taskId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(taskId);
+        return _repository.GetAsync(taskId, cancellationToken);
     }
 
     public Task<IReadOnlyList<TaskHistoryEntry>> GetHistoryAsync(string taskId, CancellationToken cancellationToken)

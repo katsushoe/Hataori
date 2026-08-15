@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hataori.Core.Tests", "tests
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hataori.Infrastructure.Tests", "tests\Hataori.Infrastructure.Tests\Hataori.Infrastructure.Tests.csproj", "{E41CACA9-2532-45A1-B3EB-AA53AAF7D48C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hataori.Cli.Tests", "tests\Hataori.Cli.Tests\Hataori.Cli.Tests.csproj", "{E0AFBCCE-F468-47F3-AADF-A1124B47982F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -115,6 +117,18 @@ Global
 		{E41CACA9-2532-45A1-B3EB-AA53AAF7D48C}.Release|x64.Build.0 = Release|Any CPU
 		{E41CACA9-2532-45A1-B3EB-AA53AAF7D48C}.Release|x86.ActiveCfg = Release|Any CPU
 		{E41CACA9-2532-45A1-B3EB-AA53AAF7D48C}.Release|x86.Build.0 = Release|Any CPU
+		{E0AFBCCE-F468-47F3-AADF-A1124B47982F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E0AFBCCE-F468-47F3-AADF-A1124B47982F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E0AFBCCE-F468-47F3-AADF-A1124B47982F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E0AFBCCE-F468-47F3-AADF-A1124B47982F}.Debug|x64.Build.0 = Debug|Any CPU
+		{E0AFBCCE-F468-47F3-AADF-A1124B47982F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{E0AFBCCE-F468-47F3-AADF-A1124B47982F}.Debug|x86.Build.0 = Debug|Any CPU
+		{E0AFBCCE-F468-47F3-AADF-A1124B47982F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E0AFBCCE-F468-47F3-AADF-A1124B47982F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E0AFBCCE-F468-47F3-AADF-A1124B47982F}.Release|x64.ActiveCfg = Release|Any CPU
+		{E0AFBCCE-F468-47F3-AADF-A1124B47982F}.Release|x64.Build.0 = Release|Any CPU
+		{E0AFBCCE-F468-47F3-AADF-A1124B47982F}.Release|x86.ActiveCfg = Release|Any CPU
+		{E0AFBCCE-F468-47F3-AADF-A1124B47982F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -127,5 +141,6 @@ Global
 		{1086CAB3-3BAF-4FE4-905C-C31A3A7B2F5F} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{84CE0236-6574-4352-89CB-4D1B3A9EAA91} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{E41CACA9-2532-45A1-B3EB-AA53AAF7D48C} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{E0AFBCCE-F468-47F3-AADF-A1124B47982F} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal
