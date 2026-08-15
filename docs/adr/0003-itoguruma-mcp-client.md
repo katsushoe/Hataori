@@ -24,7 +24,7 @@ Hataori Serverは、エージェント間の通知・問い合わせ・回答を
 
 ## Consequences
 
-接続・認証・受信・返信・ACKの境界が確立され、Itogurumaの変更はAdapter内へ隔離されます。一方、実際の継続受信とタスク変換は永続キュー実装まで開始されません。
+接続・認証・受信・返信・ACKの境界が確立され、Itogurumaの変更はAdapter内へ隔離されます。受信メッセージはSQLiteへ永続化してからACKし、再配信時は `message_id` で重複排除します。キューから先のSession起動とタスク変換はActivation実装まで行いません。
 
 ## Security and Operations
 
