@@ -1,0 +1,6 @@
+{
+  "server": {
+    "databasePath": "data/hataori.db",
+    "controlPipeName": "hataori-control"
+  }
+}
