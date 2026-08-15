@@ -1,5 +1,7 @@
 using System.Net;
+using Hataori.Application.Itoguruma;
 using Hataori.Application.Tasks;
+using Hataori.Infrastructure.Itoguruma;
 using Hataori.Infrastructure.Tasks;
 using Hataori.Server;
 using Microsoft.Data.Sqlite;
@@ -17,6 +19,13 @@ builder.Services.AddOptions<ServerOptions>()
     .Bind(builder.Configuration.GetRequiredSection(ServerOptions.SectionName))
     .ValidateOnStart();
 builder.Services.AddSingleton<IValidateOptions<ServerOptions>, ServerOptionsValidator>();
+builder.Services.AddOptions<ItogurumaClientOptions>()
+    .Bind(builder.Configuration.GetRequiredSection(ItogurumaClientOptions.SectionName))
+    .ValidateOnStart();
+builder.Services.AddSingleton<IValidateOptions<ItogurumaClientOptions>, ItogurumaClientOptionsValidator>();
+builder.Services.AddSingleton<IItogurumaClient>(services => new McpItogurumaClient(
+    services.GetRequiredService<IOptions<ItogurumaClientOptions>>().Value,
+    services.GetRequiredService<ILoggerFactory>()));
 builder.Services.AddSingleton<ITaskRepository>(services =>
 {
     var options = services.GetRequiredService<IOptions<ServerOptions>>().Value;
@@ -34,6 +43,7 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<TaskService>();
 builder.Services.AddSingleton<ControlCommandHandler>();
 builder.Services.AddHostedService<HataoriServerWorker>();
+builder.Services.AddHostedService<ItogurumaConnectionWorker>();
 builder.Services.AddMcpServer()
     .WithHttpTransport(options => options.Stateless = true)
     .WithTools<TaskMcpTools>();
