@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using Hataori.Application.Control;
 using Hataori.Application.Tasks;
 using Hataori.Application.Sessions;
+using Hataori.Application.Runs;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -24,19 +25,22 @@ public sealed class HataoriServerWorker : BackgroundService
 
     private readonly ITaskRepository _repository;
     private readonly IConversationSessionRepository _sessionRepository;
+    private readonly IAgentRunRepository _runRepository;
     private readonly ControlCommandHandler _handler;
     private readonly ServerOptions _options;
     private readonly ILogger<HataoriServerWorker> _logger;
 
-    public HataoriServerWorker(ITaskRepository repository, IConversationSessionRepository sessionRepository, ControlCommandHandler handler, IOptions<ServerOptions> options, ILogger<HataoriServerWorker> logger)
+    public HataoriServerWorker(ITaskRepository repository, IConversationSessionRepository sessionRepository, IAgentRunRepository runRepository, ControlCommandHandler handler, IOptions<ServerOptions> options, ILogger<HataoriServerWorker> logger)
     {
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(sessionRepository);
+        ArgumentNullException.ThrowIfNull(runRepository);
         ArgumentNullException.ThrowIfNull(handler);
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(logger);
         _repository = repository;
         _sessionRepository = sessionRepository;
+        _runRepository = runRepository;
         _handler = handler;
         _options = options.Value;
         _logger = logger;
@@ -46,6 +50,7 @@ public sealed class HataoriServerWorker : BackgroundService
     {
         await _repository.InitializeAsync(stoppingToken).ConfigureAwait(false);
         await _sessionRepository.InitializeAsync(stoppingToken).ConfigureAwait(false);
+        await _runRepository.InitializeAsync(stoppingToken).ConfigureAwait(false);
         _logger.LogInformation("[Startup][ControlPipe] Hataori Server started with pipe {PipeName}", _options.ControlPipeName);
 
         while (!stoppingToken.IsCancellationRequested)
