@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="520" viewBox="0 0 960 520">
+  <title>Hataori progress as of 2026-08-16</title>
+  <desc>PROGRESS.mdの2026.08.16列を可視化した機能別進捗グラフ。</desc>
+  <rect width="960" height="520" fill="#f7f8fa"/>
+  <text x="40" y="42" font-family="Segoe UI, sans-serif" font-size="24" fill="#172033">Hataori Progress — 66%</text>
+  <g font-family="Segoe UI, sans-serif" font-size="14" fill="#263247">
+    <text x="40" y="82">Server / Core / SQLite</text><rect x="250" y="66" width="595" height="20" rx="4" fill="#dce3ed"/><rect x="250" y="66" width="506" height="20" rx="4" fill="#3978c5"/><text x="860" y="82">85%</text>
+    <text x="40" y="122">Itoguruma</text><rect x="250" y="106" width="595" height="20" rx="4" fill="#dce3ed"/><rect x="250" y="106" width="536" height="20" rx="4" fill="#3978c5"/><text x="860" y="122">90%</text>
+    <text x="40" y="162">Session / Activation</text><rect x="250" y="146" width="595" height="20" rx="4" fill="#dce3ed"/><rect x="250" y="146" width="536" height="20" rx="4" fill="#3978c5"/><text x="860" y="162">90%</text>
+    <text x="40" y="202">Task</text><rect x="250" y="186" width="595" height="20" rx="4" fill="#dce3ed"/><rect x="250" y="186" width="565" height="20" rx="4" fill="#3978c5"/><text x="860" y="202">95%</text>
+    <text x="40" y="242">CLI</text><rect x="250" y="226" width="595" height="20" rx="4" fill="#dce3ed"/><rect x="250" y="226" width="547" height="20" rx="4" fill="#3978c5"/><text x="860" y="242">92%</text>
+    <text x="40" y="282">Windows Service</text><rect x="250" y="266" width="595" height="20" rx="4" fill="#dce3ed"/><rect x="250" y="266" width="417" height="20" rx="4" fill="#5d8fc8"/><text x="860" y="282">70%</text>
+    <text x="40" y="322">Monitor</text><rect x="250" y="306" width="595" height="20" rx="4" fill="#dce3ed"/><text x="860" y="322">0%</text>
+    <text x="40" y="362">Operations / Recovery</text><rect x="250" y="346" width="595" height="20" rx="4" fill="#dce3ed"/><rect x="250" y="346" width="268" height="20" rx="4" fill="#d39b3b"/><text x="860" y="362">45%</text>
+    <text x="40" y="402">Documentation / Release</text><rect x="250" y="386" width="595" height="20" rx="4" fill="#dce3ed"/><rect x="250" y="386" width="119" height="20" rx="4" fill="#d39b3b"/><text x="860" y="402">20%</text>
+    <text x="40" y="442">Testing</text><rect x="250" y="426" width="595" height="20" rx="4" fill="#dce3ed"/><rect x="250" y="426" width="446" height="20" rx="4" fill="#5d8fc8"/><text x="860" y="442">75%</text>
+  </g>
+  <text x="40" y="490" font-family="Segoe UI, sans-serif" font-size="13" fill="#657087">Updated 2026-08-16 · Phase 1: 72%</text>
+</svg>
