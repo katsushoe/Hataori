@@ -102,6 +102,36 @@ public sealed class CliApplicationTests : IDisposable
     }
 
     [Fact]
+    public async Task RunAsync_QueueGetAndCancel_AcceptsPositionalMessageId()
+    {
+        var repository = new SqliteMessageQueueRepository(GetConnectionString());
+        await repository.InitializeAsync(CancellationToken.None);
+        var message = new IncomingMessage("message-1", "conversation-1", "codex", "sender", null, "prompt", "body", null, DateTimeOffset.UtcNow);
+        await repository.EnqueueAsync(message, 0, CancellationToken.None);
+
+        var getResponse = await RunAsync("queue", "get", "message-1", "--database", _databasePath);
+        var cancelResponse = await RunAsync("queue", "cancel", "message-1", "--database", _databasePath);
+
+        getResponse.ExitCode.Should().Be(0);
+        cancelResponse.ExitCode.Should().Be(0);
+        (await repository.ListAsync(null, CancellationToken.None)).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task RunAsync_ConversationReset_AcceptsPositionalConversationId()
+    {
+        var repository = new SqliteConversationSessionRepository(GetConnectionString());
+        await repository.InitializeAsync(CancellationToken.None);
+        await repository.SaveAsync(ConversationSession.Create("conversation-1", "codex", "session-1", DateTimeOffset.UtcNow), CancellationToken.None);
+
+        var response = await RunAsync("conversation", "reset", "conversation-1", "--database", _databasePath, "--agent", "codex");
+
+        response.ExitCode.Should().Be(0);
+        var session = await repository.GetAsync("conversation-1", "codex", CancellationToken.None);
+        session!.Status.Should().Be(ConversationSessionStatus.Invalid);
+    }
+
+    [Fact]
     public async Task RunAsync_DbIntegrity_ReturnsOk()
     {
         (await RunAsync("task", "list", "--database", _databasePath)).ExitCode.Should().Be(0);

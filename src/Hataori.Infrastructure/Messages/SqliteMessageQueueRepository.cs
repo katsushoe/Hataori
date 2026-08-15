@@ -144,6 +144,89 @@ public sealed class SqliteMessageQueueRepository(string connectionString) : IMes
         return messages;
     }
 
+    public async Task<QueuedMessage?> GetQueuedAsync(string messageId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(messageId);
+        await using var connection = new SqliteConnection(connectionString);
+        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using var command = connection.CreateCommand();
+        command.CommandText = $"{SelectQueuedMessage} WHERE p.message_id = $message_id;";
+        command.Parameters.AddWithValue("$message_id", messageId);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        return await reader.ReadAsync(cancellationToken).ConfigureAwait(false) ? ReadQueuedMessage(reader) : null;
+    }
+
+    public async Task<QueuedMessage> RetryAsync(string messageId, DateTimeOffset enqueuedAtUtc, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(messageId);
+        var status = await GetProcessingStatusAsync(messageId, cancellationToken).ConfigureAwait(false)
+            ?? throw new KeyNotFoundException($"Message processing '{messageId}' was not found.");
+        if (status == MessageProcessingStatus.Queued)
+        {
+            return await GetQueuedAsync(messageId, cancellationToken).ConfigureAwait(false)
+                ?? throw new InvalidOperationException($"Message '{messageId}' has an inconsistent queue state.");
+        }
+
+        if (status is not (MessageProcessingStatus.Failed or MessageProcessingStatus.Cancelled))
+        {
+            throw new InvalidOperationException($"Message '{messageId}' is not retryable from status '{status}'.");
+        }
+
+        await using var connection = new SqliteConnection(connectionString);
+        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using var transaction = connection.BeginTransaction(deferred: false);
+        await using var command = connection.CreateCommand();
+        command.Transaction = (SqliteTransaction)transaction;
+        command.CommandText = """
+            INSERT INTO message_queue (message_id, conversation_id, agent_id, priority, enqueued_at_utc, sequence)
+            SELECT message_id, conversation_id, agent_id, 0, $enqueued_at_utc,
+                   COALESCE((SELECT MAX(sequence) + 1 FROM message_queue), 1)
+            FROM message_processing
+            WHERE message_id = $message_id AND status IN ('failed', 'cancelled')
+            ON CONFLICT(message_id) DO NOTHING;
+            UPDATE message_processing
+            SET status = 'queued', started_at_utc = NULL, completed_at_utc = NULL, error = NULL,
+                reply_attempt_count = 0, next_reply_attempt_at_utc = NULL, reply_error = NULL, reply_message_id = NULL
+            WHERE message_id = $message_id AND status IN ('failed', 'cancelled');
+            """;
+        command.Parameters.AddWithValue("$message_id", messageId);
+        command.Parameters.AddWithValue("$enqueued_at_utc", FormatDate(enqueuedAtUtc));
+        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+        return await GetQueuedAsync(messageId, cancellationToken).ConfigureAwait(false)
+            ?? throw new InvalidOperationException($"Message '{messageId}' is not retryable.");
+    }
+
+    public async Task CancelQueuedAsync(string messageId, DateTimeOffset cancelledAtUtc, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(messageId);
+        await using var connection = new SqliteConnection(connectionString);
+        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using var transaction = connection.BeginTransaction(deferred: false);
+        await using var delete = connection.CreateCommand();
+        delete.Transaction = (SqliteTransaction)transaction;
+        delete.CommandText = "DELETE FROM message_queue WHERE message_id = $message_id;";
+        delete.Parameters.AddWithValue("$message_id", messageId);
+        if (await delete.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false) != 1)
+        {
+            await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+            throw new InvalidOperationException($"Message '{messageId}' is not queued.");
+        }
+
+        await using var update = connection.CreateCommand();
+        update.Transaction = (SqliteTransaction)transaction;
+        update.CommandText = """
+            UPDATE message_processing
+            SET status = 'cancelled', completed_at_utc = $cancelled_at_utc,
+                next_reply_attempt_at_utc = NULL
+            WHERE message_id = $message_id AND status = 'queued';
+            """;
+        update.Parameters.AddWithValue("$message_id", messageId);
+        update.Parameters.AddWithValue("$cancelled_at_utc", FormatDate(cancelledAtUtc));
+        await EnsureSingleUpdateAsync(update, messageId, cancellationToken).ConfigureAwait(false);
+        await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task<QueuedMessage?> TryClaimNextAsync(string? agentId, CancellationToken cancellationToken)
     {
         await using var connection = new SqliteConnection(connectionString);
@@ -363,6 +446,14 @@ public sealed class SqliteMessageQueueRepository(string connectionString) : IMes
             ParseDate(reader.GetString(11)));
         return new QueuedMessage(reader.GetInt64(0), reader.GetInt64(1), reader.GetInt32(2), message, ParseDate(reader.GetString(12)));
     }
+
+    private const string SelectQueuedMessage = """
+        SELECT q.queue_id, q.sequence, q.priority, p.message_id, p.conversation_id, p.agent_id,
+               p.sender_agent_id, p.reply_to_message_id, p.message_type, p.body, p.payload_json,
+               p.received_at_utc, q.enqueued_at_utc
+        FROM message_queue q
+        JOIN message_processing p ON p.message_id = q.message_id
+        """;
 
     private static string? GetNullableString(SqliteDataReader reader, int ordinal) => reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
     private static string FormatDate(DateTimeOffset value) => value.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);

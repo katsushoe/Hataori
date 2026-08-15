@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using Hataori.Core.Messages;
 using Hataori.Infrastructure.Messages;
 using Microsoft.Data.Sqlite;
@@ -52,6 +52,37 @@ public sealed class SqliteMessageQueueRepositoryTests : IDisposable
         var messages = await repository.ListAsync(null, CancellationToken.None);
 
         messages.Select(item => item.Message.MessageId).Should().Equal("urgent", "normal");
+    }
+
+    [Fact]
+    public async Task CancelAndRetryAsync_QueuedMessage_RequeuesAtEnd()
+    {
+        var repository = CreateRepository();
+        await repository.InitializeAsync(CancellationToken.None);
+        await repository.EnqueueAsync(CreateMessage("message-1", "first"), 0, CancellationToken.None);
+
+        await repository.CancelQueuedAsync("message-1", DateTimeOffset.UtcNow, CancellationToken.None);
+
+        (await repository.ListAsync(null, CancellationToken.None)).Should().BeEmpty();
+        (await GetStatusAsync("message-1")).Should().Be("cancelled");
+
+        var retried = await repository.RetryAsync("message-1", DateTimeOffset.UtcNow, CancellationToken.None);
+
+        retried.Message.MessageId.Should().Be("message-1");
+        (await GetStatusAsync("message-1")).Should().Be("queued");
+    }
+
+    [Fact]
+    public async Task GetQueuedAsync_ExistingMessage_ReturnsItem()
+    {
+        var repository = CreateRepository();
+        await repository.InitializeAsync(CancellationToken.None);
+        await repository.EnqueueAsync(CreateMessage("message-1", "first"), 0, CancellationToken.None);
+
+        var result = await repository.GetQueuedAsync("message-1", CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result!.Message.Body.Should().Be("first");
     }
 
     [Fact]
