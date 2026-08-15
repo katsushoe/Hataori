@@ -57,6 +57,10 @@ public static class CliApplication
             {
                 result = new { version = GetVersion() };
             }
+            else if (IsSubcommandHelp(args))
+            {
+                result = new { help = GetSubcommandHelp(args[0]) };
+            }
             else if (string.Equals(args[0], "task", StringComparison.OrdinalIgnoreCase))
             {
                 if (args.Length < 2)
@@ -64,11 +68,13 @@ public static class CliApplication
                     throw new ArgumentException("Usage: hataori task <command> [options]");
                 }
 
-                var options = ParseOptions(args.Skip(2));
+                var hasPositional = args.Length > 2 && !args[2].StartsWith("--", StringComparison.Ordinal);
+                var positional = hasPositional ? args[2] : null;
+                var options = ParseOptions(args.Skip(hasPositional ? 3 : 2));
                 var connectionString = new SqliteConnectionStringBuilder { DataSource = GetDatabasePath(options), ForeignKeys = true }.ToString();
                 var repository = new SqliteTaskRepository(connectionString);
                 await repository.InitializeAsync(cancellationToken).ConfigureAwait(false);
-                result = await ExecuteTaskAsync(args[1], options, new TaskService(repository, TimeProvider.System), cancellationToken).ConfigureAwait(false);
+                result = await ExecuteTaskAsync(args[1], positional, options, new TaskService(repository, TimeProvider.System), cancellationToken).ConfigureAwait(false);
             }
             else if (IsDatabaseCommand(args[0]))
             {
@@ -444,23 +450,41 @@ public static class CliApplication
         throw new InvalidOperationException("Hataori Server did not stop before the restart timeout.");
     }
 
-    private static async Task<object?> ExecuteTaskAsync(string command, IReadOnlyDictionary<string, string> options, TaskService service, CancellationToken cancellationToken)
+    private static async Task<object?> ExecuteTaskAsync(string command, string? positional, IReadOnlyDictionary<string, string> options, TaskService service, CancellationToken cancellationToken)
     {
+        var taskId = positional ?? Optional(options, "id");
         return command.ToLowerInvariant() switch
         {
             "start" => await service.StartAsync(Required(options, "id"), Required(options, "name"), Required(options, "agent"), Optional(options, "conversation"), Optional(options, "message"), Optional(options, "summary") ?? string.Empty, Optional(options, "current-work") ?? string.Empty, cancellationToken).ConfigureAwait(false),
-            "get" => await service.GetAsync(Required(options, "id"), cancellationToken).ConfigureAwait(false) ?? throw new KeyNotFoundException($"Task '{Required(options, "id")}' was not found."),
-            "list" => await service.ListAsync(ParseStatus(Optional(options, "status")), Optional(options, "agent"), cancellationToken).ConfigureAwait(false),
-            "heartbeat" => await service.HeartbeatAsync(Required(options, "id"), Required(options, "current-work"), ParseProgress(Required(options, "progress")), cancellationToken).ConfigureAwait(false),
-            "complete" => await service.CompleteAsync(Required(options, "id"), Required(options, "result"), cancellationToken).ConfigureAwait(false),
-            "cancel" => await service.CancelAsync(Required(options, "id"), Optional(options, "result"), cancellationToken).ConfigureAwait(false),
-            "fail" => await service.FailAsync(Required(options, "id"), Required(options, "result"), cancellationToken).ConfigureAwait(false),
-            "expire" => await service.ExpireAsync(Required(options, "id"), cancellationToken).ConfigureAwait(false),
-            "history" => await service.GetHistoryAsync(Required(options, "id"), cancellationToken).ConfigureAwait(false),
+            "get" => await GetTaskDetailsAsync(RequiredTaskId(taskId), service, cancellationToken).ConfigureAwait(false),
+            "list" => await ListTasksAsync(options, service, cancellationToken).ConfigureAwait(false),
+            "heartbeat" => await service.HeartbeatAsync(RequiredTaskId(taskId), Required(options, "current-work"), ParseProgress(Required(options, "progress")), Optional(options, "message"), cancellationToken).ConfigureAwait(false),
+            "complete" => await service.CompleteAsync(RequiredTaskId(taskId), Optional(options, "message") ?? Required(options, "result"), cancellationToken).ConfigureAwait(false),
+            "cancel" => await service.CancelAsync(RequiredTaskId(taskId), Optional(options, "message") ?? Optional(options, "result"), cancellationToken).ConfigureAwait(false),
+            "fail" => await service.FailAsync(RequiredTaskId(taskId), Required(options, "result"), cancellationToken).ConfigureAwait(false),
+            "expire" => await service.ExpireAsync(RequiredTaskId(taskId), cancellationToken).ConfigureAwait(false),
+            "history" => await service.GetHistoryAsync(RequiredTaskId(taskId), cancellationToken).ConfigureAwait(false),
             "relation-add" => await AddRelationAsync(service, options, cancellationToken).ConfigureAwait(false),
             "relations" => await service.GetRelationsAsync(Required(options, "id"), cancellationToken).ConfigureAwait(false),
             _ => throw new ArgumentException($"Unknown task command '{command}'."),
         };
+    }
+
+    private static async Task<object> GetTaskDetailsAsync(string taskId, TaskService service, CancellationToken cancellationToken)
+    {
+        var task = await service.GetAsync(taskId, cancellationToken).ConfigureAwait(false)
+            ?? throw new KeyNotFoundException($"Task '{taskId}' was not found.");
+        var history = await service.GetHistoryAsync(taskId, cancellationToken).ConfigureAwait(false);
+        var relations = await service.GetRelationsAsync(taskId, cancellationToken).ConfigureAwait(false);
+        return new { task, history, relations };
+    }
+
+    private static async Task<object> ListTasksAsync(IReadOnlyDictionary<string, string> options, TaskService service, CancellationToken cancellationToken)
+    {
+        HataoriTaskStatus? status = options.ContainsKey("all") ? null : ParseStatus(Optional(options, "status")) ?? HataoriTaskStatus.Active;
+        var tasks = await service.ListAsync(status, Optional(options, "agent"), cancellationToken).ConfigureAwait(false);
+        var conversationId = Optional(options, "conversation");
+        return conversationId is null ? tasks : tasks.Where(task => task.ConversationId == conversationId).ToArray();
     }
 
     private static async Task<object> AddRelationAsync(TaskService service, IReadOnlyDictionary<string, string> options, CancellationToken cancellationToken)
@@ -473,20 +497,27 @@ public static class CliApplication
     private static Dictionary<string, string> ParseOptions(IEnumerable<string> arguments)
     {
         var values = arguments.ToArray();
-        if (values.Length % 2 != 0)
-        {
-            throw new ArgumentException("Every option must have a value.");
-        }
-
         var options = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        for (var index = 0; index < values.Length; index += 2)
+        for (var index = 0; index < values.Length; index++)
         {
             if (!values[index].StartsWith("--", StringComparison.Ordinal) || values[index].Length == 2)
             {
                 throw new ArgumentException($"Invalid option '{values[index]}'.");
             }
 
-            options[values[index][2..]] = values[index + 1];
+            var name = values[index][2..];
+            if (IsFlag(name))
+            {
+                options[name] = "true";
+                continue;
+            }
+
+            if (++index >= values.Length || values[index].StartsWith("--", StringComparison.Ordinal))
+            {
+                throw new ArgumentException($"Option '--{name}' must have a value.");
+            }
+
+            options[name] = values[index];
         }
 
         return options;
@@ -527,6 +558,9 @@ public static class CliApplication
         return string.IsNullOrWhiteSpace(value) ? throw new ArgumentException($"Missing --{name}.") : value;
     }
 
+    private static string RequiredTaskId(string? taskId) => string.IsNullOrWhiteSpace(taskId) ? throw new ArgumentException("Specify a task ID as an argument or with --id.") : taskId;
+    private static bool IsFlag(string name) => name.Equals("json", StringComparison.OrdinalIgnoreCase) || name.Equals("all", StringComparison.OrdinalIgnoreCase);
+
     private static string? Optional(IReadOnlyDictionary<string, string> options, string name) => options.TryGetValue(name, out var value) ? value : null;
     private static int ParseProgress(string value) => int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var progress) ? progress : throw new ArgumentException("--progress must be an integer.");
     private static HataoriTaskStatus? ParseStatus(string? value) => value is null ? null : Enum.TryParse<HataoriTaskStatus>(value, true, out var status) ? status : throw new ArgumentException($"Invalid task status '{value}'.");
@@ -534,8 +568,10 @@ public static class CliApplication
     private static ConversationSessionStatus? ParseSessionStatus(string? value) => value is null ? null : Enum.TryParse<ConversationSessionStatus>(value, true, out var status) ? status : throw new ArgumentException($"Invalid conversation status '{value}'.");
     private static bool IsHelpCommand(IReadOnlyList<string> args) => args[0].Equals("help", StringComparison.OrdinalIgnoreCase) || args[0].Equals("--help", StringComparison.OrdinalIgnoreCase);
     private static bool IsVersionCommand(IReadOnlyList<string> args) => args[0].Equals("version", StringComparison.OrdinalIgnoreCase) || args[0].Equals("--version", StringComparison.OrdinalIgnoreCase);
+    private static bool IsSubcommandHelp(IReadOnlyList<string> args) => args.Count > 1 && (args[1].Equals("help", StringComparison.OrdinalIgnoreCase) || args[1].Equals("--help", StringComparison.OrdinalIgnoreCase));
     private static string GetVersion() => typeof(CliApplication).Assembly.GetName().Version?.ToString() ?? "unknown";
     private static string GetHelpText() => "Usage: hataori <start|stop|restart|status|service|task|agent|conversation|queue|db|config|itoguruma|mcp|doctor|version|help> [command] [options]";
+    private static string GetSubcommandHelp(string command) => $"Usage: hataori {command} <command> [arguments] [options]";
 
     private sealed record DoctorCheck(string Name, bool Ok, string? Error, bool Skipped = false);
     private sealed record AgentSummary(string AgentId, bool Enabled, int Running, int MaxRuns);

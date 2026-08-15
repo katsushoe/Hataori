@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Hataori.Application.Tasks;
 using Hataori.Core.Tasks;
 using Microsoft.Data.Sqlite;
@@ -118,13 +118,18 @@ public sealed class SqliteTaskRepository : ITaskRepository
 
     public async Task UpdateAsync(HataoriTask task, string eventType, CancellationToken cancellationToken)
     {
+        await UpdateAsync(task, eventType, null, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task UpdateAsync(HataoriTask task, string eventType, string? message, CancellationToken cancellationToken)
+    {
         ArgumentNullException.ThrowIfNull(task);
         ArgumentException.ThrowIfNullOrWhiteSpace(eventType);
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
         await using var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
         await UpsertTaskAsync(connection, transaction, task, cancellationToken).ConfigureAwait(false);
-        await InsertHistoryAsync(connection, transaction, task, eventType, cancellationToken).ConfigureAwait(false);
+        await InsertHistoryAsync(connection, transaction, task, eventType, message, cancellationToken).ConfigureAwait(false);
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
@@ -194,7 +199,10 @@ public sealed class SqliteTaskRepository : ITaskRepository
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task InsertHistoryAsync(SqliteConnection connection, System.Data.Common.DbTransaction transaction, HataoriTask task, string eventType, CancellationToken cancellationToken)
+    private static async Task InsertHistoryAsync(SqliteConnection connection, System.Data.Common.DbTransaction transaction, HataoriTask task, string eventType, CancellationToken cancellationToken) =>
+        await InsertHistoryAsync(connection, transaction, task, eventType, null, cancellationToken).ConfigureAwait(false);
+
+    private static async Task InsertHistoryAsync(SqliteConnection connection, System.Data.Common.DbTransaction transaction, HataoriTask task, string eventType, string? message, CancellationToken cancellationToken)
     {
         const string sql = "INSERT INTO task_history (task_id, created_at_utc, event_type, message, progress_percent) VALUES ($task_id, $created_at_utc, $event_type, $message, $progress_percent);";
         await using var command = connection.CreateCommand();
@@ -203,7 +211,7 @@ public sealed class SqliteTaskRepository : ITaskRepository
         command.Parameters.AddWithValue("$task_id", task.TaskId);
         command.Parameters.AddWithValue("$created_at_utc", FormatDate(task.LastActivityAtUtc));
         command.Parameters.AddWithValue("$event_type", eventType);
-        command.Parameters.AddWithValue("$message", task.CurrentWork);
+        command.Parameters.AddWithValue("$message", message ?? task.CurrentWork);
         command.Parameters.AddWithValue("$progress_percent", task.ProgressPercent);
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }

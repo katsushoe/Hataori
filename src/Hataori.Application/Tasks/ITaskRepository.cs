@@ -1,4 +1,4 @@
-using Hataori.Core.Tasks;
+﻿using Hataori.Core.Tasks;
 
 namespace Hataori.Application.Tasks;
 
@@ -12,6 +12,7 @@ public interface ITaskRepository
     Task<HataoriTask?> GetAsync(string taskId, CancellationToken cancellationToken);
     Task<IReadOnlyList<HataoriTask>> ListAsync(HataoriTaskStatus? status, string? agentId, CancellationToken cancellationToken);
     Task UpdateAsync(HataoriTask task, string eventType, CancellationToken cancellationToken);
+    Task UpdateAsync(HataoriTask task, string eventType, string? message, CancellationToken cancellationToken);
     Task<IReadOnlyList<TaskHistoryEntry>> GetHistoryAsync(string taskId, CancellationToken cancellationToken);
     Task AddRelationAsync(TaskRelation relation, CancellationToken cancellationToken);
     Task<IReadOnlyList<TaskRelation>> GetRelationsAsync(string taskId, CancellationToken cancellationToken);
