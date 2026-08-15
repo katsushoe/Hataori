@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Hataori.Application.Control;
 using Hataori.Application.Tasks;
+using Hataori.Application.Sessions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -22,17 +23,20 @@ public sealed class HataoriServerWorker : BackgroundService
     };
 
     private readonly ITaskRepository _repository;
+    private readonly IConversationSessionRepository _sessionRepository;
     private readonly ControlCommandHandler _handler;
     private readonly ServerOptions _options;
     private readonly ILogger<HataoriServerWorker> _logger;
 
-    public HataoriServerWorker(ITaskRepository repository, ControlCommandHandler handler, IOptions<ServerOptions> options, ILogger<HataoriServerWorker> logger)
+    public HataoriServerWorker(ITaskRepository repository, IConversationSessionRepository sessionRepository, ControlCommandHandler handler, IOptions<ServerOptions> options, ILogger<HataoriServerWorker> logger)
     {
         ArgumentNullException.ThrowIfNull(repository);
+        ArgumentNullException.ThrowIfNull(sessionRepository);
         ArgumentNullException.ThrowIfNull(handler);
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(logger);
         _repository = repository;
+        _sessionRepository = sessionRepository;
         _handler = handler;
         _options = options.Value;
         _logger = logger;
@@ -41,6 +45,7 @@ public sealed class HataoriServerWorker : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         await _repository.InitializeAsync(stoppingToken).ConfigureAwait(false);
+        await _sessionRepository.InitializeAsync(stoppingToken).ConfigureAwait(false);
         _logger.LogInformation("[Startup][ControlPipe] Hataori Server started with pipe {PipeName}", _options.ControlPipeName);
 
         while (!stoppingToken.IsCancellationRequested)
