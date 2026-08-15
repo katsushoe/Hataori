@@ -29,7 +29,7 @@ public sealed class CliConfigurationManager
             return Task.FromResult<object>(new { path = fullPath, exists = File.Exists(fullPath) });
         }
 
-        var configuration = Load(fullPath);
+        var configuration = LoadConfiguration(fullPath);
         if (command.Equals("show", StringComparison.OrdinalIgnoreCase))
         {
             var values = configuration.AsEnumerable()
@@ -41,14 +41,17 @@ public sealed class CliConfigurationManager
 
         if (command.Equals("check", StringComparison.OrdinalIgnoreCase))
         {
-            var errors = Validate(configuration);
+            var errors = ValidateConfiguration(configuration);
             return Task.FromResult<object>(new { path = fullPath, valid = errors.Count == 0, errors });
         }
 
         throw new ArgumentException($"Unknown config command '{command}'.");
     }
 
-    private static IConfigurationRoot Load(string fullPath)
+    /// <summary>
+    /// JSONとHATAORI_環境変数をServerと同じ順序で読み込みます。
+    /// </summary>
+    public static IConfigurationRoot LoadConfiguration(string fullPath)
     {
         if (!File.Exists(fullPath))
         {
@@ -62,7 +65,10 @@ public sealed class CliConfigurationManager
             .Build();
     }
 
-    private static IReadOnlyList<string> Validate(IConfiguration configuration)
+    /// <summary>
+    /// Server起動時と同じValidator群で設定を検証します。
+    /// </summary>
+    public static IReadOnlyList<string> ValidateConfiguration(IConfiguration configuration)
     {
         var errors = new List<string>();
         Add(errors, new ServerOptionsValidator().Validate(null, Bind<ServerOptions>(configuration, ServerOptions.SectionName)));
