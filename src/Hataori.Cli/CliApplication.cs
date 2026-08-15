@@ -5,11 +5,17 @@ using Hataori.Application.Tasks;
 using Hataori.Core.Runs;
 using Hataori.Core.Sessions;
 using Hataori.Core.Tasks;
+using Hataori.Infrastructure.Agents.ClaudeCode;
+using Hataori.Infrastructure.Agents.Codex;
 using Hataori.Infrastructure.Messages;
 using Hataori.Infrastructure.Runs;
 using Hataori.Infrastructure.Sessions;
 using Hataori.Infrastructure.Tasks;
+using Hataori.Infrastructure.Itoguruma;
+using Hataori.Server;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Hataori.Cli;
 
@@ -75,6 +81,18 @@ public static class CliApplication
             {
                 result = await ExecuteConfigAsync(args, cancellationToken).ConfigureAwait(false);
             }
+            else if (string.Equals(args[0], "itoguruma", StringComparison.OrdinalIgnoreCase))
+            {
+                result = await ExecuteItogurumaAsync(args, cancellationToken).ConfigureAwait(false);
+            }
+            else if (string.Equals(args[0], "mcp", StringComparison.OrdinalIgnoreCase))
+            {
+                result = await ExecuteMcpAsync(args, cancellationToken).ConfigureAwait(false);
+            }
+            else if (string.Equals(args[0], "doctor", StringComparison.OrdinalIgnoreCase))
+            {
+                result = await ExecuteDoctorAsync(args, cancellationToken).ConfigureAwait(false);
+            }
             else
             {
                 result = await ExecuteServerAsync(args[0], ParseOptions(args.Skip(1)), cancellationToken).ConfigureAwait(false);
@@ -129,6 +147,114 @@ public static class CliApplication
         }
     }
 
+    private static async Task<object> ExecuteItogurumaAsync(string[] args, CancellationToken cancellationToken)
+    {
+        if (args.Length < 2 || (!args[1].Equals("status", StringComparison.OrdinalIgnoreCase) && !args[1].Equals("test", StringComparison.OrdinalIgnoreCase)))
+        {
+            throw new ArgumentException("Usage: hataori itoguruma <status|test> [options]");
+        }
+
+        var options = ParseOptions(args.Skip(2));
+        var configuration = LoadConfiguration(options);
+        var clientOptions = configuration.GetRequiredSection(ItogurumaClientOptions.SectionName).Get<ItogurumaClientOptions>()
+            ?? throw new InvalidOperationException("Itoguruma configuration is missing.");
+        await using var client = new McpItogurumaClient(clientOptions, NullLoggerFactory.Instance);
+        await client.ConnectAsync(cancellationToken).ConfigureAwait(false);
+        var status = await client.GetStatusAsync(cancellationToken).ConfigureAwait(false);
+        return new { status.Connected, status.Name, status.Version, tested = args[1].Equals("test", StringComparison.OrdinalIgnoreCase) };
+    }
+
+    private static async Task<object> ExecuteMcpAsync(string[] args, CancellationToken cancellationToken)
+    {
+        if (args.Length < 2 || !args[1].Equals("status", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException("Usage: hataori mcp status [options]");
+        }
+
+        var options = ParseOptions(args.Skip(2));
+        var configuration = LoadConfiguration(options);
+        var server = configuration.GetRequiredSection(ServerOptions.SectionName).Get<ServerOptions>()
+            ?? throw new InvalidOperationException("Server configuration is missing.");
+        return await new McpEndpointProbe(NullLoggerFactory.Instance).ProbeAsync(server, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<object> ExecuteDoctorAsync(string[] args, CancellationToken cancellationToken)
+    {
+        var options = ParseOptions(args.Skip(1));
+        var configuration = LoadConfiguration(options);
+        var serverOptions = configuration.GetRequiredSection(ServerOptions.SectionName).Get<ServerOptions>()
+            ?? throw new InvalidOperationException("Server configuration is missing.");
+        var checks = new List<DoctorCheck>();
+        await AddDoctorCheckAsync(checks, "configuration", () =>
+        {
+            var errors = CliConfigurationManager.ValidateConfiguration(configuration);
+            return errors.Count == 0 ? Task.CompletedTask : throw new InvalidOperationException(string.Join(" ", errors));
+        }).ConfigureAwait(false);
+        await AddDoctorCheckAsync(checks, "server", async () =>
+        {
+            await new ControlPipeClient().SendAsync(serverOptions.ControlPipeName, "status", GetControlTimeout(options), cancellationToken).ConfigureAwait(false);
+        }).ConfigureAwait(false);
+        await AddDoctorCheckAsync(checks, "itoguruma", async () =>
+        {
+            await ExecuteItogurumaAsync(["itoguruma", "status", "--config", GetConfigurationPath(options)], cancellationToken).ConfigureAwait(false);
+        }).ConfigureAwait(false);
+        await AddDoctorCheckAsync(checks, "mcp", async () =>
+        {
+            await ExecuteMcpAsync(["mcp", "status", "--config", GetConfigurationPath(options)], cancellationToken).ConfigureAwait(false);
+        }).ConfigureAwait(false);
+        await AddDoctorCheckAsync(checks, "sqlite", async () =>
+        {
+            var databasePath = ServerPaths.ResolveDatabasePath(serverOptions.DatabasePath, Path.GetDirectoryName(GetConfigurationPath(options)) ?? AppContext.BaseDirectory);
+            await CliDatabaseDiagnostics.ExecuteAsync("integrity", databasePath, cancellationToken).ConfigureAwait(false);
+        }).ConfigureAwait(false);
+        await AddDoctorCheckAsync(checks, "codex_cli", async () =>
+        {
+            var driver = configuration.GetRequiredSection(CodexDriverOptions.SectionName).Get<CodexDriverOptions>()
+                ?? throw new InvalidOperationException("Codex configuration is missing.");
+            await CheckExecutableAsync(driver.ExecutablePath, cancellationToken).ConfigureAwait(false);
+        }).ConfigureAwait(false);
+        await AddDoctorCheckAsync(checks, "claude_cli", async () =>
+        {
+            var driver = configuration.GetRequiredSection(ClaudeCodeDriverOptions.SectionName).Get<ClaudeCodeDriverOptions>()
+                ?? throw new InvalidOperationException("Claude Code configuration is missing.");
+            await CheckExecutableAsync(driver.ExecutablePath, cancellationToken).ConfigureAwait(false);
+        }).ConfigureAwait(false);
+        await AddDoctorCheckAsync(checks, "windows_service", async () =>
+        {
+            await new WindowsServiceManager(new SystemProcessRunner()).ExecuteAsync("status", "Hataori", null, cancellationToken).ConfigureAwait(false);
+        }).ConfigureAwait(false);
+        checks.Add(new DoctorCheck("hooks", false, "Hook diagnostics are not implemented.", true));
+        return new { healthy = checks.All(check => check.Ok || check.Skipped), checks };
+    }
+
+    private static async Task CheckExecutableAsync(string executablePath, CancellationToken cancellationToken)
+    {
+        var result = await new SystemProcessRunner().RunAsync(executablePath, ["--version"], cancellationToken).ConfigureAwait(false);
+        if (result.ExitCode != 0)
+        {
+            throw new InvalidOperationException($"'{executablePath} --version' failed with exit code {result.ExitCode}.");
+        }
+    }
+
+    private static async Task AddDoctorCheckAsync(List<DoctorCheck> checks, string name, Func<Task> action)
+    {
+        try
+        {
+            await action().ConfigureAwait(false);
+            checks.Add(new DoctorCheck(name, true, null));
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            checks.Add(new DoctorCheck(name, false, exception.Message));
+        }
+    }
+
+    private static IConfigurationRoot LoadConfiguration(IReadOnlyDictionary<string, string> options) =>
+        CliConfigurationManager.LoadConfiguration(GetConfigurationPath(options));
+
+    private static string GetConfigurationPath(IReadOnlyDictionary<string, string> options) =>
+        Path.GetFullPath(Optional(options, "config") ?? Environment.GetEnvironmentVariable("HATAORI_CONFIG_PATH") ?? Path.Combine(AppContext.BaseDirectory, "hataori.json"));
+
     private static async Task<object> ExecuteConfigAsync(string[] args, CancellationToken cancellationToken)
     {
         if (args.Length < 2)
@@ -142,7 +268,7 @@ public static class CliApplication
             return await new ControlPipeClient().SendAsync(GetPipeName(options), "reload", GetControlTimeout(options), cancellationToken).ConfigureAwait(false);
         }
 
-        var path = Optional(options, "config") ?? Environment.GetEnvironmentVariable("HATAORI_CONFIG_PATH") ?? Path.Combine(AppContext.BaseDirectory, "hataori.json");
+        var path = GetConfigurationPath(options);
         return await new CliConfigurationManager().ExecuteAsync(args[1], path, cancellationToken).ConfigureAwait(false);
     }
 
@@ -328,7 +454,7 @@ public static class CliApplication
 
     private static TimeSpan GetControlTimeout(IReadOnlyDictionary<string, string> options)
     {
-        var value = Optional(options, "timeout-seconds") ?? Environment.GetEnvironmentVariable("HATAORI_CONTROL_TIMEOUT_SECONDS");
+        var value = Optional(options, "timeout-seconds") ?? Environment.GetEnvironmentVariable("HATAORI_CONTROL_TIMEOUT_SECONDS") ?? "10";
         if (!int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var seconds) || seconds is < 1 or > 300)
         {
             throw new ArgumentException("Specify --timeout-seconds between 1 and 300 or HATAORI_CONTROL_TIMEOUT_SECONDS.");
@@ -351,5 +477,7 @@ public static class CliApplication
     private static bool IsHelpCommand(IReadOnlyList<string> args) => args[0].Equals("help", StringComparison.OrdinalIgnoreCase) || args[0].Equals("--help", StringComparison.OrdinalIgnoreCase);
     private static bool IsVersionCommand(IReadOnlyList<string> args) => args[0].Equals("version", StringComparison.OrdinalIgnoreCase) || args[0].Equals("--version", StringComparison.OrdinalIgnoreCase);
     private static string GetVersion() => typeof(CliApplication).Assembly.GetName().Version?.ToString() ?? "unknown";
-    private static string GetHelpText() => "Usage: hataori <start|stop|restart|status|service|task|agent|conversation|queue|db|config|version|help> [command] [options]";
+    private static string GetHelpText() => "Usage: hataori <start|stop|restart|status|service|task|agent|conversation|queue|db|config|itoguruma|mcp|doctor|version|help> [command] [options]";
+
+    private sealed record DoctorCheck(string Name, bool Ok, string? Error, bool Skipped = false);
 }
