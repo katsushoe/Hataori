@@ -22,6 +22,11 @@
       "sandboxMode": "workspace-write",
       "approveForMe": true,
       "maxCapturedCharacters": 4194304
+    },
+    "claudeCode": {
+      "executablePath": "claude",
+      "permissionMode": "acceptEdits",
+      "maxCapturedCharacters": 4194304
     }
   },
   "allowedHosts": "127.0.0.1;localhost"

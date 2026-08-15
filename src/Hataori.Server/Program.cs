@@ -10,6 +10,7 @@ using Hataori.Infrastructure.Messages;
 using Hataori.Infrastructure.Sessions;
 using Hataori.Infrastructure.Runs;
 using Hataori.Infrastructure.Agents.Codex;
+using Hataori.Infrastructure.Agents.ClaudeCode;
 using Hataori.Infrastructure.Tasks;
 using Hataori.Server;
 using Microsoft.Data.Sqlite;
@@ -35,6 +36,10 @@ builder.Services.AddOptions<CodexDriverOptions>()
     .Bind(builder.Configuration.GetRequiredSection(CodexDriverOptions.SectionName))
     .ValidateOnStart();
 builder.Services.AddSingleton<IValidateOptions<CodexDriverOptions>, CodexDriverOptionsValidator>();
+builder.Services.AddOptions<ClaudeCodeDriverOptions>()
+    .Bind(builder.Configuration.GetRequiredSection(ClaudeCodeDriverOptions.SectionName))
+    .ValidateOnStart();
+builder.Services.AddSingleton<IValidateOptions<ClaudeCodeDriverOptions>, ClaudeCodeDriverOptionsValidator>();
 builder.Services.AddSingleton<IItogurumaClient>(services => new McpItogurumaClient(
     services.GetRequiredService<IOptions<ItogurumaClientOptions>>().Value,
     services.GetRequiredService<ILoggerFactory>()));
@@ -77,6 +82,9 @@ builder.Services.AddSingleton<IAgentProcessManager, SystemAgentProcessManager>()
 builder.Services.AddSingleton<IAgentDriver>(services => new CodexDriver(
     services.GetRequiredService<IAgentProcessManager>(),
     services.GetRequiredService<IOptions<CodexDriverOptions>>().Value));
+builder.Services.AddSingleton<IAgentDriver>(services => new ClaudeCodeDriver(
+    services.GetRequiredService<IAgentProcessManager>(),
+    services.GetRequiredService<IOptions<ClaudeCodeDriverOptions>>().Value));
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<TaskService>();
 builder.Services.AddSingleton<ConversationSessionService>();
