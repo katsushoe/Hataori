@@ -168,10 +168,25 @@ public sealed class SqliteMessageQueueRepository(string connectionString) : IMes
     public Task MarkRunningAsync(string messageId, CancellationToken cancellationToken) =>
         UpdateStatusAsync(messageId, "running", null, null, cancellationToken);
 
+    public Task MarkRespondedAsync(string messageId, DateTimeOffset respondedAtUtc, CancellationToken cancellationToken) =>
+        UpdateStatusAsync(messageId, "responded", null, respondedAtUtc, cancellationToken);
+
     public Task MarkFailedAsync(string messageId, string error, DateTimeOffset failedAtUtc, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(error);
         return UpdateStatusAsync(messageId, "failed", error, failedAtUtc, cancellationToken);
+    }
+
+    public async Task<MessageProcessingStatus?> GetProcessingStatusAsync(string messageId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(messageId);
+        await using var connection = new SqliteConnection(connectionString);
+        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT status FROM message_processing WHERE message_id = $message_id;";
+        command.Parameters.AddWithValue("$message_id", messageId);
+        var value = (string?)await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+        return value is null ? null : Enum.Parse<MessageProcessingStatus>(value, true);
     }
 
     private async Task UpdateStatusAsync(string messageId, string status, string? error, DateTimeOffset? completedAtUtc, CancellationToken cancellationToken)

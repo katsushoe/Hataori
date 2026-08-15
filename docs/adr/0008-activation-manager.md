@@ -18,7 +18,9 @@ Itogurumaから永続Queueへ取り込んだメッセージを、対象Agentの�
 - Agentへ `HATAORI_ROOT`、Conversation ID、Message ID、Agent ID、MCP URLを環境変数で渡します。
 - Agentごとに `maxConcurrentRuns` 数の逐次laneを起動し、Agent単位の最大並列数を保証します。
 - Queue claimはAgentで絞り込み、同じConversationに `starting` または `running` のMessageがある間は後続MessageをQueueに残します。
-- Agent応答をItogurumaへ返信するまではMessage処理状態を `running` に保持します。
+- Agent応答を元送信者へ同じConversationのreplyとして返し、Itoguruma送信成功後だけMessage処理状態を `responded` にします。
+- Replyのidempotency keyは `hataori-reply:<message-id>` とし、送信後のローカル更新失敗でも安全に再送できるようにします。
+- Reply失敗時も成功済みAgent RunとSessionは維持し、Message処理だけを `failed` にします。
 - 誤ったWorkspaceでAgentを起動しないよう、Activationは既定で無効とし、有効化時は既存の絶対Working Directoryを必須とします。
 
 ## Alternatives
