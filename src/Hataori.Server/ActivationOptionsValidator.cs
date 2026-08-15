@@ -21,6 +21,16 @@ public sealed class ActivationOptionsValidator : IValidateOptions<ActivationOpti
             errors.Add("Activation pollIntervalMilliseconds must be between 100 and 60000.");
         }
 
+        if (options.Enabled && options.MaxConcurrentRuns.Count == 0)
+        {
+            errors.Add("Activation maxConcurrentRuns must contain at least one agent when activation is enabled.");
+        }
+
+        if (options.MaxConcurrentRuns.Any(pair => string.IsNullOrWhiteSpace(pair.Key) || pair.Value is < 1 or > 32))
+        {
+            errors.Add("Activation maxConcurrentRuns keys must be non-empty and values must be between 1 and 32.");
+        }
+
         return errors.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(errors);
     }
 }

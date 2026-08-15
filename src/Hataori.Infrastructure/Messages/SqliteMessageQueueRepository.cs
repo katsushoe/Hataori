@@ -128,6 +128,13 @@ public sealed class SqliteMessageQueueRepository(string connectionString) : IMes
             FROM message_queue q
             JOIN message_processing p ON p.message_id = q.message_id
             WHERE ($agent_id IS NULL OR q.agent_id = $agent_id)
+              AND NOT EXISTS (
+                  SELECT 1 FROM message_processing active
+                  WHERE active.conversation_id = q.conversation_id
+                    AND active.agent_id = q.agent_id
+                    AND active.message_id <> q.message_id
+                    AND active.status IN ('starting', 'running')
+              )
             ORDER BY q.priority DESC, q.sequence ASC
             LIMIT 1;
             """;

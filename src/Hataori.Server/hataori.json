@@ -33,7 +33,11 @@
   "activation": {
     "enabled": false,
     "workingDirectory": "",
-    "pollIntervalMilliseconds": 1000
+    "pollIntervalMilliseconds": 1000,
+    "maxConcurrentRuns": {
+      "codex": 2,
+      "claude-code": 2
+    }
   },
   "allowedHosts": "127.0.0.1;localhost"
 }

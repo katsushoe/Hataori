@@ -17,4 +17,12 @@ public sealed class ActivationOptionsValidatorTests
 
         new ActivationOptionsValidator().Validate(null, options).Failed.Should().BeTrue();
     }
+
+    [Fact]
+    public void Validate_ZeroConcurrency_ReturnsFailure()
+    {
+        var options = new ActivationOptions { MaxConcurrentRuns = new Dictionary<string, int> { ["codex"] = 0 } };
+
+        new ActivationOptionsValidator().Validate(null, options).Failed.Should().BeTrue();
+    }
 }
