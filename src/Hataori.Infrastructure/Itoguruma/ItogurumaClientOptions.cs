@@ -1,4 +1,4 @@
-namespace Hataori.Infrastructure.Itoguruma;
+﻿namespace Hataori.Infrastructure.Itoguruma;
 
 /// <summary>
 /// Itoguruma MCP Clientの接続設定です。
@@ -11,7 +11,7 @@ public sealed class ItogurumaClientOptions
     public string AuthenticationToken { get; init; } = string.Empty;
     public string AgentId { get; init; } = string.Empty;
     public string AgentType { get; init; } = string.Empty;
-    public IReadOnlyList<string> MonitoredAgentIds { get; init; } = ["codex", "claude-code"];
+    public IReadOnlyList<string> MonitoredAgentIds { get; init; } = [];
     public int ConnectionTimeoutSeconds { get; init; }
     public int PollIntervalSeconds { get; init; }
     public int MaxReconnectAttempts { get; init; }
