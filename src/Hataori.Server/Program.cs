@@ -1,15 +1,17 @@
+using System.Net;
 using Hataori.Application.Tasks;
 using Hataori.Infrastructure.Tasks;
 using Hataori.Server;
 using Microsoft.Data.Sqlite;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using ModelContextProtocol.Server;
 
-var builder = Host.CreateApplicationBuilder(args);
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions { Args = args, ContentRootPath = AppContext.BaseDirectory });
 builder.Configuration.AddJsonFile("hataori.json", optional: false, reloadOnChange: true);
 builder.Configuration.AddEnvironmentVariables("HATAORI_");
+var startupOptions = builder.Configuration.GetRequiredSection(ServerOptions.SectionName).Get<ServerOptions>()
+    ?? throw new InvalidOperationException("Server configuration is missing.");
+builder.WebHost.ConfigureKestrel(options => options.Listen(IPAddress.Parse(startupOptions.McpHost), startupOptions.McpPort));
 builder.Services.AddWindowsService();
 builder.Services.AddOptions<ServerOptions>()
     .Bind(builder.Configuration.GetRequiredSection(ServerOptions.SectionName))
@@ -32,5 +34,11 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<TaskService>();
 builder.Services.AddSingleton<ControlCommandHandler>();
 builder.Services.AddHostedService<HataoriServerWorker>();
+builder.Services.AddMcpServer()
+    .WithHttpTransport(options => options.Stateless = true)
+    .WithTools<TaskMcpTools>();
 
-await builder.Build().RunAsync();
+var app = builder.Build();
+app.UseHostFiltering();
+app.MapMcp(startupOptions.McpPath);
+await app.RunAsync();

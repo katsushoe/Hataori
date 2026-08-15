@@ -9,4 +9,7 @@ public sealed class ServerOptions
 
     public string DatabasePath { get; init; } = string.Empty;
     public string ControlPipeName { get; init; } = string.Empty;
+    public string McpHost { get; init; } = string.Empty;
+    public int McpPort { get; init; }
+    public string McpPath { get; init; } = string.Empty;
 }

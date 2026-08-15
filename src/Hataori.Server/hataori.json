@@ -1,6 +1,10 @@
 {
   "server": {
     "databasePath": "data/hataori.db",
-    "controlPipeName": "hataori-control"
-  }
+    "controlPipeName": "hataori-control",
+    "mcpHost": "127.0.0.1",
+    "mcpPort": 45440,
+    "mcpPath": "/mcp"
+  },
+  "allowedHosts": "127.0.0.1;localhost"
 }
