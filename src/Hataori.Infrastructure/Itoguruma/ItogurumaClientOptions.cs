@@ -14,4 +14,6 @@ public sealed class ItogurumaClientOptions
     public int ConnectionTimeoutSeconds { get; init; }
     public int PollIntervalSeconds { get; init; }
     public int MaxReconnectAttempts { get; init; }
+    public int ReceiveBatchSize { get; init; } = 50;
+    public int LeaseSeconds { get; init; } = 300;
 }

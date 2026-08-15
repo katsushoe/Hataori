@@ -1,4 +1,6 @@
 using Hataori.Application.Itoguruma;
+using Hataori.Application.Messages;
+using Hataori.Core.Messages;
 using Hataori.Infrastructure.Itoguruma;
 using Microsoft.Extensions.Options;
 
@@ -9,11 +11,13 @@ namespace Hataori.Server;
 /// </summary>
 public sealed class ItogurumaConnectionWorker(
     IItogurumaClient client,
+    IMessageQueueRepository messageQueue,
     IOptions<ItogurumaClientOptions> options,
     ILogger<ItogurumaConnectionWorker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        await messageQueue.InitializeAsync(stoppingToken).ConfigureAwait(false);
         var failures = 0;
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -21,6 +25,15 @@ public sealed class ItogurumaConnectionWorker(
             {
                 await client.ConnectAsync(stoppingToken).ConfigureAwait(false);
                 var status = await client.GetStatusAsync(stoppingToken).ConfigureAwait(false);
+                var messages = await client.GetMessagesAsync(
+                    options.Value.ReceiveBatchSize,
+                    options.Value.LeaseSeconds,
+                    null,
+                    stoppingToken).ConfigureAwait(false);
+                foreach (var message in messages)
+                {
+                    await PersistAndAcknowledgeAsync(message, stoppingToken).ConfigureAwait(false);
+                }
                 if (failures > 0)
                 {
                     logger.LogInformation("Itoguruma connection recovered: {Name} {Version}", status.Name, status.Version);
@@ -47,5 +60,29 @@ public sealed class ItogurumaConnectionWorker(
                 await Task.Delay(TimeSpan.FromSeconds(delaySeconds), stoppingToken).ConfigureAwait(false);
             }
         }
+    }
+
+    private async Task PersistAndAcknowledgeAsync(ItogurumaMessage message, CancellationToken cancellationToken)
+    {
+        var incoming = new IncomingMessage(
+            message.MessageId,
+            message.ThreadId,
+            options.Value.AgentId,
+            message.SenderAgentId,
+            message.ReplyToMessageId,
+            message.MessageType,
+            message.Body,
+            message.PayloadJson,
+            message.CreatedAt);
+        var inserted = await messageQueue.EnqueueAsync(incoming, 0, cancellationToken).ConfigureAwait(false);
+        var acknowledged = await client.AcknowledgeAsync(message.MessageId, cancellationToken).ConfigureAwait(false);
+        if (!acknowledged)
+        {
+            throw new InvalidOperationException($"Itoguruma message '{message.MessageId}' could not be acknowledged.");
+        }
+
+        logger.LogInformation(
+            inserted ? "Itoguruma message queued: {MessageId}" : "Duplicate Itoguruma message acknowledged: {MessageId}",
+            message.MessageId);
     }
 }

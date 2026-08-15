@@ -12,7 +12,9 @@
     "agentType": "hataori",
     "connectionTimeoutSeconds": 10,
     "pollIntervalSeconds": 5,
-    "maxReconnectAttempts": 5
+    "maxReconnectAttempts": 5,
+    "receiveBatchSize": 50,
+    "leaseSeconds": 300
   },
   "allowedHosts": "127.0.0.1;localhost"
 }

@@ -46,5 +46,7 @@ public sealed class ItogurumaClientOptionsValidatorTests
             ConnectionTimeoutSeconds = 10,
             PollIntervalSeconds = 5,
             MaxReconnectAttempts = 5,
+            ReceiveBatchSize = 50,
+            LeaseSeconds = 300,
         };
 }

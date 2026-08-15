@@ -42,6 +42,16 @@ public sealed class ItogurumaClientOptionsValidator : IValidateOptions<Itoguruma
             errors.Add("Itoguruma maxReconnectAttempts must be between 1 and 100.");
         }
 
+        if (options.ReceiveBatchSize is < 1 or > 500)
+        {
+            errors.Add("Itoguruma receiveBatchSize must be between 1 and 500.");
+        }
+
+        if (options.LeaseSeconds is < 1 or > 3600)
+        {
+            errors.Add("Itoguruma leaseSeconds must be between 1 and 3600.");
+        }
+
         return errors.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(errors);
     }
 }
