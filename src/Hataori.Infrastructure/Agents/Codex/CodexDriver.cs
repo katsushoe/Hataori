@@ -34,6 +34,11 @@ public sealed class CodexDriver(IAgentProcessManager processManager, CodexDriver
             options.MaxCapturedCharacters,
             request.Message);
         await using var process = await processManager.StartAsync(processRequest, cancellationToken).ConfigureAwait(false);
+        if (request.ProcessStarted is not null)
+        {
+            await request.ProcessStarted(process.ProcessId, cancellationToken).ConfigureAwait(false);
+        }
+
         var processResult = await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
         var parsed = CodexJsonlParser.Parse(processResult.StandardOutput);
         if (processResult.ExitCode != 0 || parsed.Error is not null)

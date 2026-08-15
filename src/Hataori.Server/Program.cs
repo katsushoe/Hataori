@@ -4,6 +4,7 @@ using Hataori.Application.Messages;
 using Hataori.Application.Sessions;
 using Hataori.Application.Runs;
 using Hataori.Application.Agents;
+using Hataori.Application.Activation;
 using Hataori.Application.Tasks;
 using Hataori.Infrastructure.Itoguruma;
 using Hataori.Infrastructure.Messages;
@@ -40,6 +41,10 @@ builder.Services.AddOptions<ClaudeCodeDriverOptions>()
     .Bind(builder.Configuration.GetRequiredSection(ClaudeCodeDriverOptions.SectionName))
     .ValidateOnStart();
 builder.Services.AddSingleton<IValidateOptions<ClaudeCodeDriverOptions>, ClaudeCodeDriverOptionsValidator>();
+builder.Services.AddOptions<ActivationOptions>()
+    .Bind(builder.Configuration.GetRequiredSection(ActivationOptions.SectionName))
+    .ValidateOnStart();
+builder.Services.AddSingleton<IValidateOptions<ActivationOptions>, ActivationOptionsValidator>();
 builder.Services.AddSingleton<IItogurumaClient>(services => new McpItogurumaClient(
     services.GetRequiredService<IOptions<ItogurumaClientOptions>>().Value,
     services.GetRequiredService<ILoggerFactory>()));
@@ -89,9 +94,11 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<TaskService>();
 builder.Services.AddSingleton<ConversationSessionService>();
 builder.Services.AddSingleton<AgentRunService>();
+builder.Services.AddSingleton<ActivationManager>();
 builder.Services.AddSingleton<ControlCommandHandler>();
 builder.Services.AddHostedService<HataoriServerWorker>();
 builder.Services.AddHostedService<ItogurumaConnectionWorker>();
+builder.Services.AddHostedService<ActivationWorker>();
 builder.Services.AddMcpServer()
     .WithHttpTransport(options => options.Stateless = true)
     .WithTools<TaskMcpTools>();

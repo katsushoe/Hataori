@@ -62,6 +62,15 @@ public sealed class McpItogurumaClient : IItogurumaClient
                 ["agent_type"] = _options.AgentType,
                 ["name"] = "Hataori",
             }, cancellationToken).ConfigureAwait(false);
+            foreach (var agentId in _options.MonitoredAgentIds)
+            {
+                await CallAsync("register_agent", new Dictionary<string, object?>
+                {
+                    ["agent_id"] = agentId,
+                    ["agent_type"] = agentId,
+                    ["name"] = $"Hataori managed {agentId}",
+                }, cancellationToken).ConfigureAwait(false);
+            }
         }
         catch
         {
@@ -74,11 +83,12 @@ public sealed class McpItogurumaClient : IItogurumaClient
         }
     }
 
-    public async Task<IReadOnlyList<ItogurumaMessage>> GetMessagesAsync(int limit, int leaseSeconds, string? threadId, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<ItogurumaMessage>> GetMessagesAsync(string agentId, int limit, int leaseSeconds, string? threadId, CancellationToken cancellationToken)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(agentId);
         var result = await CallAsync("get_messages", new Dictionary<string, object?>
         {
-            ["agent_id"] = _options.AgentId,
+            ["agent_id"] = agentId,
             ["limit"] = limit,
             ["lease_seconds"] = leaseSeconds,
             ["thread_id"] = threadId,
@@ -113,11 +123,12 @@ public sealed class McpItogurumaClient : IItogurumaClient
         return Deserialize<SendMessageResult>(result).MessageId;
     }
 
-    public async Task<bool> AcknowledgeAsync(string messageId, CancellationToken cancellationToken)
+    public async Task<bool> AcknowledgeAsync(string agentId, string messageId, CancellationToken cancellationToken)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(agentId);
         var result = await CallAsync("ack_message", new Dictionary<string, object?>
         {
-            ["agent_id"] = _options.AgentId,
+            ["agent_id"] = agentId,
             ["message_id"] = messageId,
         }, cancellationToken).ConfigureAwait(false);
         return Deserialize<AcknowledgeResult>(result).Acked;

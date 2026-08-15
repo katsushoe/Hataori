@@ -16,6 +16,7 @@ Hataori Serverは、エージェント間の通知・問い合わせ・回答を
 - 接続先はloopback HTTP(S)に限定し、Bearer tokenは設定ファイルへ保存せず、`HATAORI_ITOGURUMA__AUTHENTICATIONTOKEN` 環境変数から渡します。
 - 受信APIはItogurumaのlease/ACKモデルをそのまま表現します。永続キュー完成前にバックグラウンドでメッセージをleaseすると配送を阻害し得るため、自動ポーリングはキュー実装と同時に開始します。
 - 返信時は呼び出し元がidempotency keyを指定し、再試行でも同じ値を使用します。
+- `codex` と `claude-code` を監視Agentとして登録し、受信時のAgent IDをローカルQueueへ保持します。
 
 ## Alternatives
 
