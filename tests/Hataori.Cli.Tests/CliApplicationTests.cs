@@ -181,6 +181,17 @@ public sealed class CliApplicationTests : IDisposable
         response.Output.Should().Contain("hataori task");
     }
 
+    [Fact]
+    public async Task RunAsync_MonitorMissingExecutable_ReturnsDependencyError()
+    {
+        var missingPath = Path.Combine(Path.GetTempPath(), $"hataori-monitor-{Guid.NewGuid():N}.exe");
+
+        var response = await RunAsync("monitor", "--monitor", missingPath);
+
+        response.ExitCode.Should().Be(3);
+        response.Error.Should().Contain("was not found");
+    }
+
     public void Dispose()
     {
         SqliteConnection.ClearAllPools();

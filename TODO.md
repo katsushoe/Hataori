@@ -13,7 +13,7 @@
 
 ## すぐやる
 
-- [-] Monitorアプリ本体と`monitor` CLIを実装する。
+- [X] Monitorアプリ本体と`monitor` CLIを実装する。
 - [-] DB MaintenanceとRetention設定を実装する。
 
 ## 次にやる
@@ -30,7 +30,7 @@
 
 ## P0
 
-- [-] Monitor参照機能を完成させる。
+- [X] Monitor参照機能を実装する。
 - [-] DB Maintenanceを完成させる。
 
 ## P1
@@ -48,7 +48,8 @@
 - [X] Server、SQLite、Task、MCP、主要CLI
 - [X] Itoguruma、Queue、Reply、Retry
 - [X] Session、Activation、Agent Driver
-- [-] Monitor
+- [X] Monitor実装
+- [-] Monitor実機表示検証
 - [-] 運用・復旧・実環境受入
 
 ## Phase 2: 運用強化

@@ -1,30 +1,50 @@
-﻿using Hataori.Application.Control;
+using Hataori.Application.Control;
+using Hataori.Application.Messages;
+using Hataori.Application.Runs;
+using Hataori.Application.Sessions;
+using Hataori.Application.Tasks;
+using Hataori.Core.Runs;
 using Microsoft.Extensions.Hosting;
 
 namespace Hataori.Server;
 
-/// <summary>
-/// ローカルControl Pipeから受け取った管理コマンドを処理します。
-/// </summary>
+/// <summary>ローカルControl Pipeから受け取った管理コマンドを処理します。</summary>
 public sealed class ControlCommandHandler
 {
     private readonly IHostApplicationLifetime _lifetime;
     private readonly TimeProvider _timeProvider;
+    private readonly ITaskRepository _tasks;
+    private readonly IConversationSessionRepository _sessions;
+    private readonly IAgentRunRepository _runs;
+    private readonly IMessageQueueRepository _queue;
 
-    public ControlCommandHandler(IHostApplicationLifetime lifetime, TimeProvider timeProvider)
+    public ControlCommandHandler(IHostApplicationLifetime lifetime, TimeProvider timeProvider, ITaskRepository tasks, IConversationSessionRepository sessions, IAgentRunRepository runs, IMessageQueueRepository queue)
     {
         ArgumentNullException.ThrowIfNull(lifetime);
         ArgumentNullException.ThrowIfNull(timeProvider);
+        ArgumentNullException.ThrowIfNull(tasks);
+        ArgumentNullException.ThrowIfNull(sessions);
+        ArgumentNullException.ThrowIfNull(runs);
+        ArgumentNullException.ThrowIfNull(queue);
         _lifetime = lifetime;
         _timeProvider = timeProvider;
+        _tasks = tasks;
+        _sessions = sessions;
+        _runs = runs;
+        _queue = queue;
     }
 
-    public ControlResponse Handle(ControlRequest request)
+    public async Task<ControlResponse> HandleAsync(ControlRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         if (string.Equals(request.Command, "status", StringComparison.OrdinalIgnoreCase))
         {
             return new ControlResponse(true, "running", _timeProvider.GetUtcNow());
+        }
+
+        if (string.Equals(request.Command, "monitor", StringComparison.OrdinalIgnoreCase))
+        {
+            return await CreateMonitorResponseAsync(cancellationToken).ConfigureAwait(false);
         }
 
         if (string.Equals(request.Command, "stop", StringComparison.OrdinalIgnoreCase))
@@ -39,5 +59,22 @@ public sealed class ControlCommandHandler
         }
 
         return new ControlResponse(false, "unknown_command", _timeProvider.GetUtcNow());
+    }
+
+    private async Task<ControlResponse> CreateMonitorResponseAsync(CancellationToken cancellationToken)
+    {
+        var tasks = await _tasks.ListAsync(null, null, cancellationToken).ConfigureAwait(false);
+        var sessions = await _sessions.ListAsync(null, null, cancellationToken).ConfigureAwait(false);
+        var runs = await _runs.ListAsync(null, null, cancellationToken).ConfigureAwait(false);
+        var queued = await _queue.ListAsync(null, cancellationToken).ConfigureAwait(false);
+        var agents = runs.GroupBy(run => run.AgentId, StringComparer.OrdinalIgnoreCase).Select(group =>
+        {
+            var active = group.Where(run => run.Status is AgentRunStatus.Starting or AgentRunStatus.Running).ToArray();
+            var latest = group.OrderByDescending(run => run.StartedAtUtc ?? run.QueuedAtUtc).First();
+            var state = active.Length > 0 ? "running" : group.Any(run => run.Status == AgentRunStatus.Queued) ? "queued" : "idle";
+            return new MonitorAgentStatus(group.Key, active.FirstOrDefault()?.ConversationId ?? latest.ConversationId, state, active.Length);
+        }).OrderBy(agent => agent.AgentId, StringComparer.OrdinalIgnoreCase).ToArray();
+        var snapshot = new MonitorSnapshot(tasks, agents, sessions, runs, queued.Count, new MonitorSystemStatus("running", "configured", "running", "connected"));
+        return new ControlResponse(true, "running", _timeProvider.GetUtcNow(), snapshot);
     }
 }

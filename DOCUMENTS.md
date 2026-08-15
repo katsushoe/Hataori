@@ -12,7 +12,7 @@
 | パス | Git管理 | 用途 |
 | :--- | :--- | :--- |
 | `.` | Yes | Solution、入口文書、進捗・計画の正本。 |
-| `src/` | Yes | Core、Application、Infrastructure、Server、CLIの実装。 |
+| `src/` | Yes | Core、Application、Infrastructure、Server、CLI、Monitorの実装。 |
 | `tests/` | Yes | 自動テスト。 |
 | `docs/adr/` | Yes | アーキテクチャ判断の正本。 |
 | `progress/` | Yes | 進捗グラフ。 |

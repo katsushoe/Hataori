@@ -84,6 +84,7 @@ public sealed class HataoriServerWorker : BackgroundService
         await using var writer = new StreamWriter(pipe, new UTF8Encoding(false), leaveOpen: true) { AutoFlush = true };
         var line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
         var request = JsonSerializer.Deserialize<ControlRequest>(line ?? string.Empty, JsonOptions) ?? throw new JsonException("Control request is empty.");
-        await writer.WriteLineAsync(JsonSerializer.Serialize(_handler.Handle(request), JsonOptions)).ConfigureAwait(false);
+        var response = await _handler.HandleAsync(request, cancellationToken).ConfigureAwait(false);
+        await writer.WriteLineAsync(JsonSerializer.Serialize(response, JsonOptions)).ConfigureAwait(false);
     }
 }
