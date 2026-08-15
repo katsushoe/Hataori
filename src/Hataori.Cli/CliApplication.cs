@@ -100,6 +100,10 @@ public static class CliApplication
             {
                 result = await ExecuteDoctorAsync(args, cancellationToken).ConfigureAwait(false);
             }
+            else if (string.Equals(args[0], "logs", StringComparison.OrdinalIgnoreCase))
+            {
+                result = await ExecuteLogsAsync(args, output, cancellationToken).ConfigureAwait(false);
+            }
             else
             {
                 result = await ExecuteServerAsync(args[0], ParseOptions(args.Skip(1)), cancellationToken).ConfigureAwait(false);
@@ -147,11 +151,36 @@ public static class CliApplication
             await error.WriteLineAsync(exception.Message).ConfigureAwait(false);
             return 9;
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return 0;
+        }
         catch (Exception exception)
         {
             await error.WriteLineAsync(exception.Message).ConfigureAwait(false);
             return 1;
         }
+    }
+
+    private static async Task<object?> ExecuteLogsAsync(string[] args, TextWriter output, CancellationToken cancellationToken)
+    {
+        var options = ParseOptions(args.Skip(1));
+        var configuration = LoadConfiguration(options);
+        var fileLogging = configuration.GetRequiredSection(FileLogOptions.SectionName).Get<FileLogOptions>()
+            ?? throw new InvalidOperationException("File logging configuration is missing.");
+        var directoryPath = Optional(options, "log-directory") ?? (Path.IsPathFullyQualified(fileLogging.DirectoryPath)
+            ? Path.GetFullPath(fileLogging.DirectoryPath)
+            : Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, fileLogging.DirectoryPath)));
+        var lineCount = ParseLineCount(Optional(options, "lines"));
+        var reader = new CliLogReader();
+        if (options.ContainsKey("follow"))
+        {
+            await reader.FollowAsync(directoryPath, lineCount, Optional(options, "agent"), Optional(options, "run"), output, cancellationToken).ConfigureAwait(false);
+            return null;
+        }
+
+        var lines = await reader.ReadAsync(directoryPath, lineCount, Optional(options, "agent"), Optional(options, "run"), cancellationToken).ConfigureAwait(false);
+        return new { directory_path = directoryPath, lines };
     }
 
     private static async Task<object> ExecuteItogurumaAsync(string[] args, CancellationToken cancellationToken)
@@ -559,10 +588,11 @@ public static class CliApplication
     }
 
     private static string RequiredTaskId(string? taskId) => string.IsNullOrWhiteSpace(taskId) ? throw new ArgumentException("Specify a task ID as an argument or with --id.") : taskId;
-    private static bool IsFlag(string name) => name.Equals("json", StringComparison.OrdinalIgnoreCase) || name.Equals("all", StringComparison.OrdinalIgnoreCase);
+    private static bool IsFlag(string name) => name.Equals("json", StringComparison.OrdinalIgnoreCase) || name.Equals("all", StringComparison.OrdinalIgnoreCase) || name.Equals("follow", StringComparison.OrdinalIgnoreCase);
 
     private static string? Optional(IReadOnlyDictionary<string, string> options, string name) => options.TryGetValue(name, out var value) ? value : null;
     private static int ParseProgress(string value) => int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var progress) ? progress : throw new ArgumentException("--progress must be an integer.");
+    private static int ParseLineCount(string? value) => value is null ? 200 : int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var count) && count is >= 1 and <= 100000 ? count : throw new ArgumentException("--lines must be between 1 and 100000.");
     private static HataoriTaskStatus? ParseStatus(string? value) => value is null ? null : Enum.TryParse<HataoriTaskStatus>(value, true, out var status) ? status : throw new ArgumentException($"Invalid task status '{value}'.");
     private static AgentRunStatus? ParseRunStatus(string? value) => value is null ? null : Enum.TryParse<AgentRunStatus>(value, true, out var status) ? status : throw new ArgumentException($"Invalid agent run status '{value}'.");
     private static ConversationSessionStatus? ParseSessionStatus(string? value) => value is null ? null : Enum.TryParse<ConversationSessionStatus>(value, true, out var status) ? status : throw new ArgumentException($"Invalid conversation status '{value}'.");
@@ -570,7 +600,7 @@ public static class CliApplication
     private static bool IsVersionCommand(IReadOnlyList<string> args) => args[0].Equals("version", StringComparison.OrdinalIgnoreCase) || args[0].Equals("--version", StringComparison.OrdinalIgnoreCase);
     private static bool IsSubcommandHelp(IReadOnlyList<string> args) => args.Count > 1 && (args[1].Equals("help", StringComparison.OrdinalIgnoreCase) || args[1].Equals("--help", StringComparison.OrdinalIgnoreCase));
     private static string GetVersion() => typeof(CliApplication).Assembly.GetName().Version?.ToString() ?? "unknown";
-    private static string GetHelpText() => "Usage: hataori <start|stop|restart|status|service|task|agent|conversation|queue|db|config|itoguruma|mcp|doctor|version|help> [command] [options]";
+    private static string GetHelpText() => "Usage: hataori <start|stop|restart|status|service|task|agent|conversation|queue|db|config|itoguruma|mcp|doctor|logs|version|help> [command] [options]";
     private static string GetSubcommandHelp(string command) => $"Usage: hataori {command} <command> [arguments] [options]";
 
     private sealed record DoctorCheck(string Name, bool Ok, string? Error, bool Skipped = false);

@@ -1,4 +1,4 @@
-using Hataori.Application.Activation;
+﻿using Hataori.Application.Activation;
 using Hataori.Application.Messages;
 using Microsoft.Extensions.Options;
 
@@ -41,7 +41,11 @@ public sealed class ActivationWorker(
                 }
                 else if (!result.Succeeded)
                 {
-                    logger.LogWarning("Activation failed for agent {AgentId} lane {LaneNumber}, message {MessageId}: {Error}", agentId, laneNumber, result.MessageId, result.Error);
+                    logger.LogWarning("Activation failed for agent {AgentId} lane {LaneNumber}, run {RunId}, message {MessageId}: {Error}", agentId, laneNumber, result.RunId, result.MessageId, result.Error);
+                }
+                else
+                {
+                    logger.LogInformation("Activation completed for agent {AgentId}, run {RunId}, message {MessageId}, reply {ReplyMessageId}", agentId, result.RunId, result.MessageId, result.ReplyMessageId);
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)

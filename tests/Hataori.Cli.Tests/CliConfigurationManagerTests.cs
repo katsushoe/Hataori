@@ -86,6 +86,12 @@ public sealed class CliConfigurationManagerTests : IDisposable
             "maximumDelaySeconds": 300,
             "batchSize": 20,
             "pollIntervalMilliseconds": 1000
+          },
+          "fileLogging": {
+            "enabled": true,
+            "directoryPath": "logs",
+            "minimumLevel": "Information",
+            "retentionDays": 30
           }
         }
         """;

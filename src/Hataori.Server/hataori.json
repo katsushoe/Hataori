@@ -47,5 +47,11 @@
     "batchSize": 20,
     "pollIntervalMilliseconds": 1000
   },
+  "fileLogging": {
+    "enabled": true,
+    "directoryPath": "logs",
+    "minimumLevel": "Information",
+    "retentionDays": 30
+  },
   "allowedHosts": "127.0.0.1;localhost"
 }
