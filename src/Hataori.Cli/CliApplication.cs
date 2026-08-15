@@ -2,7 +2,12 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Hataori.Application.Tasks;
+using Hataori.Core.Runs;
+using Hataori.Core.Sessions;
 using Hataori.Core.Tasks;
+using Hataori.Infrastructure.Messages;
+using Hataori.Infrastructure.Runs;
+using Hataori.Infrastructure.Sessions;
 using Hataori.Infrastructure.Tasks;
 using Microsoft.Data.Sqlite;
 
@@ -33,11 +38,19 @@ public static class CliApplication
         {
             if (args.Length == 0)
             {
-                throw new ArgumentException("Usage: hataori <start|stop|restart|status|task> [options]");
+                throw new ArgumentException(GetHelpText());
             }
 
             object? result;
-            if (string.Equals(args[0], "task", StringComparison.OrdinalIgnoreCase))
+            if (IsHelpCommand(args))
+            {
+                result = new { help = GetHelpText() };
+            }
+            else if (IsVersionCommand(args))
+            {
+                result = new { version = GetVersion() };
+            }
+            else if (string.Equals(args[0], "task", StringComparison.OrdinalIgnoreCase))
             {
                 if (args.Length < 2)
                 {
@@ -49,6 +62,10 @@ public static class CliApplication
                 var repository = new SqliteTaskRepository(connectionString);
                 await repository.InitializeAsync(cancellationToken).ConfigureAwait(false);
                 result = await ExecuteTaskAsync(args[1], options, new TaskService(repository, TimeProvider.System), cancellationToken).ConfigureAwait(false);
+            }
+            else if (IsDatabaseCommand(args[0]))
+            {
+                result = await ExecuteDatabaseCommandAsync(args, cancellationToken).ConfigureAwait(false);
             }
             else
             {
@@ -102,6 +119,68 @@ public static class CliApplication
             await error.WriteLineAsync(exception.Message).ConfigureAwait(false);
             return 1;
         }
+    }
+
+    private static bool IsDatabaseCommand(string command) =>
+        command.Equals("agent", StringComparison.OrdinalIgnoreCase) ||
+        command.Equals("conversation", StringComparison.OrdinalIgnoreCase) ||
+        command.Equals("queue", StringComparison.OrdinalIgnoreCase) ||
+        command.Equals("db", StringComparison.OrdinalIgnoreCase);
+
+    private static async Task<object> ExecuteDatabaseCommandAsync(string[] args, CancellationToken cancellationToken)
+    {
+        if (args.Length < 2)
+        {
+            throw new ArgumentException($"Usage: hataori {args[0]} <command> [options]");
+        }
+
+        var options = ParseOptions(args.Skip(2));
+        var databasePath = GetDatabasePath(options);
+        var connectionString = new SqliteConnectionStringBuilder { DataSource = databasePath, ForeignKeys = true }.ToString();
+        return args[0].ToLowerInvariant() switch
+        {
+            "agent" => await ExecuteAgentAsync(args[1], options, connectionString, cancellationToken).ConfigureAwait(false),
+            "conversation" => await ExecuteConversationAsync(args[1], options, connectionString, cancellationToken).ConfigureAwait(false),
+            "queue" => await ExecuteQueueAsync(args[1], options, connectionString, cancellationToken).ConfigureAwait(false),
+            "db" => await CliDatabaseDiagnostics.ExecuteAsync(args[1], databasePath, cancellationToken).ConfigureAwait(false),
+            _ => throw new ArgumentException($"Unknown command '{args[0]}'."),
+        };
+    }
+
+    private static async Task<object> ExecuteAgentAsync(string command, IReadOnlyDictionary<string, string> options, string connectionString, CancellationToken cancellationToken)
+    {
+        if (!command.Equals("runs", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException($"Unknown agent command '{command}'.");
+        }
+
+        var repository = new SqliteAgentRunRepository(connectionString);
+        await repository.InitializeAsync(cancellationToken).ConfigureAwait(false);
+        return await repository.ListAsync(ParseRunStatus(Optional(options, "status")), Optional(options, "agent"), cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<object> ExecuteConversationAsync(string command, IReadOnlyDictionary<string, string> options, string connectionString, CancellationToken cancellationToken)
+    {
+        if (!command.Equals("list", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException($"Unknown conversation command '{command}'.");
+        }
+
+        var repository = new SqliteConversationSessionRepository(connectionString);
+        await repository.InitializeAsync(cancellationToken).ConfigureAwait(false);
+        return await repository.ListAsync(ParseSessionStatus(Optional(options, "status")), Optional(options, "agent"), cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<object> ExecuteQueueAsync(string command, IReadOnlyDictionary<string, string> options, string connectionString, CancellationToken cancellationToken)
+    {
+        if (!command.Equals("list", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException($"Unknown queue command '{command}'.");
+        }
+
+        var repository = new SqliteMessageQueueRepository(connectionString);
+        await repository.InitializeAsync(cancellationToken).ConfigureAwait(false);
+        return await repository.ListAsync(Optional(options, "agent"), cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<object> ExecuteServerAsync(string command, IReadOnlyDictionary<string, string> options, CancellationToken cancellationToken)
@@ -229,4 +308,10 @@ public static class CliApplication
     private static string? Optional(IReadOnlyDictionary<string, string> options, string name) => options.TryGetValue(name, out var value) ? value : null;
     private static int ParseProgress(string value) => int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var progress) ? progress : throw new ArgumentException("--progress must be an integer.");
     private static HataoriTaskStatus? ParseStatus(string? value) => value is null ? null : Enum.TryParse<HataoriTaskStatus>(value, true, out var status) ? status : throw new ArgumentException($"Invalid task status '{value}'.");
+    private static AgentRunStatus? ParseRunStatus(string? value) => value is null ? null : Enum.TryParse<AgentRunStatus>(value, true, out var status) ? status : throw new ArgumentException($"Invalid agent run status '{value}'.");
+    private static ConversationSessionStatus? ParseSessionStatus(string? value) => value is null ? null : Enum.TryParse<ConversationSessionStatus>(value, true, out var status) ? status : throw new ArgumentException($"Invalid conversation status '{value}'.");
+    private static bool IsHelpCommand(IReadOnlyList<string> args) => args[0].Equals("help", StringComparison.OrdinalIgnoreCase) || args[0].Equals("--help", StringComparison.OrdinalIgnoreCase);
+    private static bool IsVersionCommand(IReadOnlyList<string> args) => args[0].Equals("version", StringComparison.OrdinalIgnoreCase) || args[0].Equals("--version", StringComparison.OrdinalIgnoreCase);
+    private static string GetVersion() => typeof(CliApplication).Assembly.GetName().Version?.ToString() ?? "unknown";
+    private static string GetHelpText() => "Usage: hataori <start|stop|restart|status|task|agent|conversation|queue|db|version|help> [command] [options]";
 }

@@ -1,7 +1,13 @@
-using System.IO.Pipes;
+﻿using System.IO.Pipes;
 using System.Text;
 using System.Text.Json;
 using FluentAssertions;
+using Hataori.Core.Messages;
+using Hataori.Core.Runs;
+using Hataori.Core.Sessions;
+using Hataori.Infrastructure.Messages;
+using Hataori.Infrastructure.Runs;
+using Hataori.Infrastructure.Sessions;
 using Microsoft.Data.Sqlite;
 
 namespace Hataori.Cli.Tests;
@@ -49,6 +55,74 @@ public sealed class CliApplicationTests : IDisposable
         document.RootElement.GetProperty("status").GetString().Should().Be("running");
     }
 
+    [Fact]
+    public async Task RunAsync_AgentRuns_ReturnsPersistedRuns()
+    {
+        var repository = new SqliteAgentRunRepository(GetConnectionString());
+        await repository.InitializeAsync(CancellationToken.None);
+        await repository.AddAsync(AgentRun.Queue("run-1", "message-1", "conversation-1", "codex", DateTimeOffset.UtcNow), CancellationToken.None);
+
+        var response = await RunAsync("agent", "runs", "--database", _databasePath, "--agent", "codex");
+
+        response.ExitCode.Should().Be(0);
+        using var document = JsonDocument.Parse(response.Output);
+        document.RootElement.GetArrayLength().Should().Be(1);
+        document.RootElement[0].GetProperty("run_id").GetString().Should().Be("run-1");
+    }
+
+    [Fact]
+    public async Task RunAsync_ConversationList_ReturnsPersistedSessions()
+    {
+        var repository = new SqliteConversationSessionRepository(GetConnectionString());
+        await repository.InitializeAsync(CancellationToken.None);
+        await repository.SaveAsync(ConversationSession.Create("conversation-1", "codex", "session-1", DateTimeOffset.UtcNow), CancellationToken.None);
+
+        var response = await RunAsync("conversation", "list", "--database", _databasePath, "--agent", "codex");
+
+        response.ExitCode.Should().Be(0);
+        using var document = JsonDocument.Parse(response.Output);
+        document.RootElement.GetArrayLength().Should().Be(1);
+        document.RootElement[0].GetProperty("conversation_id").GetString().Should().Be("conversation-1");
+    }
+
+    [Fact]
+    public async Task RunAsync_QueueList_ReturnsQueuedMessages()
+    {
+        var repository = new SqliteMessageQueueRepository(GetConnectionString());
+        await repository.InitializeAsync(CancellationToken.None);
+        var message = new IncomingMessage("message-1", "conversation-1", "codex", "sender", null, "prompt", "body", null, DateTimeOffset.UtcNow);
+        await repository.EnqueueAsync(message, 0, CancellationToken.None);
+
+        var response = await RunAsync("queue", "list", "--database", _databasePath, "--agent", "codex");
+
+        response.ExitCode.Should().Be(0);
+        using var document = JsonDocument.Parse(response.Output);
+        document.RootElement.GetArrayLength().Should().Be(1);
+        document.RootElement[0].GetProperty("message").GetProperty("message_id").GetString().Should().Be("message-1");
+    }
+
+    [Fact]
+    public async Task RunAsync_DbIntegrity_ReturnsOk()
+    {
+        (await RunAsync("task", "list", "--database", _databasePath)).ExitCode.Should().Be(0);
+
+        var response = await RunAsync("db", "integrity", "--database", _databasePath);
+
+        response.ExitCode.Should().Be(0);
+        using var document = JsonDocument.Parse(response.Output);
+        document.RootElement.GetProperty("ok").GetBoolean().Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task RunAsync_Version_ReturnsAssemblyVersion()
+    {
+        var response = await RunAsync("--version");
+
+        response.ExitCode.Should().Be(0);
+        using var document = JsonDocument.Parse(response.Output);
+        document.RootElement.GetProperty("version").GetString().Should().NotBeNullOrWhiteSpace();
+    }
+
     public void Dispose()
     {
         SqliteConnection.ClearAllPools();
@@ -65,6 +139,8 @@ public sealed class CliApplicationTests : IDisposable
         var exitCode = await CliApplication.RunAsync(args, output, error, CancellationToken.None);
         return new CliResponse(exitCode, output.ToString(), error.ToString());
     }
+
+    private string GetConnectionString() => new SqliteConnectionStringBuilder { DataSource = _databasePath, ForeignKeys = true }.ToString();
 
     private static async Task RespondToStatusAsync(NamedPipeServerStream server)
     {
