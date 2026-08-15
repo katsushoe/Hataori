@@ -39,9 +39,12 @@ public sealed class ActivationManager
     }
 
     public async Task<ActivationResult?> ProcessNextAsync(ActivationRequest request, CancellationToken cancellationToken)
+        => await ProcessNextAsync(request, null, cancellationToken).ConfigureAwait(false);
+
+    public async Task<ActivationResult?> ProcessNextAsync(ActivationRequest request, string? agentId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        var queued = await _messageQueue.TryClaimNextAsync(null, cancellationToken).ConfigureAwait(false);
+        var queued = await _messageQueue.TryClaimNextAsync(agentId, cancellationToken).ConfigureAwait(false);
         if (queued is null)
         {
             return null;

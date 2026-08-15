@@ -16,6 +16,8 @@ Itogurumaから永続Queueへ取り込んだメッセージを、対象Agentの�
 - Agent Runを `queued`、`starting`、Process開始時に `running`、終了時に終端状態へ更新します。
 - Driver成功後にSession IDを登録または更新します。resume失敗時は旧Sessionをinvalidにします。
 - Agentへ `HATAORI_ROOT`、Conversation ID、Message ID、Agent ID、MCP URLを環境変数で渡します。
+- Agentごとに `maxConcurrentRuns` 数の逐次laneを起動し、Agent単位の最大並列数を保証します。
+- Queue claimはAgentで絞り込み、同じConversationに `starting` または `running` のMessageがある間は後続MessageをQueueに残します。
 - Agent応答をItogurumaへ返信するまではMessage処理状態を `running` に保持します。
 - 誤ったWorkspaceでAgentを起動しないよう、Activationは既定で無効とし、有効化時は既存の絶対Working Directoryを必須とします。
 
@@ -27,7 +29,7 @@ Itogurumaから永続Queueへ取り込んだメッセージを、対象Agentの�
 
 ## Consequences
 
-Activation有効化には `HATAORI_ACTIVATION__ENABLED=true` と `HATAORI_ACTIVATION__WORKINGDIRECTORY=<absolute-path>` が必要です。現段階のWorkerは逐次実行であり、Agent別並列数制御は次の実装で追加します。
+Activation有効化には `HATAORI_ACTIVATION__ENABLED=true` と `HATAORI_ACTIVATION__WORKINGDIRECTORY=<absolute-path>` が必要です。既定の最大並列数はCodex、Claude Codeともに2です。同一Conversationは並列数に空きがあっても直列処理します。
 
 ## Verification
 

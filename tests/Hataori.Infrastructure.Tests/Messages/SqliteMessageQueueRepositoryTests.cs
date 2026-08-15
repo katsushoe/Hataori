@@ -30,7 +30,7 @@ public sealed class SqliteMessageQueueRepositoryTests : IDisposable
         var repository = CreateRepository();
         await repository.InitializeAsync(CancellationToken.None);
         await repository.EnqueueAsync(CreateMessage("message-1", "first"), 0, CancellationToken.None);
-        await repository.EnqueueAsync(CreateMessage("message-2", "second"), 0, CancellationToken.None);
+        await repository.EnqueueAsync(CreateMessage("message-2", "second", "conversation-2"), 0, CancellationToken.None);
 
         var first = await repository.TryClaimNextAsync("codex", CancellationToken.None);
         var second = await repository.TryClaimNextAsync("codex", CancellationToken.None);
@@ -69,8 +69,25 @@ public sealed class SqliteMessageQueueRepositoryTests : IDisposable
         return new SqliteMessageQueueRepository(connectionString);
     }
 
-    private static IncomingMessage CreateMessage(string id, string body) => new(
-        id, "conversation-1", "codex", "sender", null, "message", body, null, DateTimeOffset.UtcNow);
+    [Fact]
+    public async Task TryClaimNextAsync_SameConversationRunning_LeavesNextMessageQueued()
+    {
+        var repository = CreateRepository();
+        await repository.InitializeAsync(CancellationToken.None);
+        await repository.EnqueueAsync(CreateMessage("message-1", "first"), 0, CancellationToken.None);
+        await repository.EnqueueAsync(CreateMessage("message-2", "second"), 0, CancellationToken.None);
+
+        var first = await repository.TryClaimNextAsync("codex", CancellationToken.None);
+        var blocked = await repository.TryClaimNextAsync("codex", CancellationToken.None);
+
+        first!.Message.MessageId.Should().Be("message-1");
+        blocked.Should().BeNull();
+        (await repository.ListAsync(null, CancellationToken.None)).Should().ContainSingle()
+            .Which.Message.MessageId.Should().Be("message-2");
+    }
+
+    private static IncomingMessage CreateMessage(string id, string body, string conversationId = "conversation-1") => new(
+        id, conversationId, "codex", "sender", null, "message", body, null, DateTimeOffset.UtcNow);
 
     private async Task<string?> GetStatusAsync(string messageId)
     {

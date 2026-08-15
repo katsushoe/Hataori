@@ -70,6 +70,21 @@ public sealed class ActivationManagerTests : IDisposable
         (await fixture.Runs.ListAsync(AgentRunStatus.Failed, "codex", CancellationToken.None)).Should().ContainSingle();
     }
 
+    [Fact]
+    public async Task ProcessNextAsync_AgentLane_ClaimsOnlyMatchingAgent()
+    {
+        var fixture = await CreateFixtureAsync();
+        await fixture.Queue.EnqueueAsync(CreateMessage("claude-message", "claude-code"), 10, CancellationToken.None);
+        await fixture.Queue.EnqueueAsync(CreateMessage("codex-message"), 0, CancellationToken.None);
+        ConfigureSuccessfulStart(fixture.Driver, "native-1", "done");
+
+        var result = await fixture.Manager.ProcessNextAsync(CreateRequest(), "codex", CancellationToken.None);
+
+        result!.MessageId.Should().Be("codex-message");
+        (await fixture.Queue.ListAsync("claude-code", CancellationToken.None)).Should().ContainSingle()
+            .Which.Message.MessageId.Should().Be("claude-message");
+    }
+
     public void Dispose()
     {
         SqliteConnection.ClearAllPools();
@@ -113,8 +128,8 @@ public sealed class ActivationManagerTests : IDisposable
         return new AgentDriverResult(sessionId, finalMessage, new AgentProcessResult(4321, 0, string.Empty, string.Empty, false, false, now, now));
     }
 
-    private static IncomingMessage CreateMessage(string messageId) => new(
-        messageId, "conversation-1", "codex", "sender", null, "message", "work", null, DateTimeOffset.UtcNow);
+    private static IncomingMessage CreateMessage(string messageId, string agentId = "codex") => new(
+        messageId, "conversation-1", agentId, "sender", null, "message", "work", null, DateTimeOffset.UtcNow);
 
     private static ActivationRequest CreateRequest() => new(Directory.GetCurrentDirectory(), Directory.GetCurrentDirectory(), "http://127.0.0.1:45440/mcp");
 
