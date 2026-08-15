@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Hataori.Application.Messages;
 using Hataori.Core.Messages;
 using Microsoft.Data.Sqlite;
@@ -10,9 +10,25 @@ namespace Hataori.Infrastructure.Messages;
 /// </summary>
 public sealed class SqliteMessageQueueRepository(string connectionString) : IMessageQueueRepository
 {
+    private readonly SemaphoreSlim _initializeLock = new(1, 1);
+    private int _initialized;
+
     public async Task InitializeAsync(CancellationToken cancellationToken)
     {
-        const string sql = """
+        if (Volatile.Read(ref _initialized) != 0)
+        {
+            return;
+        }
+
+        await _initializeLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            if (_initialized != 0)
+            {
+                return;
+            }
+
+            const string sql = """
             CREATE TABLE IF NOT EXISTS message_processing (
                 message_id TEXT PRIMARY KEY,
                 conversation_id TEXT NOT NULL,
@@ -26,7 +42,11 @@ public sealed class SqliteMessageQueueRepository(string connectionString) : IMes
                 received_at_utc TEXT NOT NULL,
                 started_at_utc TEXT NULL,
                 completed_at_utc TEXT NULL,
-                error TEXT NULL
+                error TEXT NULL,
+                reply_attempt_count INTEGER NOT NULL DEFAULT 0,
+                next_reply_attempt_at_utc TEXT NULL,
+                reply_error TEXT NULL,
+                reply_message_id TEXT NULL
             );
             CREATE TABLE IF NOT EXISTS message_queue (
                 queue_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -41,11 +61,21 @@ public sealed class SqliteMessageQueueRepository(string connectionString) : IMes
             CREATE INDEX IF NOT EXISTS ix_message_processing_status ON message_processing(status, agent_id);
             CREATE INDEX IF NOT EXISTS ix_message_queue_fifo ON message_queue(priority DESC, sequence ASC);
             """;
-        await using var connection = new SqliteConnection(connectionString);
-        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
-        await using var command = connection.CreateCommand();
-        command.CommandText = sql;
-        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            await using var connection = new SqliteConnection(connectionString);
+            await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+            await using var command = connection.CreateCommand();
+            command.CommandText = sql;
+            await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            await EnsureColumnAsync(connection, "reply_attempt_count", "INTEGER NOT NULL DEFAULT 0", cancellationToken).ConfigureAwait(false);
+            await EnsureColumnAsync(connection, "next_reply_attempt_at_utc", "TEXT NULL", cancellationToken).ConfigureAwait(false);
+            await EnsureColumnAsync(connection, "reply_error", "TEXT NULL", cancellationToken).ConfigureAwait(false);
+            await EnsureColumnAsync(connection, "reply_message_id", "TEXT NULL", cancellationToken).ConfigureAwait(false);
+            Volatile.Write(ref _initialized, 1);
+        }
+        finally
+        {
+            _initializeLock.Release();
+        }
     }
 
     public async Task<bool> EnqueueAsync(IncomingMessage message, int priority, CancellationToken cancellationToken)
@@ -168,8 +198,24 @@ public sealed class SqliteMessageQueueRepository(string connectionString) : IMes
     public Task MarkRunningAsync(string messageId, CancellationToken cancellationToken) =>
         UpdateStatusAsync(messageId, "running", null, null, cancellationToken);
 
-    public Task MarkRespondedAsync(string messageId, DateTimeOffset respondedAtUtc, CancellationToken cancellationToken) =>
-        UpdateStatusAsync(messageId, "responded", null, respondedAtUtc, cancellationToken);
+    public async Task MarkRespondedAsync(string messageId, string replyMessageId, DateTimeOffset respondedAtUtc, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(messageId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(replyMessageId);
+        await using var connection = new SqliteConnection(connectionString);
+        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            UPDATE message_processing
+            SET status = 'responded', completed_at_utc = $responded_at_utc, error = NULL,
+                next_reply_attempt_at_utc = NULL, reply_error = NULL, reply_message_id = $reply_message_id
+            WHERE message_id = $message_id;
+            """;
+        command.Parameters.AddWithValue("$message_id", messageId);
+        command.Parameters.AddWithValue("$reply_message_id", replyMessageId);
+        command.Parameters.AddWithValue("$responded_at_utc", FormatDate(respondedAtUtc));
+        await EnsureSingleUpdateAsync(command, messageId, cancellationToken).ConfigureAwait(false);
+    }
 
     public Task MarkFailedAsync(string messageId, string error, DateTimeOffset failedAtUtc, CancellationToken cancellationToken)
     {
@@ -189,6 +235,68 @@ public sealed class SqliteMessageQueueRepository(string connectionString) : IMes
         return value is null ? null : Enum.Parse<MessageProcessingStatus>(value, true);
     }
 
+    public async Task ScheduleReplyRetryAsync(string messageId, string error, int attemptCount, DateTimeOffset failedAtUtc, DateTimeOffset? nextAttemptAtUtc, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(messageId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(error);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(attemptCount);
+        await using var connection = new SqliteConnection(connectionString);
+        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            UPDATE message_processing
+            SET status = $status, completed_at_utc = $completed_at_utc, error = $error,
+                reply_attempt_count = $attempt_count, next_reply_attempt_at_utc = $next_attempt_at_utc,
+                reply_error = $error
+            WHERE message_id = $message_id;
+            """;
+        command.Parameters.AddWithValue("$message_id", messageId);
+        command.Parameters.AddWithValue("$error", error);
+        command.Parameters.AddWithValue("$attempt_count", attemptCount);
+        command.Parameters.AddWithValue("$status", nextAttemptAtUtc is null ? "failed" : "running");
+        command.Parameters.AddWithValue("$completed_at_utc", nextAttemptAtUtc is null ? FormatDate(failedAtUtc) : DBNull.Value);
+        command.Parameters.AddWithValue("$next_attempt_at_utc", nextAttemptAtUtc is null ? DBNull.Value : FormatDate(nextAttemptAtUtc.Value));
+        await EnsureSingleUpdateAsync(command, messageId, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<IReadOnlyList<PendingReply>> GetDueReplyRetriesAsync(DateTimeOffset dueAtUtc, int limit, CancellationToken cancellationToken)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(limit);
+        const string sql = """
+            WITH pending AS (
+                SELECT p.message_id, p.conversation_id, p.sender_agent_id,
+                       (SELECT r.final_message FROM agent_runs r
+                        WHERE r.message_id = p.message_id AND r.status = 'completed'
+                        ORDER BY r.queued_at_utc DESC LIMIT 1) AS final_message,
+                       p.reply_attempt_count, p.next_reply_attempt_at_utc
+                FROM message_processing p
+                WHERE p.status IN ('running', 'failed')
+                  AND p.next_reply_attempt_at_utc IS NOT NULL
+                  AND p.next_reply_attempt_at_utc <= $due_at_utc
+            )
+            SELECT message_id, conversation_id, sender_agent_id, final_message, reply_attempt_count, next_reply_attempt_at_utc
+            FROM pending
+            WHERE final_message IS NOT NULL
+            ORDER BY next_reply_attempt_at_utc, message_id
+            LIMIT $limit;
+            """;
+        await using var connection = new SqliteConnection(connectionString);
+        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        command.Parameters.AddWithValue("$due_at_utc", FormatDate(dueAtUtc));
+        command.Parameters.AddWithValue("$limit", limit);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        var replies = new List<PendingReply>();
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            replies.Add(new PendingReply(
+                reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetString(3), reader.GetInt32(4), ParseDate(reader.GetString(5))));
+        }
+
+        return replies;
+    }
+
     private async Task UpdateStatusAsync(string messageId, string status, string? error, DateTimeOffset? completedAtUtc, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(messageId);
@@ -204,10 +312,34 @@ public sealed class SqliteMessageQueueRepository(string connectionString) : IMes
         command.Parameters.AddWithValue("$status", status);
         command.Parameters.AddWithValue("$error", (object?)error ?? DBNull.Value);
         command.Parameters.AddWithValue("$completed_at_utc", completedAtUtc is null ? DBNull.Value : FormatDate(completedAtUtc.Value));
+        await EnsureSingleUpdateAsync(command, messageId, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task EnsureSingleUpdateAsync(SqliteCommand command, string messageId, CancellationToken cancellationToken)
+    {
         if (await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false) != 1)
         {
             throw new KeyNotFoundException($"Message processing '{messageId}' was not found.");
         }
+    }
+
+    private static async Task EnsureColumnAsync(SqliteConnection connection, string columnName, string definition, CancellationToken cancellationToken)
+    {
+        await using var query = connection.CreateCommand();
+        query.CommandText = "PRAGMA table_info(message_processing);";
+        await using var reader = await query.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            if (string.Equals(reader.GetString(1), columnName, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+        }
+
+        await reader.DisposeAsync().ConfigureAwait(false);
+        await using var alter = connection.CreateCommand();
+        alter.CommandText = $"ALTER TABLE message_processing ADD COLUMN {columnName} {definition};";
+        await alter.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
     private static void AddMessageParameters(SqliteCommand command, IncomingMessage message)

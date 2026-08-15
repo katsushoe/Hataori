@@ -39,5 +39,13 @@
       "claude-code": 2
     }
   },
+  "replyRetry": {
+    "enabled": true,
+    "maxAttempts": 5,
+    "initialDelaySeconds": 5,
+    "maximumDelaySeconds": 300,
+    "batchSize": 20,
+    "pollIntervalMilliseconds": 1000
+  },
   "allowedHosts": "127.0.0.1;localhost"
 }

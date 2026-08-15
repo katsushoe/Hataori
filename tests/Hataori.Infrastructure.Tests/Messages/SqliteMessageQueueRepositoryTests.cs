@@ -54,6 +54,41 @@ public sealed class SqliteMessageQueueRepositoryTests : IDisposable
         messages.Select(item => item.Message.MessageId).Should().Equal("urgent", "normal");
     }
 
+    [Fact]
+    public async Task InitializeAsync_PreRetrySchema_AddsReplyColumns()
+    {
+        var connectionString = new SqliteConnectionStringBuilder { DataSource = _databasePath, ForeignKeys = true, Pooling = false }.ToString();
+        await using (var connection = new SqliteConnection(connectionString))
+        {
+            await connection.OpenAsync(CancellationToken.None);
+            await using var command = connection.CreateCommand();
+            command.CommandText = """
+                CREATE TABLE message_processing (
+                    message_id TEXT PRIMARY KEY, conversation_id TEXT NOT NULL, agent_id TEXT NOT NULL,
+                    sender_agent_id TEXT NOT NULL, reply_to_message_id TEXT NULL, message_type TEXT NOT NULL,
+                    body TEXT NOT NULL, payload_json TEXT NULL, status TEXT NOT NULL, received_at_utc TEXT NOT NULL,
+                    started_at_utc TEXT NULL, completed_at_utc TEXT NULL, error TEXT NULL);
+                """;
+            await command.ExecuteNonQueryAsync(CancellationToken.None);
+        }
+
+        var repository = new SqliteMessageQueueRepository(connectionString);
+        await repository.InitializeAsync(CancellationToken.None);
+
+        await using var verification = new SqliteConnection(connectionString);
+        await verification.OpenAsync(CancellationToken.None);
+        await using var pragma = verification.CreateCommand();
+        pragma.CommandText = "PRAGMA table_info(message_processing);";
+        await using var reader = await pragma.ExecuteReaderAsync(CancellationToken.None);
+        var columns = new List<string>();
+        while (await reader.ReadAsync(CancellationToken.None))
+        {
+            columns.Add(reader.GetString(1));
+        }
+
+        columns.Should().Contain(["reply_attempt_count", "next_reply_attempt_at_utc", "reply_error", "reply_message_id"]);
+    }
+
     public void Dispose()
     {
         SqliteConnection.ClearAllPools();

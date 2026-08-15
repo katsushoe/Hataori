@@ -45,6 +45,10 @@ builder.Services.AddOptions<ActivationOptions>()
     .Bind(builder.Configuration.GetRequiredSection(ActivationOptions.SectionName))
     .ValidateOnStart();
 builder.Services.AddSingleton<IValidateOptions<ActivationOptions>, ActivationOptionsValidator>();
+builder.Services.AddOptions<ReplyRetryOptions>()
+    .Bind(builder.Configuration.GetRequiredSection(ReplyRetryOptions.SectionName))
+    .ValidateOnStart();
+builder.Services.AddSingleton<IValidateOptions<ReplyRetryOptions>, ReplyRetryOptionsValidator>();
 builder.Services.AddSingleton<IItogurumaClient>(services => new McpItogurumaClient(
     services.GetRequiredService<IOptions<ItogurumaClientOptions>>().Value,
     services.GetRequiredService<ILoggerFactory>()));
@@ -95,10 +99,21 @@ builder.Services.AddSingleton<TaskService>();
 builder.Services.AddSingleton<ConversationSessionService>();
 builder.Services.AddSingleton<AgentRunService>();
 builder.Services.AddSingleton<ActivationManager>();
+builder.Services.AddSingleton(services =>
+{
+    var options = services.GetRequiredService<IOptions<ReplyRetryOptions>>().Value;
+    return new ReplyRetrySettings(
+        options.MaxAttempts,
+        TimeSpan.FromSeconds(options.InitialDelaySeconds),
+        TimeSpan.FromSeconds(options.MaximumDelaySeconds),
+        options.BatchSize);
+});
+builder.Services.AddSingleton<ReplyRetryManager>();
 builder.Services.AddSingleton<ControlCommandHandler>();
 builder.Services.AddHostedService<HataoriServerWorker>();
 builder.Services.AddHostedService<ItogurumaConnectionWorker>();
 builder.Services.AddHostedService<ActivationWorker>();
+builder.Services.AddHostedService<ReplyRetryWorker>();
 builder.Services.AddMcpServer()
     .WithHttpTransport(options => options.Stateless = true)
     .WithTools<TaskMcpTools>();
