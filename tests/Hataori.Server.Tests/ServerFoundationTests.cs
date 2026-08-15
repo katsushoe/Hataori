@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Hataori.Application.Control;
 using Microsoft.Extensions.Hosting;
 
 namespace Hataori.Server.Tests;

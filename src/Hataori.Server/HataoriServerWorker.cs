@@ -2,6 +2,7 @@ using System.IO.Pipes;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Hataori.Application.Control;
 using Hataori.Application.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;

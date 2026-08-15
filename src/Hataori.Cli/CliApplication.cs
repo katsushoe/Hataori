@@ -31,16 +31,30 @@ public static class CliApplication
 
         try
         {
-            if (args.Length < 2 || !string.Equals(args[0], "task", StringComparison.OrdinalIgnoreCase))
+            if (args.Length == 0)
             {
-                throw new ArgumentException("Usage: hataori task <command> [options]");
+                throw new ArgumentException("Usage: hataori <start|stop|restart|status|task> [options]");
             }
 
-            var options = ParseOptions(args.Skip(2));
-            var connectionString = new SqliteConnectionStringBuilder { DataSource = GetDatabasePath(options), ForeignKeys = true }.ToString();
-            var repository = new SqliteTaskRepository(connectionString);
-            await repository.InitializeAsync(cancellationToken).ConfigureAwait(false);
-            var result = await ExecuteTaskAsync(args[1], options, new TaskService(repository, TimeProvider.System), cancellationToken).ConfigureAwait(false);
+            object? result;
+            if (string.Equals(args[0], "task", StringComparison.OrdinalIgnoreCase))
+            {
+                if (args.Length < 2)
+                {
+                    throw new ArgumentException("Usage: hataori task <command> [options]");
+                }
+
+                var options = ParseOptions(args.Skip(2));
+                var connectionString = new SqliteConnectionStringBuilder { DataSource = GetDatabasePath(options), ForeignKeys = true }.ToString();
+                var repository = new SqliteTaskRepository(connectionString);
+                await repository.InitializeAsync(cancellationToken).ConfigureAwait(false);
+                result = await ExecuteTaskAsync(args[1], options, new TaskService(repository, TimeProvider.System), cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                result = await ExecuteServerAsync(args[0], ParseOptions(args.Skip(1)), cancellationToken).ConfigureAwait(false);
+            }
+
             if (result is not null)
             {
                 await output.WriteLineAsync(JsonSerializer.Serialize(result, JsonOptions)).ConfigureAwait(false);
@@ -58,10 +72,25 @@ public static class CliApplication
             await error.WriteLineAsync(exception.Message).ConfigureAwait(false);
             return 4;
         }
+        catch (FileNotFoundException exception)
+        {
+            await error.WriteLineAsync(exception.Message).ConfigureAwait(false);
+            return 3;
+        }
+        catch (TimeoutException exception)
+        {
+            await error.WriteLineAsync(exception.Message).ConfigureAwait(false);
+            return 3;
+        }
         catch (InvalidOperationException exception)
         {
             await error.WriteLineAsync(exception.Message).ConfigureAwait(false);
             return 5;
+        }
+        catch (IOException exception)
+        {
+            await error.WriteLineAsync(exception.Message).ConfigureAwait(false);
+            return 6;
         }
         catch (SqliteException exception)
         {
@@ -73,6 +102,45 @@ public static class CliApplication
             await error.WriteLineAsync(exception.Message).ConfigureAwait(false);
             return 1;
         }
+    }
+
+    private static async Task<object> ExecuteServerAsync(string command, IReadOnlyDictionary<string, string> options, CancellationToken cancellationToken)
+    {
+        var client = new ControlPipeClient();
+        return command.ToLowerInvariant() switch
+        {
+            "start" => new ServerProcessLauncher().Start(GetServerPath(options)),
+            "stop" => await client.SendAsync(GetPipeName(options), "stop", GetControlTimeout(options), cancellationToken).ConfigureAwait(false),
+            "status" => await client.SendAsync(GetPipeName(options), "status", GetControlTimeout(options), cancellationToken).ConfigureAwait(false),
+            "restart" => await RestartAsync(client, options, cancellationToken).ConfigureAwait(false),
+            _ => throw new ArgumentException($"Unknown command '{command}'."),
+        };
+    }
+
+    private static async Task<ServerProcessResult> RestartAsync(ControlPipeClient client, IReadOnlyDictionary<string, string> options, CancellationToken cancellationToken)
+    {
+        var pipeName = GetPipeName(options);
+        var timeout = GetControlTimeout(options);
+        await client.SendAsync(pipeName, "stop", timeout, cancellationToken).ConfigureAwait(false);
+        var deadline = TimeProvider.System.GetUtcNow() + timeout;
+        while (TimeProvider.System.GetUtcNow() < deadline)
+        {
+            try
+            {
+                await client.SendAsync(pipeName, "status", TimeSpan.FromMilliseconds(100), cancellationToken).ConfigureAwait(false);
+                await Task.Delay(TimeSpan.FromMilliseconds(100), cancellationToken).ConfigureAwait(false);
+            }
+            catch (TimeoutException)
+            {
+                return new ServerProcessLauncher().Start(GetServerPath(options));
+            }
+            catch (IOException)
+            {
+                return new ServerProcessLauncher().Start(GetServerPath(options));
+            }
+        }
+
+        throw new InvalidOperationException("Hataori Server did not stop before the restart timeout.");
     }
 
     private static async Task<object?> ExecuteTaskAsync(string command, IReadOnlyDictionary<string, string> options, TaskService service, CancellationToken cancellationToken)
@@ -127,6 +195,29 @@ public static class CliApplication
     {
         var path = Optional(options, "database") ?? Environment.GetEnvironmentVariable("HATAORI_DATABASE_PATH");
         return string.IsNullOrWhiteSpace(path) ? throw new ArgumentException("Specify --database or HATAORI_DATABASE_PATH.") : Path.GetFullPath(path);
+    }
+
+    private static string GetPipeName(IReadOnlyDictionary<string, string> options)
+    {
+        var pipeName = Optional(options, "pipe") ?? Environment.GetEnvironmentVariable("HATAORI_CONTROL_PIPE_NAME");
+        return string.IsNullOrWhiteSpace(pipeName) ? throw new ArgumentException("Specify --pipe or HATAORI_CONTROL_PIPE_NAME.") : pipeName;
+    }
+
+    private static string GetServerPath(IReadOnlyDictionary<string, string> options)
+    {
+        var path = Optional(options, "server") ?? Environment.GetEnvironmentVariable("HATAORI_SERVER_PATH");
+        return string.IsNullOrWhiteSpace(path) ? throw new ArgumentException("Specify --server or HATAORI_SERVER_PATH.") : path;
+    }
+
+    private static TimeSpan GetControlTimeout(IReadOnlyDictionary<string, string> options)
+    {
+        var value = Optional(options, "timeout-seconds") ?? Environment.GetEnvironmentVariable("HATAORI_CONTROL_TIMEOUT_SECONDS");
+        if (!int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var seconds) || seconds is < 1 or > 300)
+        {
+            throw new ArgumentException("Specify --timeout-seconds between 1 and 300 or HATAORI_CONTROL_TIMEOUT_SECONDS.");
+        }
+
+        return TimeSpan.FromSeconds(seconds);
     }
 
     private static string Required(IReadOnlyDictionary<string, string> options, string name)

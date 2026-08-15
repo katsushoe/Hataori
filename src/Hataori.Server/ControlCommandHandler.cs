@@ -1,3 +1,4 @@
+using Hataori.Application.Control;
 using Microsoft.Extensions.Hosting;
 
 namespace Hataori.Server;
@@ -35,13 +36,3 @@ public sealed class ControlCommandHandler
         return new ControlResponse(false, "unknown_command", _timeProvider.GetUtcNow());
     }
 }
-
-/// <summary>
-/// Control Pipeの入力です。
-/// </summary>
-public sealed record ControlRequest(string Command);
-
-/// <summary>
-/// Control Pipeの応答です。
-/// </summary>
-public sealed record ControlResponse(bool Success, string Status, DateTimeOffset TimestampUtc);

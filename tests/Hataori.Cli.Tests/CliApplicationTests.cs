@@ -1,4 +1,6 @@
-﻿using System.Text.Json;
+using System.IO.Pipes;
+using System.Text;
+using System.Text.Json;
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
 
@@ -32,6 +34,21 @@ public sealed class CliApplicationTests : IDisposable
         response.Error.Should().Contain("not found");
     }
 
+    [Fact]
+    public async Task RunAsync_ServerStatus_UsesNamedPipeAndReturnsJson()
+    {
+        var pipeName = $"hataori-cli-test-{Guid.NewGuid():N}";
+        await using var server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+        var serverTask = RespondToStatusAsync(server);
+
+        var response = await RunAsync("status", "--pipe", pipeName, "--timeout-seconds", "5");
+        await serverTask;
+
+        response.ExitCode.Should().Be(0);
+        using var document = JsonDocument.Parse(response.Output);
+        document.RootElement.GetProperty("status").GetString().Should().Be("running");
+    }
+
     public void Dispose()
     {
         SqliteConnection.ClearAllPools();
@@ -47,6 +64,16 @@ public sealed class CliApplicationTests : IDisposable
         using var error = new StringWriter();
         var exitCode = await CliApplication.RunAsync(args, output, error, CancellationToken.None);
         return new CliResponse(exitCode, output.ToString(), error.ToString());
+    }
+
+    private static async Task RespondToStatusAsync(NamedPipeServerStream server)
+    {
+        await server.WaitForConnectionAsync(CancellationToken.None);
+        using var reader = new StreamReader(server, Encoding.UTF8, false, leaveOpen: true);
+        await using var writer = new StreamWriter(server, new UTF8Encoding(false), leaveOpen: true) { AutoFlush = true };
+        var request = await reader.ReadLineAsync(CancellationToken.None);
+        request.Should().Contain("status");
+        await writer.WriteLineAsync("{\"success\":true,\"status\":\"running\",\"timestamp_utc\":\"2026-08-15T00:00:00+00:00\"}");
     }
 
     private sealed record CliResponse(int ExitCode, string Output, string Error);
