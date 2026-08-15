@@ -17,7 +17,8 @@ public sealed record AgentProcessStartRequest(
     IReadOnlyList<string> Arguments,
     string WorkingDirectory,
     IReadOnlyDictionary<string, string?> Environment,
-    int MaxCapturedCharacters = 4 * 1024 * 1024);
+    int MaxCapturedCharacters = 4 * 1024 * 1024,
+    string? StandardInput = null);
 
 public sealed record AgentProcessResult(
     int ProcessId,

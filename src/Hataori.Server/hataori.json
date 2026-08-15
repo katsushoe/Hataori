@@ -16,5 +16,13 @@
     "receiveBatchSize": 50,
     "leaseSeconds": 300
   },
+  "agents": {
+    "codex": {
+      "executablePath": "codex",
+      "sandboxMode": "workspace-write",
+      "approveForMe": true,
+      "maxCapturedCharacters": 4194304
+    }
+  },
   "allowedHosts": "127.0.0.1;localhost"
 }
