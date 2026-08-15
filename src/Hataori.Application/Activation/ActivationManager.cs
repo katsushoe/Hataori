@@ -2,13 +2,14 @@ using Hataori.Application.Agents;
 using Hataori.Application.Messages;
 using Hataori.Application.Runs;
 using Hataori.Application.Sessions;
+using Hataori.Application.Itoguruma;
 using Hataori.Core.Runs;
 using Hataori.Core.Sessions;
 
 namespace Hataori.Application.Activation;
 
 public sealed record ActivationRequest(string WorkingDirectory, string HataoriRoot, string McpUrl);
-public sealed record ActivationResult(string MessageId, string? RunId, bool Succeeded, string? Error);
+public sealed record ActivationResult(string MessageId, string? RunId, string? ReplyMessageId, bool Succeeded, string? Error);
 
 /// <summary>
 /// Queue、Session、Run、Agent Driverを1回のActivationとして調停します。
@@ -21,6 +22,7 @@ public sealed class ActivationManager
     private readonly AgentRunService _runs;
     private readonly IReadOnlyDictionary<string, IAgentDriver> _drivers;
     private readonly TimeProvider _timeProvider;
+    private readonly IItogurumaClient _itoguruma;
 
     public ActivationManager(
         IMessageQueueRepository messageQueue,
@@ -28,7 +30,8 @@ public sealed class ActivationManager
         ConversationSessionService sessions,
         AgentRunService runs,
         IEnumerable<IAgentDriver> drivers,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        IItogurumaClient itoguruma)
     {
         _messageQueue = messageQueue;
         _conversationMutex = conversationMutex;
@@ -36,6 +39,7 @@ public sealed class ActivationManager
         _runs = runs;
         _drivers = drivers.ToDictionary(driver => driver.AgentType, StringComparer.OrdinalIgnoreCase);
         _timeProvider = timeProvider;
+        _itoguruma = itoguruma;
     }
 
     public async Task<ActivationResult?> ProcessNextAsync(ActivationRequest request, CancellationToken cancellationToken)
@@ -55,7 +59,7 @@ public sealed class ActivationManager
         {
             var error = $"Agent driver '{message.AgentId}' is not registered.";
             await _messageQueue.MarkFailedAsync(message.MessageId, error, _timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
-            return new ActivationResult(message.MessageId, null, false, error);
+            return new ActivationResult(message.MessageId, null, null, false, error);
         }
 
         await using var mutex = await _conversationMutex.AcquireAsync(message.ConversationId, message.AgentId, cancellationToken).ConfigureAwait(false);
@@ -82,6 +86,11 @@ public sealed class ActivationManager
             var result = canResume
                 ? await driver.ResumeAsync(session!.NativeSessionId, driverRequest, cancellationToken).ConfigureAwait(false)
                 : await driver.StartAsync(driverRequest, cancellationToken).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(result.FinalMessage))
+            {
+                throw new InvalidOperationException("Agent completed without a final message.");
+            }
+
             var run = await _runs.GetAsync(runId, cancellationToken).ConfigureAwait(false);
             if (run?.Status == AgentRunStatus.Starting)
             {
@@ -98,7 +107,15 @@ public sealed class ActivationManager
                 await _sessions.RegisterAsync(message.ConversationId, message.AgentId, result.NativeSessionId, cancellationToken).ConfigureAwait(false);
             }
 
-            return new ActivationResult(message.MessageId, runId, true, null);
+            var replyMessageId = await _itoguruma.ReplyAsync(
+                message.SenderAgentId,
+                result.FinalMessage,
+                message.ConversationId,
+                message.MessageId,
+                ReplyIdempotencyKey.Create(message.MessageId),
+                cancellationToken).ConfigureAwait(false);
+            await _messageQueue.MarkRespondedAsync(message.MessageId, _timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+            return new ActivationResult(message.MessageId, runId, replyMessageId, true, null);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -108,7 +125,7 @@ public sealed class ActivationManager
         catch (Exception exception)
         {
             await FailRunAsync(runId, session, message.MessageId, exception).ConfigureAwait(false);
-            return new ActivationResult(message.MessageId, runId, false, exception.Message);
+            return new ActivationResult(message.MessageId, runId, null, false, exception.Message);
         }
     }
 

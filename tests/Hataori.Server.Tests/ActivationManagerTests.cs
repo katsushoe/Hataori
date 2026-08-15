@@ -2,6 +2,7 @@ using FluentAssertions;
 using Hataori.Application.Activation;
 using Hataori.Application.Agents;
 using Hataori.Application.Runs;
+using Hataori.Application.Itoguruma;
 using Hataori.Application.Sessions;
 using Hataori.Core.Messages;
 using Hataori.Core.Runs;
@@ -31,6 +32,9 @@ public sealed class ActivationManagerTests : IDisposable
         (await fixture.Sessions.GetAsync("conversation-1", "codex", CancellationToken.None))!.NativeSessionId.Should().Be("native-1");
         (await fixture.Runs.ListAsync(AgentRunStatus.Completed, "codex", CancellationToken.None)).Should().ContainSingle()
             .Which.FinalMessage.Should().Be("done");
+        (await fixture.Queue.GetProcessingStatusAsync("message-1", CancellationToken.None)).Should().Be(MessageProcessingStatus.Responded);
+        await fixture.Itoguruma.Received(1).ReplyAsync(
+            "sender", "done", "conversation-1", "message-1", "hataori-reply:message-1", Arg.Any<CancellationToken>());
         await fixture.Driver.Received(1).StartAsync(
             Arg.Is<AgentDriverRequest>(request =>
                 request.Environment["HATAORI_MESSAGE_ID"] == "message-1" &&
@@ -85,6 +89,23 @@ public sealed class ActivationManagerTests : IDisposable
             .Which.Message.MessageId.Should().Be("claude-message");
     }
 
+    [Fact]
+    public async Task ProcessNextAsync_ReplyFailure_KeepsCompletedRunAndMarksMessageFailed()
+    {
+        var fixture = await CreateFixtureAsync();
+        await fixture.Queue.EnqueueAsync(CreateMessage("message-4"), 0, CancellationToken.None);
+        ConfigureSuccessfulStart(fixture.Driver, "native-1", "done");
+        fixture.Itoguruma.ReplyAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns<Task<string>>(_ => throw new InvalidOperationException("reply failed"));
+
+        var result = await fixture.Manager.ProcessNextAsync(CreateRequest(), CancellationToken.None);
+
+        result!.Succeeded.Should().BeFalse();
+        (await fixture.Runs.ListAsync(AgentRunStatus.Completed, "codex", CancellationToken.None)).Should().ContainSingle();
+        (await fixture.Queue.GetProcessingStatusAsync("message-4", CancellationToken.None)).Should().Be(MessageProcessingStatus.Failed);
+        (await fixture.Sessions.GetAsync("conversation-1", "codex", CancellationToken.None))!.Status.Should().Be(ConversationSessionStatus.Idle);
+    }
+
     public void Dispose()
     {
         SqliteConnection.ClearAllPools();
@@ -107,8 +128,11 @@ public sealed class ActivationManagerTests : IDisposable
         var runs = new AgentRunService(runRepository, TimeProvider.System);
         var driver = Substitute.For<IAgentDriver>();
         driver.AgentType.Returns("codex");
-        var manager = new ActivationManager(queue, new ConversationMutex(), sessions, runs, [driver], TimeProvider.System);
-        return new Fixture(manager, queue, sessions, runs, driver);
+        var itoguruma = Substitute.For<IItogurumaClient>();
+        itoguruma.ReplyAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns("reply-1");
+        var manager = new ActivationManager(queue, new ConversationMutex(), sessions, runs, [driver], TimeProvider.System, itoguruma);
+        return new Fixture(manager, queue, sessions, runs, driver, itoguruma);
     }
 
     private static void ConfigureSuccessfulStart(IAgentDriver driver, string sessionId, string finalMessage)
@@ -138,5 +162,6 @@ public sealed class ActivationManagerTests : IDisposable
         SqliteMessageQueueRepository Queue,
         ConversationSessionService Sessions,
         AgentRunService Runs,
-        IAgentDriver Driver);
+        IAgentDriver Driver,
+        IItogurumaClient Itoguruma);
 }
