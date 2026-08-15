@@ -25,14 +25,18 @@ public sealed class ItogurumaConnectionWorker(
             {
                 await client.ConnectAsync(stoppingToken).ConfigureAwait(false);
                 var status = await client.GetStatusAsync(stoppingToken).ConfigureAwait(false);
-                var messages = await client.GetMessagesAsync(
-                    options.Value.ReceiveBatchSize,
-                    options.Value.LeaseSeconds,
-                    null,
-                    stoppingToken).ConfigureAwait(false);
-                foreach (var message in messages)
+                foreach (var agentId in options.Value.MonitoredAgentIds)
                 {
-                    await PersistAndAcknowledgeAsync(message, stoppingToken).ConfigureAwait(false);
+                    var messages = await client.GetMessagesAsync(
+                        agentId,
+                        options.Value.ReceiveBatchSize,
+                        options.Value.LeaseSeconds,
+                        null,
+                        stoppingToken).ConfigureAwait(false);
+                    foreach (var message in messages)
+                    {
+                        await PersistAndAcknowledgeAsync(agentId, message, stoppingToken).ConfigureAwait(false);
+                    }
                 }
                 if (failures > 0)
                 {
@@ -62,12 +66,12 @@ public sealed class ItogurumaConnectionWorker(
         }
     }
 
-    private async Task PersistAndAcknowledgeAsync(ItogurumaMessage message, CancellationToken cancellationToken)
+    private async Task PersistAndAcknowledgeAsync(string agentId, ItogurumaMessage message, CancellationToken cancellationToken)
     {
         var incoming = new IncomingMessage(
             message.MessageId,
             message.ThreadId,
-            options.Value.AgentId,
+            agentId,
             message.SenderAgentId,
             message.ReplyToMessageId,
             message.MessageType,
@@ -75,7 +79,7 @@ public sealed class ItogurumaConnectionWorker(
             message.PayloadJson,
             message.CreatedAt);
         var inserted = await messageQueue.EnqueueAsync(incoming, 0, cancellationToken).ConfigureAwait(false);
-        var acknowledged = await client.AcknowledgeAsync(message.MessageId, cancellationToken).ConfigureAwait(false);
+        var acknowledged = await client.AcknowledgeAsync(agentId, message.MessageId, cancellationToken).ConfigureAwait(false);
         if (!acknowledged)
         {
             throw new InvalidOperationException($"Itoguruma message '{message.MessageId}' could not be acknowledged.");

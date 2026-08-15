@@ -12,7 +12,8 @@ public interface IAgentDriver
 public sealed record AgentDriverRequest(
     string Message,
     string WorkingDirectory,
-    IReadOnlyDictionary<string, string?> Environment);
+    IReadOnlyDictionary<string, string?> Environment,
+    Func<int, CancellationToken, Task>? ProcessStarted = null);
 
 public sealed record AgentDriverResult(
     string NativeSessionId,

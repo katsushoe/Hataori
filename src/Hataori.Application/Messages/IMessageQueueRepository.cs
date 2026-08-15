@@ -8,4 +8,6 @@ public interface IMessageQueueRepository
     Task<bool> EnqueueAsync(IncomingMessage message, int priority, CancellationToken cancellationToken);
     Task<IReadOnlyList<QueuedMessage>> ListAsync(string? agentId, CancellationToken cancellationToken);
     Task<QueuedMessage?> TryClaimNextAsync(string? agentId, CancellationToken cancellationToken);
+    Task MarkRunningAsync(string messageId, CancellationToken cancellationToken);
+    Task MarkFailedAsync(string messageId, string error, DateTimeOffset failedAtUtc, CancellationToken cancellationToken);
 }

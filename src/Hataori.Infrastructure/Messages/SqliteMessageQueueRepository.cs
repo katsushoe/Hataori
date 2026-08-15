@@ -158,6 +158,36 @@ public sealed class SqliteMessageQueueRepository(string connectionString) : IMes
         return message;
     }
 
+    public Task MarkRunningAsync(string messageId, CancellationToken cancellationToken) =>
+        UpdateStatusAsync(messageId, "running", null, null, cancellationToken);
+
+    public Task MarkFailedAsync(string messageId, string error, DateTimeOffset failedAtUtc, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(error);
+        return UpdateStatusAsync(messageId, "failed", error, failedAtUtc, cancellationToken);
+    }
+
+    private async Task UpdateStatusAsync(string messageId, string status, string? error, DateTimeOffset? completedAtUtc, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(messageId);
+        await using var connection = new SqliteConnection(connectionString);
+        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            UPDATE message_processing
+            SET status = $status, error = $error, completed_at_utc = $completed_at_utc
+            WHERE message_id = $message_id;
+            """;
+        command.Parameters.AddWithValue("$message_id", messageId);
+        command.Parameters.AddWithValue("$status", status);
+        command.Parameters.AddWithValue("$error", (object?)error ?? DBNull.Value);
+        command.Parameters.AddWithValue("$completed_at_utc", completedAtUtc is null ? DBNull.Value : FormatDate(completedAtUtc.Value));
+        if (await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false) != 1)
+        {
+            throw new KeyNotFoundException($"Message processing '{messageId}' was not found.");
+        }
+    }
+
     private static void AddMessageParameters(SqliteCommand command, IncomingMessage message)
     {
         command.Parameters.AddWithValue("$message_id", message.MessageId);

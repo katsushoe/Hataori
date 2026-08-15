@@ -27,6 +27,16 @@ public sealed class ItogurumaClientOptionsValidator : IValidateOptions<Itoguruma
             errors.Add("Itoguruma agentId and agentType are required.");
         }
 
+        if (options.MonitoredAgentIds.Count == 0 || options.MonitoredAgentIds.Any(string.IsNullOrWhiteSpace))
+        {
+            errors.Add("Itoguruma monitoredAgentIds must contain at least one non-empty agent ID.");
+        }
+
+        if (options.MonitoredAgentIds.Distinct(StringComparer.OrdinalIgnoreCase).Count() != options.MonitoredAgentIds.Count)
+        {
+            errors.Add("Itoguruma monitoredAgentIds must not contain duplicates.");
+        }
+
         if (options.ConnectionTimeoutSeconds is < 1 or > 120)
         {
             errors.Add("Itoguruma connectionTimeoutSeconds must be between 1 and 120.");

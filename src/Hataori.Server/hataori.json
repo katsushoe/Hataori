@@ -10,6 +10,7 @@
     "endpoint": "http://127.0.0.1:47631/mcp",
     "agentId": "hataori",
     "agentType": "hataori",
+    "monitoredAgentIds": [ "codex", "claude-code" ],
     "connectionTimeoutSeconds": 10,
     "pollIntervalSeconds": 5,
     "maxReconnectAttempts": 5,
@@ -28,6 +29,11 @@
       "permissionMode": "acceptEdits",
       "maxCapturedCharacters": 4194304
     }
+  },
+  "activation": {
+    "enabled": false,
+    "workingDirectory": "",
+    "pollIntervalMilliseconds": 1000
   },
   "allowedHosts": "127.0.0.1;localhost"
 }
