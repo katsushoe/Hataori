@@ -3,6 +3,11 @@
   <ItemGroup>
     <ProjectReference Include="..\Hataori.Application\Hataori.Application.csproj" />
     <ProjectReference Include="..\Hataori.Infrastructure\Hataori.Infrastructure.csproj" />
+    <ProjectReference Include="..\Hataori.Server\Hataori.Server.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
   <PropertyGroup>

@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using Hataori.Application.Control;
 using Microsoft.Extensions.Hosting;
 
@@ -52,6 +52,19 @@ public sealed class ServerFoundationTests
         response.Success.Should().BeTrue();
         response.Status.Should().Be("stopping");
         lifetime.StopRequested.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Handle_Reload_ReportsAutomaticReload()
+    {
+        var lifetime = new TestLifetime();
+        var handler = new ControlCommandHandler(lifetime, TimeProvider.System);
+
+        var response = handler.Handle(new ControlRequest("reload"));
+
+        response.Success.Should().BeTrue();
+        response.Status.Should().Be("reload_on_change_enabled");
+        lifetime.StopRequested.Should().BeFalse();
     }
 
     private sealed class TestLifetime : IHostApplicationLifetime

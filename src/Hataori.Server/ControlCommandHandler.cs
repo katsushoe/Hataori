@@ -1,4 +1,4 @@
-using Hataori.Application.Control;
+﻿using Hataori.Application.Control;
 using Microsoft.Extensions.Hosting;
 
 namespace Hataori.Server;
@@ -31,6 +31,11 @@ public sealed class ControlCommandHandler
         {
             _lifetime.StopApplication();
             return new ControlResponse(true, "stopping", _timeProvider.GetUtcNow());
+        }
+
+        if (string.Equals(request.Command, "reload", StringComparison.OrdinalIgnoreCase))
+        {
+            return new ControlResponse(true, "reload_on_change_enabled", _timeProvider.GetUtcNow());
         }
 
         return new ControlResponse(false, "unknown_command", _timeProvider.GetUtcNow());

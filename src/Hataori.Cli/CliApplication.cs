@@ -71,6 +71,10 @@ public static class CliApplication
             {
                 result = await ExecuteServiceAsync(args, cancellationToken).ConfigureAwait(false);
             }
+            else if (string.Equals(args[0], "config", StringComparison.OrdinalIgnoreCase))
+            {
+                result = await ExecuteConfigAsync(args, cancellationToken).ConfigureAwait(false);
+            }
             else
             {
                 result = await ExecuteServerAsync(args[0], ParseOptions(args.Skip(1)), cancellationToken).ConfigureAwait(false);
@@ -123,6 +127,23 @@ public static class CliApplication
             await error.WriteLineAsync(exception.Message).ConfigureAwait(false);
             return 1;
         }
+    }
+
+    private static async Task<object> ExecuteConfigAsync(string[] args, CancellationToken cancellationToken)
+    {
+        if (args.Length < 2)
+        {
+            throw new ArgumentException("Usage: hataori config <show|path|check|reload> [options]");
+        }
+
+        var options = ParseOptions(args.Skip(2));
+        if (args[1].Equals("reload", StringComparison.OrdinalIgnoreCase))
+        {
+            return await new ControlPipeClient().SendAsync(GetPipeName(options), "reload", GetControlTimeout(options), cancellationToken).ConfigureAwait(false);
+        }
+
+        var path = Optional(options, "config") ?? Environment.GetEnvironmentVariable("HATAORI_CONFIG_PATH") ?? Path.Combine(AppContext.BaseDirectory, "hataori.json");
+        return await new CliConfigurationManager().ExecuteAsync(args[1], path, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<object> ExecuteServiceAsync(string[] args, CancellationToken cancellationToken)
@@ -330,5 +351,5 @@ public static class CliApplication
     private static bool IsHelpCommand(IReadOnlyList<string> args) => args[0].Equals("help", StringComparison.OrdinalIgnoreCase) || args[0].Equals("--help", StringComparison.OrdinalIgnoreCase);
     private static bool IsVersionCommand(IReadOnlyList<string> args) => args[0].Equals("version", StringComparison.OrdinalIgnoreCase) || args[0].Equals("--version", StringComparison.OrdinalIgnoreCase);
     private static string GetVersion() => typeof(CliApplication).Assembly.GetName().Version?.ToString() ?? "unknown";
-    private static string GetHelpText() => "Usage: hataori <start|stop|restart|status|service|task|agent|conversation|queue|db|version|help> [command] [options]";
+    private static string GetHelpText() => "Usage: hataori <start|stop|restart|status|service|task|agent|conversation|queue|db|config|version|help> [command] [options]";
 }
