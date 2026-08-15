@@ -104,6 +104,10 @@ public static class CliApplication
             {
                 result = await ExecuteLogsAsync(args, output, cancellationToken).ConfigureAwait(false);
             }
+            else if (string.Equals(args[0], "monitor", StringComparison.OrdinalIgnoreCase))
+            {
+                result = ExecuteMonitor(args);
+            }
             else
             {
                 result = await ExecuteServerAsync(args[0], ParseOptions(args.Skip(1)), cancellationToken).ConfigureAwait(false);
@@ -160,6 +164,28 @@ public static class CliApplication
             await error.WriteLineAsync(exception.Message).ConfigureAwait(false);
             return 1;
         }
+    }
+
+    private static object ExecuteMonitor(string[] args)
+    {
+        var options = ParseOptions(args.Skip(1));
+        var configuredPath = Optional(options, "monitor") ?? Environment.GetEnvironmentVariable("HATAORI_MONITOR_PATH");
+        var path = string.IsNullOrWhiteSpace(configuredPath) ? Path.Combine(AppContext.BaseDirectory, "Hataori.Monitor.exe") : Path.GetFullPath(configuredPath);
+        if (!File.Exists(path))
+        {
+            throw new FileNotFoundException($"Hataori Monitor was not found at '{path}'.", path);
+        }
+
+        var startInfo = new System.Diagnostics.ProcessStartInfo(path) { UseShellExecute = true };
+        var pipe = Optional(options, "pipe");
+        if (!string.IsNullOrWhiteSpace(pipe))
+        {
+            startInfo.ArgumentList.Add("--pipe");
+            startInfo.ArgumentList.Add(pipe);
+        }
+
+        System.Diagnostics.Process.Start(startInfo)?.Dispose();
+        return new { status = "started", path };
     }
 
     private static async Task<object?> ExecuteLogsAsync(string[] args, TextWriter output, CancellationToken cancellationToken)
@@ -600,7 +626,7 @@ public static class CliApplication
     private static bool IsVersionCommand(IReadOnlyList<string> args) => args[0].Equals("version", StringComparison.OrdinalIgnoreCase) || args[0].Equals("--version", StringComparison.OrdinalIgnoreCase);
     private static bool IsSubcommandHelp(IReadOnlyList<string> args) => args.Count > 1 && (args[1].Equals("help", StringComparison.OrdinalIgnoreCase) || args[1].Equals("--help", StringComparison.OrdinalIgnoreCase));
     private static string GetVersion() => typeof(CliApplication).Assembly.GetName().Version?.ToString() ?? "unknown";
-    private static string GetHelpText() => "Usage: hataori <start|stop|restart|status|service|task|agent|conversation|queue|db|config|itoguruma|mcp|doctor|logs|version|help> [command] [options]";
+    private static string GetHelpText() => "Usage: hataori <start|stop|restart|status|service|task|agent|conversation|queue|db|config|itoguruma|mcp|doctor|logs|monitor|version|help> [command] [options]";
     private static string GetSubcommandHelp(string command) => $"Usage: hataori {command} <command> [arguments] [options]";
 
     private sealed record DoctorCheck(string Name, bool Ok, string? Error, bool Skipped = false);
