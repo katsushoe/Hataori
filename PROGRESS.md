@@ -26,9 +26,9 @@
 
 | 機能 | 2026.08.16 |
 | :--- | ---: |
-| **グループ全体** | **82%** |
+| **グループ全体** | **83%** |
 | Server / Core / SQLite | 88% |
-| Itoguruma連携 | 92% |
+| Itoguruma連携 | 98% |
 | Session / Activation | 90% |
 | Task管理 | 95% |
 | CLI | 95% |
@@ -36,17 +36,17 @@
 | Monitor | 80% |
 | 運用・復旧 | 97% |
 | 文書・配布 | 22% |
-| テスト | 90% |
+| テスト | 92% |
 
 ## 現在フェーズ
 
-Phase 1（基盤・必須運用機能）: **89%**
+Phase 1（基盤・必須運用機能）: **90%**
 
-算定: Core 88%、Itoguruma 92%、Session / Activation 90%、Task 95%、Monitor 80%の単純平均（89.0%）です。
+算定: Core 88%、Itoguruma 98%、Session / Activation 90%、Task 95%、Monitor 80%の単純平均（90.2%）です。
 
 ## 進捗予測メモ
 
-Monitor実機表示、Itoguruma実認証、Agent start / resume、Windows Serviceの実環境統合試験が主要な残量です。Hataori認証セットアップCLIとItogurumaの認証status／rotateが完成し、自動テスト105件、Server、MCP、Hook、Graceful Shutdown、起動異常時の安全停止は確認済みです。
+Monitor実機表示、Agent start / resume、Windows Serviceの実環境統合試験が主要な残量です。Itoguruma実認証で受信・永続化・ACK・Reply・冪等再送を確認し、自動テスト109件、Server、MCP、Hook、Graceful Shutdown、起動異常時の安全停止は確認済みです。
 
 # 実装機能一覧（チェックリスト）
 
@@ -65,7 +65,7 @@ Monitor実機表示、Itoguruma実認証、Agent start / resume、Windows Servic
 - [x] Codex／Claude Code Lifecycle Hookランナーとdoctor診断
 - [x] 異常終了時のRun・Session・Message起動復旧
 - [x] Itoguruma認証トークンの非表示セットアップCLI
-- [x] 自動テスト105件
+- [x] 自動テスト109件
 
 ## 部分実装
 
@@ -75,5 +75,5 @@ Monitor実機表示、Itoguruma実認証、Agent start / resume、Windows Servic
 
 ## 未実装
 
-- [ ] 実環境統合・受入試験
+- [ ] Agent・Monitor・Windows Serviceの実環境統合・受入試験
 - [ ] Release配布手順とインストーラ
