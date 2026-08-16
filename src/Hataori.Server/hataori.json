@@ -53,5 +53,14 @@
     "minimumLevel": "Information",
     "retentionDays": 30
   },
+  "databaseMaintenance": {
+    "enabled": true,
+    "intervalHours": 24,
+    "staleTaskHours": 24,
+    "taskRetentionDays": 90,
+    "agentRunRetentionDays": 30,
+    "messageRetentionDays": 30,
+    "vacuum": true
+  },
   "allowedHosts": "127.0.0.1;localhost"
 }

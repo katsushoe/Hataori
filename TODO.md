@@ -14,7 +14,7 @@
 ## すぐやる
 
 - [X] Monitorアプリ本体と`monitor` CLIを実装する。
-- [-] DB MaintenanceとRetention設定を実装する。
+- [X] DB MaintenanceとRetention設定を実装する。
 
 ## 次にやる
 
@@ -31,7 +31,7 @@
 ## P0
 
 - [X] Monitor参照機能を実装する。
-- [-] DB Maintenanceを完成させる。
+- [X] DB Maintenanceを完成させる。
 
 ## P1
 
