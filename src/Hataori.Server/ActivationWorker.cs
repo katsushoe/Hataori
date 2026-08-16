@@ -9,10 +9,12 @@ public sealed class ActivationWorker(
     IMessageQueueRepository messageQueue,
     IOptions<ActivationOptions> activationOptions,
     IOptions<ServerOptions> serverOptions,
+    StartupRecoveryGate recoveryGate,
     ILogger<ActivationWorker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        await recoveryGate.Ready.WaitAsync(stoppingToken).ConfigureAwait(false);
         if (!activationOptions.Value.Enabled)
         {
             logger.LogInformation("Activation Manager is disabled");

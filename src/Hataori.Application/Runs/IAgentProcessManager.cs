@@ -5,6 +5,12 @@ public interface IAgentProcessManager
     Task<IAgentProcess> StartAsync(AgentProcessStartRequest request, CancellationToken cancellationToken);
 }
 
+/// <summary>永続化されたPIDが同じAgent Processとして生存しているか確認します。</summary>
+public interface IAgentProcessProbe
+{
+    bool IsRunning(int processId, DateTimeOffset? expectedStartedAtUtc);
+}
+
 public interface IAgentProcess : IAsyncDisposable
 {
     int ProcessId { get; }

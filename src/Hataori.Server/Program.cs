@@ -110,6 +110,7 @@ builder.Services.AddSingleton<IAgentRunRepository>(services =>
 });
 builder.Services.AddSingleton<IConversationMutex, ConversationMutex>();
 builder.Services.AddSingleton<IAgentProcessManager, SystemAgentProcessManager>();
+builder.Services.AddSingleton<IAgentProcessProbe, SystemAgentProcessProbe>();
 builder.Services.AddSingleton<IAgentDriver>(services => new CodexDriver(
     services.GetRequiredService<IAgentProcessManager>(),
     services.GetRequiredService<IOptions<CodexDriverOptions>>().Value));
@@ -131,6 +132,8 @@ builder.Services.AddSingleton(services =>
         options.BatchSize);
 });
 builder.Services.AddSingleton<ReplyRetryManager>();
+builder.Services.AddSingleton<StartupRecoveryService>();
+builder.Services.AddSingleton<StartupRecoveryGate>();
 builder.Services.AddSingleton(services =>
 {
     var options = services.GetRequiredService<IOptions<ServerOptions>>().Value;
@@ -141,6 +144,7 @@ builder.Services.AddSingleton(services =>
 builder.Services.AddSingleton<ControlCommandHandler>();
 builder.Services.AddHostedService<HataoriServerWorker>();
 builder.Services.AddHostedService<ItogurumaConnectionWorker>();
+builder.Services.AddHostedService<StartupRecoveryWorker>();
 builder.Services.AddHostedService<ActivationWorker>();
 builder.Services.AddHostedService<ReplyRetryWorker>();
 builder.Services.AddHostedService<DatabaseMaintenanceWorker>();
