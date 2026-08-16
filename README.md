@@ -36,7 +36,7 @@ Start-Service Hataori
 hataori service status
 ```
 
-詳しいInstall／Upgrade／Uninstall手順は[インストールガイド](docs/installation.md)、認証連携は[Itoguruma認証セットアップ](docs/setup-itoguruma.md)を参照してください。
+詳しいInstall／Upgrade／Uninstall手順は[インストールガイド](docs/installation.md)、MCPクライアント登録は[MCPセットアップ](MCP_SETUP.ja.md)、認証連携は[Itoguruma認証セットアップ](docs/setup-itoguruma.md)を参照してください。
 
 ## 標準ディレクトリ構成
 
