@@ -1,40 +1,50 @@
-# Hataori MCPセットアップ
+# MCPセットアップ
 
 [English](MCP_SETUP.md) | [日本語](MCP_SETUP.ja.md)
 
-このガイドでは、ローカルで稼働するHataori Windows ServiceをStreamable HTTPでCodexまたはClaude Codeへ接続します。
+このGuideでは、ローカルで稼働するHataori Windows ServiceをStreamable HTTPでCodexまたはClaude Codeへ接続します。
 
-## 前提条件
+## Values and Placeholders
 
-- MCPクライアントと同じWindowsマシンへHataoriをインストールします。
-- [README.md](README.md)の初期設定を完了します。
-- `Hataori` Windows ServiceがRunningであることを確認します。
+| 値 | 取得方法 | 既定値/例 | 変更条件 |
+| :--- | :--- | :--- | :--- |
+| `$HataoriRoot` | MSIで選択したdirectory | `F:\Hataori` | 別の場所へInstallした場合。 |
+| MCP Server名 | Clientに表示する論理名 | `hataori` | 意図的に別表示名を使う場合。 |
+| MCP URL | `hataori.json`の`server.mcpHost`、`mcpPort`、`mcpPath` | `http://127.0.0.1:45440/mcp` | いずれかのServer設定を変更した場合。 |
 
-既定のMCP設定は次のとおりです。
+`<install-root>`などの山括弧表記は説明用です。山括弧をterminalや設定fileへそのまま入力しないでください。
 
-| 設定 | 値 |
-| --- | --- |
-| Server名 | `hataori` |
-| Transport | Streamable HTTP（`http`） |
-| URL | `http://127.0.0.1:45440/mcp` |
-| MCP認証 | なし |
+## Prerequisites
 
-Hataoriは既定でloopbackだけを待ち受けます。Itoguruma認証トークンは別用途であり、MCPクライアント設定へ追加しないでください。
+- MCP Clientと同じWindows machineへHataoriをInstallします。
+- [README](README.ja.md)に従い`hataori config init`と`hataori service setup`を実行します。
+- CodexまたはClaude CodeをInstallし、MSIによる`PATH`変更後は新しいterminalを開きます。
+- `Hataori` Windows Serviceが登録済みであることを確認します。
 
-## Server確認
+## Authentication and Environment
 
-PowerShellで次を実行します。
+Hataori MCPはClient credential、Authorization Header、環境変数を要求しません。loopbackへbindし、設定済みlocal host名だけを受け付けます。Itoguruma tokenをMCP Client設定へ追加しないでください。このtokenはHataoriからItogurumaへの別のoutbound接続用です。
+
+Client scopeは登録を見られる範囲だけを制御します。Hataori Task権限、Agent sandbox、Server bind addressは変更しません。
+
+## Start the Server
+
+管理者PowerShellで、Install先が異なる場合だけpathを変更します。
 
 ```powershell
-hataori service status
-hataori mcp status
+$HataoriRoot = 'F:\Hataori'
+& "$HataoriRoot\bin\cli\Hataori.Cli.exe" service start
+& "$HataoriRoot\bin\cli\Hataori.Cli.exe" service status
+& "$HataoriRoot\bin\cli\Hataori.Cli.exe" mcp status
 ```
 
-ServiceがRunningであることを確認します。`mcp status`は`connected: true`、設定済みendpoint、1以上のtool countを返す必要があります。
+ServiceがRunningで、MCP JSONに`connected: true`、期待URL、3.0.2.0では`tool_count: 11`があれば合格です。
 
-## Codex
+## Register Clients
 
-`%USERPROFILE%\.codex\config.toml`へ次のtableを追加します。他の設定は保持し、`mcp_servers.hataori`が既にある場合はそのtableだけを置き換えます。
+### Codex — 推奨する手動User設定
+
+`%USERPROFILE%\.codex\config.toml`へ次の完全なtableを追加します。他の内容は保持し、既存`[mcp_servers.hataori]`だけを置換します。
 
 ```toml
 [mcp_servers.hataori]
@@ -44,46 +54,70 @@ required = true
 default_tools_approval_mode = "writes"
 ```
 
-保存後にChatGPTデスクトップアプリ、Codex CLI、またはIDE拡張を再起動します。`/mcp`を開き、`hataori`が有効かつ接続済みであることを確認します。
+- `hataori`はClient表示用Server名です。
+- `url`はHataori Server設定と一致させます。HTTPはStreamable HTTPを選び、local start commandは不要です。
+- `enabled`は登録をloadし、`required`はEndpoint失敗をClient起動問題として扱い、`default_tools_approval_mode`はWrite判断をCodex policyへ委ねます。
+- Hataori MCPにClient認証がないため認証fieldは省略します。
 
-## Claude Code
+保存後にChatGPT Desktop、Codex CLI、またはIDE拡張を再起動し、`/mcp`で`hataori`の接続を確認します。
 
-Hataoriをユーザースコープへ登録します。
+### Claude Code — 推奨する自動User登録
+
+既定URLでは次を実行します。
 
 ```powershell
 claude mcp add --transport http --scope user hataori http://127.0.0.1:45440/mcp
 ```
 
-Claude Codeを再起動またはreloadし、登録を確認します。
+Claude Codeは他設定を保持しながら`~/.claude.json`のUser設定を更新します。生成される論理entryは次のとおりです。
 
-```powershell
-claude mcp get hataori
-claude mcp list
+```json
+{
+  "mcpServers": {
+    "hataori": {
+      "type": "http",
+      "url": "http://127.0.0.1:45440/mcp"
+    }
+  }
+}
 ```
 
-1プロジェクトだけで使う場合は`--scope user`を`--scope project`へ変更します。意図的でない限り両スコープへ重複登録しないでください。
+Command実行後にこのJSONを貼り付けないでください。これは生成結果の説明です。Server名は`hataori`、`type`はHTTP、URLはHataori設定と一致させ、認証不要のため認証fieldはありません。Claude Codeを再起動またはreloadし、`claude mcp get hataori`と`claude mcp list`を実行します。
 
-## 公開ツール
+### Alternative project-scoped registration
 
-Hataoriは次のTaskツールを公開します。
+1 ProjectだけでHataoriを表示する場合に限り使用します。
 
-- 読み取り専用: `task_get`、`task_list`、`task_history`、`task_relations`
-- 状態更新: `task_start`、`task_heartbeat`、`task_complete`、`task_relation_add`
-- 破壊的状態変更: `task_cancel`、`task_fail`、`task_expire`
+- Codex: 同じTOML tableを`<project-root>\.codex\config.toml`へ置きます。
+- Claude Code: `claude mcp add --transport http --scope project hataori http://127.0.0.1:45440/mcp`を実行し、他entryを保持してProject scopeを更新します。
 
-接続確認では、Task状態を変更しない`task_list`を最初に呼び出します。`task_heartbeat`では必ず`progressPercent`を指定してください。
+Project scopeではWorkspace trustとMCP承認が必要な場合があります。重複表示が意図でない限りUser scopeと併用しません。
 
-## Endpointを変更した場合
+## Multiple Workspaces
 
-`%INSTALL_ROOT%\config\hataori.json`の`server.mcpHost`、`server.mcpPort`、`server.mcpPath`を変更した場合、クライアント側も同じURLへ変更します。Server設定変更後はHataori Serviceを再起動してください。
+1つのHataori Serviceは、`activation.workingDirectory`で設定した1 Workspace上のAgentを調整できます。3.0.2.0にはClient別MCP Workspace allowlistがありません。自動Agent Workspaceを変更する場合は絶対`activation.workingDirectory`を更新し、`hataori config check`後にServiceを再起動します。
 
-リモート公開を別途設計・保護していない限り、Serverはloopbackへ限定してください。現在のMCP endpointはbearer tokenを要求しません。
+ClientのUser/Project scopeは登録表示範囲だけを変えます。Agent working directoryを選択せず、Agent sandboxやWorkspace trustを回避しません。
 
-## トラブルシューティング
+## Verify the Connection
 
-- 接続拒否: `hataori service status`を確認し、Serviceを起動してから`hataori mcp status`を再実行します。
-- HTTP 404: クライアントURLを`server.mcpPath`へ合わせます。既定値は`/mcp`です。
-- クライアントに`hataori`がない: ユーザーまたはプロジェクト設定を確認し、クライアントを再起動します。
-- Claude Codeが承認待ち: プロジェクトをtrustし、プロジェクトスコープのMCP登録を承認します。
-- 接続後にToolが失敗: `%INSTALL_ROOT%\logs`を確認し、`hataori doctor`を実行します。
-- Itogurumaエラー: `hataori itoguruma test`を実行します。Itoguruma tokenをMCP設定へ追加しないでください。
+最初に失敗した段階で停止します。
+
+1. **Server Endpoint:** `hataori mcp status`を実行します。合格: `connected: true`と期待Endpoint。
+2. **Tool検出:** `tool_count`を確認します。3.0.2.0の合格値は`11`で、`task_start`、`task_get`、`task_list`、`task_heartbeat`、`task_complete`、`task_cancel`、`task_fail`、`task_expire`、`task_history`、`task_relations`、`task_relation_add`です。
+3. **Client登録:** Codex `/mcp`または`claude mcp get hataori`がconnectedを示します。
+4. **Read-only Tool call:** Status/Agent filterなしで`task_list`を呼びます。合格: 該当なしの空arrayを含む構造化Task array。
+5. **全体診断:** `hataori doctor`を実行します。合格: `healthy: true`で、skip以外の全checkが`ok: true`。
+
+状態変更と破壊的Tool annotationは[コマンド](COMMANDS.ja.md)を参照してください。`task_heartbeat`では必ず`progressPercent`を指定します。
+
+## Troubleshooting
+
+- 接続拒否: `hataori service status`を確認し、Serviceを起動してEndpoint確認を再実行します。
+- HTTP 404: Client URLを`server.mcpPath`へ合わせます。既定値は`/mcp`です。
+- Host/bind error: `server.mcpHost`をloopbackに保ち、`allowedHosts`をlocal URLへ合わせます。
+- Codexに`hataori`がない: 選択した`config.toml` scopeを確認しCodexを再起動します。
+- Claude Codeにentryがない: `claude mcp add`を再実行し、`claude mcp get hataori`で確認します。
+- Claude Codeが承認待ち: ProjectをtrustしProject scope MCP entryを承認します。
+- 接続後にToolが失敗: `hataori doctor`を実行し、共有時にsanitizeしたうえで`%INSTALL_ROOT%\logs`を確認します。
+- Itoguruma error: `hataori itoguruma test`を実行し、Itoguruma tokenをMCP設定へ追加しません。
