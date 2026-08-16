@@ -182,6 +182,38 @@ public sealed class CliApplicationTests : IDisposable
     }
 
     [Fact]
+    public async Task RunAsync_Help_IncludesSetupCommand()
+    {
+        var response = await RunAsync("--help");
+
+        response.ExitCode.Should().Be(0);
+        response.Output.Should().Contain("setup");
+    }
+
+    [Fact]
+    public void ItogurumaSetup_ExistingUserToken_LinksWithoutReturningSecret()
+    {
+        var environment = new TestEnvironmentVariableStore();
+        environment.Set(ItogurumaSetupService.SourceVariable, "secret-token", EnvironmentVariableTarget.User);
+
+        var result = new ItogurumaSetupService(environment).Configure();
+
+        result.Configured.Should().BeTrue();
+        result.ToString().Should().NotContain("secret-token");
+        environment.Get(ItogurumaSetupService.TargetVariable, EnvironmentVariableTarget.User).Should().Be("secret-token");
+        environment.Get(ItogurumaSetupService.TargetVariable, EnvironmentVariableTarget.Process).Should().Be("secret-token");
+    }
+
+    [Fact]
+    public void ItogurumaSetup_MissingUserToken_ExplainsAutomaticIssuance()
+    {
+        var action = () => new ItogurumaSetupService(new TestEnvironmentVariableStore()).Configure();
+
+        action.Should().Throw<InvalidOperationException>()
+            .WithMessage("*Install or repair Itoguruma*");
+    }
+
+    [Fact]
     public async Task RunAsync_MonitorMissingExecutable_ReturnsDependencyError()
     {
         var missingPath = Path.Combine(Path.GetTempPath(), $"hataori-monitor-{Guid.NewGuid():N}.exe");
@@ -222,4 +254,15 @@ public sealed class CliApplicationTests : IDisposable
     }
 
     private sealed record CliResponse(int ExitCode, string Output, string Error);
+
+    private sealed class TestEnvironmentVariableStore : IEnvironmentVariableStore
+    {
+        private readonly Dictionary<(string Name, EnvironmentVariableTarget Target), string> _values = [];
+
+        public string? Get(string name, EnvironmentVariableTarget target) =>
+            _values.TryGetValue((name, target), out var value) ? value : null;
+
+        public void Set(string name, string value, EnvironmentVariableTarget target) =>
+            _values[(name, target)] = value;
+    }
 }

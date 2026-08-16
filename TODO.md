@@ -18,6 +18,7 @@
 
 ## 次にやる
 
+- [X] Itoguruma認証トークンの非表示セットアップコマンドを実装する。
 - [X] Agent Hook連携とdoctor診断を実装する。
 - [X] 異常終了時のRun・Session・Message起動復旧を実装する。
 - [X] Graceful Shutdownを実環境で統合検証する。
