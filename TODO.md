@@ -18,6 +18,7 @@
 
 ## 次にやる
 
+- [X] Itoguruma側の認証トークンstatus／rotateコマンドを連携する。
 - [X] Itoguruma認証トークンの非表示セットアップコマンドを実装する。
 - [X] Agent Hook連携とdoctor診断を実装する。
 - [X] 異常終了時のRun・Session・Message起動復旧を実装する。
