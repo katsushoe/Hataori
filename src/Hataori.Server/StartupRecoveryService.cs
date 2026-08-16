@@ -1,6 +1,7 @@
 using Hataori.Application.Messages;
 using Hataori.Application.Runs;
 using Hataori.Application.Sessions;
+using Hataori.Application.Tasks;
 using Hataori.Core.Messages;
 using Hataori.Core.Runs;
 using Hataori.Core.Sessions;
@@ -9,8 +10,11 @@ namespace Hataori.Server;
 
 /// <summary>Server異常終了後にRun、Session、Messageの状態を整合させます。</summary>
 public sealed class StartupRecoveryService(
+    ITaskRepository taskRepository,
     AgentRunService runs,
+    IAgentRunRepository runRepository,
     ConversationSessionService sessions,
+    IConversationSessionRepository sessionRepository,
     IMessageQueueRepository messages,
     IAgentProcessProbe processProbe,
     TimeProvider timeProvider)
@@ -19,6 +23,10 @@ public sealed class StartupRecoveryService(
 
     public async Task<StartupRecoveryResult> RecoverAsync(CancellationToken cancellationToken)
     {
+        await taskRepository.InitializeAsync(cancellationToken).ConfigureAwait(false);
+        await runRepository.InitializeAsync(cancellationToken).ConfigureAwait(false);
+        await sessionRepository.InitializeAsync(cancellationToken).ConfigureAwait(false);
+        await messages.InitializeAsync(cancellationToken).ConfigureAwait(false);
         var activeRuns = (await runs.ListAsync(null, null, cancellationToken).ConfigureAwait(false))
             .Where(run => run.Status is AgentRunStatus.Starting or AgentRunStatus.Running)
             .ToArray();

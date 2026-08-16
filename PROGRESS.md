@@ -26,7 +26,7 @@
 
 | 機能 | 2026.08.16 |
 | :--- | ---: |
-| **グループ全体** | **80%** |
+| **グループ全体** | **81%** |
 | Server / Core / SQLite | 85% |
 | Itoguruma連携 | 90% |
 | Session / Activation | 90% |
@@ -34,9 +34,9 @@
 | CLI | 93% |
 | Windows Service | 70% |
 | Monitor | 80% |
-| 運用・復旧 | 90% |
+| 運用・復旧 | 95% |
 | 文書・配布 | 20% |
-| テスト | 82% |
+| テスト | 85% |
 
 ## 現在フェーズ
 
@@ -46,7 +46,7 @@ Phase 1（基盤・必須運用機能）: **88%**
 
 ## 進捗予測メモ
 
-Monitor実機表示と実環境統合試験が主要な残量です。自動テストは100件合格していますが、Hook、Itoguruma、MCP、Agent resume、Windows Service、Monitorの実機確認は未実施です。
+Monitor実機表示、Itoguruma認証、Agent start / resume、Windows Serviceの実環境統合試験が主要な残量です。自動テスト100件、Server、MCP、Hook、Graceful Shutdownは実機確認済みです。
 
 # 実装機能一覧（チェックリスト）
 

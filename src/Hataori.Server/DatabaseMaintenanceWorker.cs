@@ -1,14 +1,19 @@
-using Hataori.Infrastructure.Maintenance;
+﻿using Hataori.Infrastructure.Maintenance;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Options;
 
 namespace Hataori.Server;
 
 /// <summary>設定周期でSQLite Maintenanceを実行します。</summary>
-public sealed class DatabaseMaintenanceWorker(SqliteDatabaseMaintenance maintenance, IOptions<DatabaseMaintenanceOptions> options, ILogger<DatabaseMaintenanceWorker> logger) : BackgroundService
+public sealed class DatabaseMaintenanceWorker(SqliteDatabaseMaintenance maintenance, StartupRecoveryGate recoveryGate, IOptions<DatabaseMaintenanceOptions> options, ILogger<DatabaseMaintenanceWorker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        if (!await recoveryGate.Ready.WaitAsync(stoppingToken).ConfigureAwait(false))
+        {
+            logger.LogWarning("[Recovery] Database maintenance was not started because startup recovery failed");
+            return;
+        }
         if (!options.Value.Enabled)
         {
             return;

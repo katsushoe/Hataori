@@ -1,7 +1,11 @@
-namespace Hataori.Server;
+﻿namespace Hataori.Server;
 
 /// <summary>Server起動時に永続状態の復旧を1回実行します。</summary>
-public sealed class StartupRecoveryWorker(StartupRecoveryService recovery, StartupRecoveryGate gate, ILogger<StartupRecoveryWorker> logger) : BackgroundService
+public sealed class StartupRecoveryWorker(
+    StartupRecoveryService recovery,
+    StartupRecoveryGate gate,
+    IHostApplicationLifetime applicationLifetime,
+    ILogger<StartupRecoveryWorker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -13,9 +17,11 @@ public sealed class StartupRecoveryWorker(StartupRecoveryService recovery, Start
         }
         catch (Exception exception)
         {
-            gate.Fail(exception);
-            logger.LogCritical(exception, "[Recovery] Startup recovery failed");
-            throw;
+            gate.Fail();
+            logger.LogCritical(
+                exception,
+                "[Recovery] Startup recovery failed. Check database access, available disk space, and the configured database path. Hataori will stop safely");
+            applicationLifetime.StopApplication();
         }
     }
 }
