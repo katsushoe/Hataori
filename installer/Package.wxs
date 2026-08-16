@@ -1,0 +1,90 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="Hataori"
+           Manufacturer="sazysoft"
+           Version="$(var.ProductVersion)"
+           UpgradeCode="1EC49A4B-879B-4F59-8B54-53A4761068C7"
+           Scope="perMachine"
+           Language="1041"
+           InstallerVersion="500">
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Hataori is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <StandardDirectory Id="ProgramFiles6432Folder">
+      <Directory Id="INSTALL_ROOT" Name="Hataori">
+        <Directory Id="BINDIR" Name="bin">
+          <Directory Id="SERVERDIR" Name="server">
+            <Component Id="ServerExecutable" Guid="41E617B4-D0EC-4876-B16F-E1C126A0BB98" Bitness="always64">
+              <File Id="ServerExe" Source="$(var.PublishRoot)\server\Hataori.Server.exe" KeyPath="yes" />
+              <ServiceInstall Id="HataoriServiceInstall"
+                              Name="Hataori"
+                              DisplayName="Hataori Server"
+                              Description="Hataori task coordination server"
+                              Type="ownProcess"
+                              Start="auto"
+                              ErrorControl="normal"
+                              Account="LocalSystem"
+                              Vital="yes" />
+              <ServiceControl Id="HataoriServiceControl"
+                              Name="Hataori"
+                              Stop="both"
+                              Remove="uninstall"
+                              Wait="yes" />
+            </Component>
+          </Directory>
+          <Directory Id="CLIDIR" Name="cli">
+            <Component Id="CliExecutable" Guid="E4DA66D4-3D8D-4F2B-935E-71161DF976FC" Bitness="always64">
+              <File Id="CliExe" Source="$(var.PublishRoot)\cli\Hataori.Cli.exe" KeyPath="yes" />
+              <Environment Id="HataoriPath" Name="PATH" Value="[CLIDIR]" Action="set" Part="last" System="yes" />
+            </Component>
+            <Directory Id="HOOKSDIR" Name="hooks">
+              <Component Id="HookTemplates" Guid="92B22522-1670-4B9A-8F80-9F440457D48E" Bitness="always64">
+                <File Id="CodexHooks" Source="$(var.PublishRoot)\cli\hooks\codex-hooks.json" KeyPath="yes" />
+                <File Id="ClaudeHooks" Source="$(var.PublishRoot)\cli\hooks\claude-settings.json" />
+              </Component>
+            </Directory>
+          </Directory>
+          <Directory Id="MONITORDIR" Name="monitor">
+            <Component Id="MonitorExecutable" Guid="2111F2D1-EAF9-4FE0-AE6E-C5496CA32C04" Bitness="always64">
+              <File Id="MonitorExe" Source="$(var.PublishRoot)\monitor\Hataori.Monitor.exe" KeyPath="yes">
+                <Shortcut Id="MonitorShortcut"
+                          Directory="ProgramMenuFolder"
+                          Name="Hataori Monitor"
+                          Description="Open Hataori Monitor"
+                          Advertise="yes"
+                          WorkingDirectory="INSTALL_ROOT" />
+              </File>
+            </Component>
+          </Directory>
+        </Directory>
+        <Directory Id="CONFIGDIR" Name="config">
+          <Component Id="PreservedConfigDirectory" Guid="E3C91B93-6C26-4A31-BE73-D2869C34AA58" Permanent="yes" NeverOverwrite="yes" Bitness="always64">
+            <CreateFolder />
+            <RegistryValue Root="HKLM" Key="Software\sazysoft\Hataori\Paths" Name="Config" Value="[CONFIGDIR]" Type="string" KeyPath="yes" />
+          </Component>
+        </Directory>
+        <Directory Id="LOGSDIR" Name="logs">
+          <Component Id="PreservedLogsDirectory" Guid="1796DFA5-C234-4550-8B2B-2FAED73A1501" Permanent="yes" NeverOverwrite="yes" Bitness="always64">
+            <CreateFolder />
+            <RegistryValue Root="HKLM" Key="Software\sazysoft\Hataori\Paths" Name="Logs" Value="[LOGSDIR]" Type="string" KeyPath="yes" />
+          </Component>
+        </Directory>
+        <Directory Id="DATADIR" Name="data">
+          <Component Id="PreservedDataDirectory" Guid="72F71F2B-339D-4C3F-9E79-E7B456279B5B" Permanent="yes" NeverOverwrite="yes" Bitness="always64">
+            <CreateFolder />
+            <RegistryValue Root="HKLM" Key="Software\sazysoft\Hataori\Paths" Name="Data" Value="[DATADIR]" Type="string" KeyPath="yes" />
+          </Component>
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+
+    <Feature Id="Complete" Title="Hataori" Level="1">
+      <ComponentRef Id="ServerExecutable" />
+      <ComponentRef Id="CliExecutable" />
+      <ComponentRef Id="HookTemplates" />
+      <ComponentRef Id="MonitorExecutable" />
+      <ComponentRef Id="PreservedConfigDirectory" />
+      <ComponentRef Id="PreservedLogsDirectory" />
+      <ComponentRef Id="PreservedDataDirectory" />
+    </Feature>
+  </Package>
+</Wix>

@@ -64,8 +64,8 @@
   },
   "hooks": {
     "enabled": true,
-    "codexConfigPath": "hooks/codex-hooks.json",
-    "claudeConfigPath": "hooks/claude-settings.json"
+    "codexConfigPath": "bin/cli/hooks/codex-hooks.json",
+    "claudeConfigPath": "bin/cli/hooks/claude-settings.json"
   },
   "allowedHosts": "127.0.0.1;localhost"
 }

@@ -224,6 +224,28 @@ public sealed class CliApplicationTests : IDisposable
         response.Error.Should().Contain("was not found");
     }
 
+    [Fact]
+    public async Task RunAsync_ConfigInit_CreatesDefaultConfiguration()
+    {
+        var directoryPath = Path.Combine(Path.GetTempPath(), $"hataori-config-init-{Guid.NewGuid():N}");
+        var configurationPath = Path.Combine(directoryPath, "hataori.json");
+        try
+        {
+            var response = await RunAsync("config", "init", "--config", configurationPath);
+
+            response.ExitCode.Should().Be(0);
+            File.Exists(configurationPath).Should().BeTrue();
+            response.Output.Should().Contain("\"created\": true");
+        }
+        finally
+        {
+            if (Directory.Exists(directoryPath))
+            {
+                Directory.Delete(directoryPath, recursive: true);
+            }
+        }
+    }
+
     public void Dispose()
     {
         SqliteConnection.ClearAllPools();

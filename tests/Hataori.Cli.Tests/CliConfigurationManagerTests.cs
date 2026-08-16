@@ -28,8 +28,8 @@ public sealed class CliConfigurationManagerTests : IDisposable
 
         using var document = JsonDocument.Parse(JsonSerializer.Serialize(result));
         var values = document.RootElement.GetProperty("values");
-        values.GetProperty("itoguruma:authenticationToken").GetString().Should().Be("(redacted)");
-        values.GetProperty("server:mcpPort").GetString().Should().Be("45440");
+        GetPropertyIgnoreCase(values, "itoguruma:authenticationToken").GetString().Should().Be("(redacted)");
+        GetPropertyIgnoreCase(values, "server:mcpPort").GetString().Should().Be("45440");
     }
 
     [Fact]
@@ -49,6 +49,11 @@ public sealed class CliConfigurationManagerTests : IDisposable
             File.Delete(_configPath);
         }
     }
+
+    private static JsonElement GetPropertyIgnoreCase(JsonElement element, string name) =>
+        element.EnumerateObject()
+            .Single(property => property.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+            .Value;
 
     private const string ValidConfiguration = """
         {

@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Hataori.Application;
 using Hataori.Application.Control;
 using Hataori.Application.Sessions;
 using Hataori.Application.Tasks;
@@ -208,7 +209,14 @@ public static class CliApplication
     {
         var options = ParseOptions(args.Skip(1));
         var configuredPath = Optional(options, "monitor") ?? Environment.GetEnvironmentVariable("HATAORI_MONITOR_PATH");
-        var path = string.IsNullOrWhiteSpace(configuredPath) ? Path.Combine(AppContext.BaseDirectory, "Hataori.Monitor.exe") : Path.GetFullPath(configuredPath);
+        var layout = InstallationLayout.Resolve(AppContext.BaseDirectory);
+        var path = string.IsNullOrWhiteSpace(configuredPath)
+            ? Path.Combine(layout.BinPath, "monitor", "Hataori.Monitor.exe")
+            : Path.GetFullPath(configuredPath);
+        if (!File.Exists(path) && string.IsNullOrWhiteSpace(configuredPath))
+        {
+            path = Path.Combine(AppContext.BaseDirectory, "Hataori.Monitor.exe");
+        }
         if (!File.Exists(path))
         {
             throw new FileNotFoundException($"Hataori Monitor was not found at '{path}'.", path);
@@ -234,7 +242,7 @@ public static class CliApplication
             ?? throw new InvalidOperationException("File logging configuration is missing.");
         var directoryPath = Optional(options, "log-directory") ?? (Path.IsPathFullyQualified(fileLogging.DirectoryPath)
             ? Path.GetFullPath(fileLogging.DirectoryPath)
-            : Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, fileLogging.DirectoryPath)));
+            : Path.GetFullPath(Path.Combine(InstallationLayout.Resolve(AppContext.BaseDirectory).RootPath, fileLogging.DirectoryPath)));
         var lineCount = ParseLineCount(Optional(options, "lines"));
         var reader = new CliLogReader();
         if (options.ContainsKey("follow"))
@@ -350,7 +358,7 @@ public static class CliApplication
         }).ConfigureAwait(false);
         await AddDoctorCheckAsync(checks, "sqlite", async () =>
         {
-            var databasePath = ServerPaths.ResolveDatabasePath(serverOptions.DatabasePath, Path.GetDirectoryName(GetConfigurationPath(options)) ?? AppContext.BaseDirectory);
+            var databasePath = ServerPaths.ResolveDatabasePath(serverOptions.DatabasePath, InstallationLayout.Resolve(AppContext.BaseDirectory).RootPath);
             await CliDatabaseDiagnostics.ExecuteAsync("integrity", databasePath, cancellationToken).ConfigureAwait(false);
         }).ConfigureAwait(false);
         await AddDoctorCheckAsync(checks, "codex_cli", async () =>
@@ -378,7 +386,7 @@ public static class CliApplication
                 throw new InvalidOperationException("Hooks are disabled.");
             }
 
-            var baseDirectory = Path.GetDirectoryName(GetConfigurationPath(options)) ?? AppContext.BaseDirectory;
+            var baseDirectory = InstallationLayout.Resolve(AppContext.BaseDirectory).RootPath;
             await HookDiagnostics.CheckAsync([hookOptions.CodexConfigPath, hookOptions.ClaudeConfigPath], baseDirectory, cancellationToken).ConfigureAwait(false);
         }).ConfigureAwait(false);
         return new { healthy = checks.All(check => check.Ok || check.Skipped), checks };
@@ -410,16 +418,25 @@ public static class CliApplication
         CliConfigurationManager.LoadConfiguration(GetConfigurationPath(options));
 
     private static string GetConfigurationPath(IReadOnlyDictionary<string, string> options) =>
-        Path.GetFullPath(Optional(options, "config") ?? Environment.GetEnvironmentVariable("HATAORI_CONFIG_PATH") ?? Path.Combine(AppContext.BaseDirectory, "hataori.json"));
+        Path.GetFullPath(Optional(options, "config") ?? Environment.GetEnvironmentVariable("HATAORI_CONFIG_PATH") ?? InstallationLayout.Resolve(AppContext.BaseDirectory).ConfigurationPath);
 
     private static async Task<object> ExecuteConfigAsync(string[] args, CancellationToken cancellationToken)
     {
         if (args.Length < 2)
         {
-            throw new ArgumentException("Usage: hataori config <show|path|check|reload> [options]");
+            throw new ArgumentException("Usage: hataori config <init|show|path|check|reload> [options]");
         }
 
         var options = ParseOptions(args.Skip(2));
+        if (args[1].Equals("init", StringComparison.OrdinalIgnoreCase))
+        {
+            var layout = InstallationLayout.Resolve(AppContext.BaseDirectory);
+            layout.EnsureDirectories();
+            var configurationPath = GetConfigurationPath(options);
+            var created = await DefaultConfigurationWriter.EnsureAsync(configurationPath, cancellationToken).ConfigureAwait(false);
+            return new { path = configurationPath, created };
+        }
+
         if (args[1].Equals("reload", StringComparison.OrdinalIgnoreCase))
         {
             return await new ControlPipeClient().SendAsync(GetPipeName(options), "reload", GetControlTimeout(options), cancellationToken).ConfigureAwait(false);

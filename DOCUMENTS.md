@@ -14,6 +14,8 @@
 | `.` | Yes | Solution、入口文書、進捗・計画の正本。 |
 | `src/` | Yes | Core、Application、Infrastructure、Server、CLI、Monitorの実装。 |
 | `tests/` | Yes | 自動テスト。 |
+| `installer/` | Yes | WiX x64 MSI定義。 |
+| `scripts/` | Yes | publish・MSI生成スクリプト。 |
 | `docs/adr/` | Yes | アーキテクチャ判断の正本。 |
 | `docs/validation/` | Yes | 実環境検証結果。 |
 | `progress/` | Yes | 進捗グラフ。 |
@@ -30,6 +32,7 @@
 | ADR | `docs/adr/*.md` | Yes | 設計判断。 |
 | 実機検証結果 | `docs/validation/*.md` | Yes | 実機での合否、修正、未完了事項。 |
 | Itoguruma認証セットアップ | `docs/setup-itoguruma.md` | Yes | 認証トークンの非表示連携と接続試験手順。 |
+| インストール | `docs/installation.md` | Yes | MSIのInstall、Upgrade、Uninstallと標準配置。 |
 
 ## Git管理外情報
 

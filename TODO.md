@@ -27,7 +27,7 @@
 ## 後でやる
 
 - [-] 利用者向け文書とRelease配布手順を整備する。
-- [-] Itoguruma、MCP、Agent resume、Windows Serviceを実環境で受入試験する。
+- [X] Itoguruma、MCP、Agent resume、Windows Serviceを実環境で受入試験する。
 
 # 優先タスク
 
@@ -38,7 +38,7 @@
 
 ## P1
 
-- [-] Hook、復旧、実環境統合試験を完成させる。
+- [X] Hook、復旧、実環境統合試験を完成させる。
 
 ## P2
 
@@ -53,7 +53,7 @@
 - [X] Session、Activation、Agent Driver
 - [X] Monitor実装
 - [X] Monitor実機表示検証
-- [-] 運用・復旧・実環境受入
+- [X] 運用・復旧・実環境受入
 
 ## Phase 2: 運用強化
 
