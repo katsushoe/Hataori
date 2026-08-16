@@ -30,7 +30,13 @@ public sealed class SystemAgentProcessManager(TimeProvider timeProvider) : IAgen
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             RedirectStandardInput = request.StandardInput is not null,
+            StandardOutputEncoding = Encoding.UTF8,
+            StandardErrorEncoding = Encoding.UTF8,
         };
+        if (request.StandardInput is not null)
+        {
+            startInfo.StandardInputEncoding = Encoding.UTF8;
+        }
         foreach (var argument in request.Arguments)
         {
             startInfo.ArgumentList.Add(argument);
