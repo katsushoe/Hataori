@@ -28,7 +28,7 @@
 | :--- | ---: |
 | **グループ全体** | **82%** |
 | Server / Core / SQLite | 88% |
-| Itoguruma連携 | 91% |
+| Itoguruma連携 | 92% |
 | Session / Activation | 90% |
 | Task管理 | 95% |
 | CLI | 95% |
@@ -42,11 +42,11 @@
 
 Phase 1（基盤・必須運用機能）: **89%**
 
-算定: Core 88%、Itoguruma 91%、Session / Activation 90%、Task 95%、Monitor 80%の単純平均（88.8%を整数四捨五入）です。
+算定: Core 88%、Itoguruma 92%、Session / Activation 90%、Task 95%、Monitor 80%の単純平均（89.0%）です。
 
 ## 進捗予測メモ
 
-Monitor実機表示、Itoguruma実認証、Agent start / resume、Windows Serviceの実環境統合試験が主要な残量です。認証セットアップCLIを実装し、自動テスト105件、Server、MCP、Hook、Graceful Shutdown、起動異常時の安全停止は確認済みです。
+Monitor実機表示、Itoguruma実認証、Agent start / resume、Windows Serviceの実環境統合試験が主要な残量です。Hataori認証セットアップCLIとItogurumaの認証status／rotateが完成し、自動テスト105件、Server、MCP、Hook、Graceful Shutdown、起動異常時の安全停止は確認済みです。
 
 # 実装機能一覧（チェックリスト）
 
