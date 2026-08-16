@@ -52,7 +52,7 @@
 - [X] Itoguruma、Queue、Reply、Retry
 - [X] Session、Activation、Agent Driver
 - [X] Monitor実装
-- [-] Monitor実機表示検証
+- [X] Monitor実機表示検証
 - [-] 運用・復旧・実環境受入
 
 ## Phase 2: 運用強化

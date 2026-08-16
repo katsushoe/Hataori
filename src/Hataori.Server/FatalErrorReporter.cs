@@ -15,6 +15,7 @@ public static class FatalErrorReporter
             "Hataori",
             "logs");
         var logPath = Path.Combine(logDirectory, $"hataori-fatal-{DateTimeOffset.Now:yyyyMMdd}.log");
+        var saved = false;
         try
         {
             Directory.CreateDirectory(logDirectory);
@@ -22,13 +23,18 @@ public static class FatalErrorReporter
                 CultureInfo.InvariantCulture,
                 $"{DateTimeOffset.Now:yyyy-MM-ddTHH:mm:ss.fffzzz} [E] [Fatal] {exception}{Environment.NewLine}");
             await File.AppendAllTextAsync(logPath, entry, cancellationToken).ConfigureAwait(false);
+            saved = true;
         }
         catch (Exception loggingException) when (loggingException is IOException or UnauthorizedAccessException)
         {
             Console.Error.WriteLine($"致命的エラーのログ保存にも失敗しました: {loggingException.Message}");
         }
+        catch (Exception loggingException)
+        {
+            Console.Error.WriteLine($"致命的エラーのログ保存中に予期しないエラーが発生しました: {loggingException.Message}");
+        }
 
-        return new FatalErrorReport(CreateUserMessage(exception), logPath);
+        return new FatalErrorReport(CreateUserMessage(exception), saved ? logPath : null);
     }
 
     private static string CreateUserMessage(Exception exception)
@@ -53,4 +59,4 @@ public static class FatalErrorReporter
 }
 
 /// <summary>致命的例外の利用者向け報告です。</summary>
-public sealed record FatalErrorReport(string UserMessage, string LogPath);
+public sealed record FatalErrorReport(string UserMessage, string? LogPath);

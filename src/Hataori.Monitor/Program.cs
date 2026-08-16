@@ -6,7 +6,17 @@ internal static class Program
     private static void Main(string[] args)
     {
         ApplicationConfiguration.Initialize();
-        System.Windows.Forms.Application.Run(new MonitorForm(GetPipeName(args)));
+        var logger = new MonitorFileLogger();
+        var errors = new MonitorErrorHandler(logger);
+        System.Windows.Forms.Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+        System.Windows.Forms.Application.ThreadException += (_, eventArgs) => errors.Report(eventArgs.Exception, null, "予期しないエラーが発生しました。Monitorを再起動し、解消しない場合はログを管理者へ共有してください。", showDialog: true);
+        AppDomain.CurrentDomain.UnhandledException += (_, eventArgs) => errors.Report(eventArgs.ExceptionObject as Exception ?? new InvalidOperationException("An unknown fatal error occurred."), null, "Monitorを継続できないエラーが発生しました。ログを確認してMonitorを再起動してください。", showDialog: true);
+        TaskScheduler.UnobservedTaskException += (_, eventArgs) =>
+        {
+            errors.Report(eventArgs.Exception, null, "バックグラウンド処理でエラーが発生しました。ログを確認してください。", showDialog: true);
+            eventArgs.SetObserved();
+        };
+        System.Windows.Forms.Application.Run(new MonitorForm(GetPipeName(args), new MonitorControlClient(), errors));
     }
 
     private static string GetPipeName(IReadOnlyList<string> args)

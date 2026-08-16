@@ -12,62 +12,85 @@ namespace Hataori.Server;
 public sealed class ItogurumaConnectionWorker(
     IItogurumaClient client,
     IMessageQueueRepository messageQueue,
+    ItogurumaConnectionState connectionState,
     IOptions<ItogurumaClientOptions> options,
     ILogger<ItogurumaConnectionWorker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await messageQueue.InitializeAsync(stoppingToken).ConfigureAwait(false);
-        var failures = 0;
-        while (!stoppingToken.IsCancellationRequested)
+        connectionState.Set("connecting");
+        try
         {
-            try
+            await messageQueue.InitializeAsync(stoppingToken).ConfigureAwait(false);
+            var failures = 0;
+            while (!stoppingToken.IsCancellationRequested)
             {
-                await client.ConnectAsync(stoppingToken).ConfigureAwait(false);
-                var status = await client.GetStatusAsync(stoppingToken).ConfigureAwait(false);
-                foreach (var agentId in options.Value.MonitoredAgentIds)
+                try
                 {
-                    var messages = await client.GetMessagesAsync(
-                        agentId,
-                        options.Value.ReceiveBatchSize,
-                        options.Value.LeaseSeconds,
-                        null,
-                        stoppingToken).ConfigureAwait(false);
-                    foreach (var message in messages)
+                    await client.ConnectAsync(stoppingToken).ConfigureAwait(false);
+                    var status = await client.GetStatusAsync(stoppingToken).ConfigureAwait(false);
+                    connectionState.Set("connected");
+                    foreach (var agentId in options.Value.MonitoredAgentIds)
                     {
-                        await PersistAndAcknowledgeAsync(agentId, message, stoppingToken).ConfigureAwait(false);
+                        var messages = await client.GetMessagesAsync(
+                            agentId,
+                            options.Value.ReceiveBatchSize,
+                            options.Value.LeaseSeconds,
+                            null,
+                            stoppingToken).ConfigureAwait(false);
+                        foreach (var message in messages)
+                        {
+                            await PersistAndAcknowledgeAsync(agentId, message, stoppingToken).ConfigureAwait(false);
+                        }
                     }
-                }
-                if (failures > 0)
-                {
-                    logger.LogInformation("Itoguruma connection recovered: {Name} {Version}", status.Name, status.Version);
-                }
+                    if (failures > 0)
+                    {
+                        logger.LogInformation("Itoguruma connection recovered: {Name} {Version}", status.Name, status.Version);
+                    }
 
-                failures = 0;
-                await Task.Delay(TimeSpan.FromSeconds(options.Value.PollIntervalSeconds), stoppingToken).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
-            {
-                break;
-            }
-            catch (Exception exception)
-            {
-                failures++;
-                logger.LogWarning(exception, "Itoguruma connection failed ({Attempt}/{MaximumAttempts})", failures, options.Value.MaxReconnectAttempts);
-                await client.DisconnectAsync(CancellationToken.None).ConfigureAwait(false);
-                if (failures >= options.Value.MaxReconnectAttempts)
-                {
-                    logger.LogError(
-                        exception,
-                        "[Itoguruma] Reconnect limit reached. Hataori will continue in degraded mode and retry. Check the endpoint, network connection, and authentication token");
                     failures = 0;
                     await Task.Delay(TimeSpan.FromSeconds(options.Value.PollIntervalSeconds), stoppingToken).ConfigureAwait(false);
-                    continue;
                 }
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                {
+                    break;
+                }
+                catch (Exception exception)
+                {
+                    connectionState.Set("degraded");
+                    failures++;
+                    logger.LogWarning(exception, "Itoguruma connection failed ({Attempt}/{MaximumAttempts})", failures, options.Value.MaxReconnectAttempts);
+                    await SafeDisconnectAsync().ConfigureAwait(false);
+                    if (failures >= options.Value.MaxReconnectAttempts)
+                    {
+                        logger.LogError(
+                            exception,
+                            "[Itoguruma] Reconnect limit reached. Hataori will continue in degraded mode and retry. Check the endpoint, network connection, and authentication token");
+                        failures = 0;
+                        await Task.Delay(TimeSpan.FromSeconds(options.Value.PollIntervalSeconds), stoppingToken).ConfigureAwait(false);
+                        continue;
+                    }
 
-                var delaySeconds = Math.Min(options.Value.PollIntervalSeconds, 1 << Math.Min(failures - 1, 6));
-                await Task.Delay(TimeSpan.FromSeconds(delaySeconds), stoppingToken).ConfigureAwait(false);
+                    var delaySeconds = Math.Min(options.Value.PollIntervalSeconds, 1 << Math.Min(failures - 1, 6));
+                    await Task.Delay(TimeSpan.FromSeconds(delaySeconds), stoppingToken).ConfigureAwait(false);
+                }
             }
+        }
+        finally
+        {
+            connectionState.Set("stopped");
+        }
+    }
+
+    private async Task SafeDisconnectAsync()
+    {
+        try
+        {
+            await client.DisconnectAsync(CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Itoguruma disconnect failed while recovering from a connection error");
         }
     }
 

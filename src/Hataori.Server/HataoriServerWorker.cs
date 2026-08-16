@@ -27,30 +27,52 @@ public sealed class HataoriServerWorker : BackgroundService
     private readonly IConversationSessionRepository _sessionRepository;
     private readonly IAgentRunRepository _runRepository;
     private readonly ControlCommandHandler _handler;
+    private readonly DatabaseInitializationGate _initializationGate;
+    private readonly IHostApplicationLifetime _applicationLifetime;
     private readonly ServerOptions _options;
     private readonly ILogger<HataoriServerWorker> _logger;
 
-    public HataoriServerWorker(ITaskRepository repository, IConversationSessionRepository sessionRepository, IAgentRunRepository runRepository, ControlCommandHandler handler, IOptions<ServerOptions> options, ILogger<HataoriServerWorker> logger)
+    public HataoriServerWorker(ITaskRepository repository, IConversationSessionRepository sessionRepository, IAgentRunRepository runRepository, ControlCommandHandler handler, DatabaseInitializationGate initializationGate, IHostApplicationLifetime applicationLifetime, IOptions<ServerOptions> options, ILogger<HataoriServerWorker> logger)
     {
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(sessionRepository);
         ArgumentNullException.ThrowIfNull(runRepository);
         ArgumentNullException.ThrowIfNull(handler);
+        ArgumentNullException.ThrowIfNull(initializationGate);
+        ArgumentNullException.ThrowIfNull(applicationLifetime);
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(logger);
         _repository = repository;
         _sessionRepository = sessionRepository;
         _runRepository = runRepository;
         _handler = handler;
+        _initializationGate = initializationGate;
+        _applicationLifetime = applicationLifetime;
         _options = options.Value;
         _logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await _repository.InitializeAsync(stoppingToken).ConfigureAwait(false);
-        await _sessionRepository.InitializeAsync(stoppingToken).ConfigureAwait(false);
-        await _runRepository.InitializeAsync(stoppingToken).ConfigureAwait(false);
+        try
+        {
+            await _repository.InitializeAsync(stoppingToken).ConfigureAwait(false);
+            await _sessionRepository.InitializeAsync(stoppingToken).ConfigureAwait(false);
+            await _runRepository.InitializeAsync(stoppingToken).ConfigureAwait(false);
+            _initializationGate.Complete();
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            _initializationGate.Fail();
+            return;
+        }
+        catch (Exception exception)
+        {
+            _initializationGate.Fail();
+            _logger.LogCritical(exception, "[Startup][Database] Database initialization failed. Check database access, available disk space, and the configured database path. Hataori will stop safely");
+            _applicationLifetime.StopApplication();
+            return;
+        }
         _logger.LogInformation("[Startup][ControlPipe] Hataori Server started with pipe {PipeName}", _options.ControlPipeName);
 
         while (!stoppingToken.IsCancellationRequested)
@@ -70,6 +92,10 @@ public sealed class HataoriServerWorker : BackgroundService
             catch (JsonException exception)
             {
                 _logger.LogWarning(exception, "[ControlPipe] Invalid request received");
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError(exception, "[ControlPipe] Unexpected request processing failure");
             }
         }
 
