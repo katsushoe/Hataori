@@ -62,5 +62,10 @@
     "messageRetentionDays": 30,
     "vacuum": true
   },
+  "hooks": {
+    "enabled": true,
+    "codexConfigPath": "hooks/codex-hooks.json",
+    "claudeConfigPath": "hooks/claude-settings.json"
+  },
   "allowedHosts": "127.0.0.1;localhost"
 }

@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Hataori.Application.Control;
 using Hataori.Application.Sessions;
 using Hataori.Application.Tasks;
 using Hataori.Core.Runs;
@@ -37,7 +38,14 @@ public static class CliApplication
     /// </summary>
     public static async Task<int> RunAsync(string[] args, TextWriter output, TextWriter error, CancellationToken cancellationToken)
     {
+        return await RunAsync(args, TextReader.Null, output, error, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>標準入力を使用するHook対応CLIコマンドを実行します。</summary>
+    public static async Task<int> RunAsync(string[] args, TextReader input, TextWriter output, TextWriter error, CancellationToken cancellationToken)
+    {
         ArgumentNullException.ThrowIfNull(args);
+        ArgumentNullException.ThrowIfNull(input);
         ArgumentNullException.ThrowIfNull(output);
         ArgumentNullException.ThrowIfNull(error);
 
@@ -108,6 +116,10 @@ public static class CliApplication
             {
                 result = ExecuteMonitor(args);
             }
+            else if (string.Equals(args[0], "hook", StringComparison.OrdinalIgnoreCase))
+            {
+                result = await ExecuteHookAsync(args, input, cancellationToken).ConfigureAwait(false);
+            }
             else
             {
                 result = await ExecuteServerAsync(args[0], ParseOptions(args.Skip(1)), cancellationToken).ConfigureAwait(false);
@@ -164,6 +176,28 @@ public static class CliApplication
             await error.WriteLineAsync(exception.Message).ConfigureAwait(false);
             return 1;
         }
+    }
+
+    private static async Task<object> ExecuteHookAsync(string[] args, TextReader input, CancellationToken cancellationToken)
+    {
+        var options = ParseOptions(args.Skip(1));
+        var json = await input.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            throw new ArgumentException("Hook command requires JSON on standard input.");
+        }
+
+        using var document = JsonDocument.Parse(json);
+        var response = await new ControlPipeClient().SendAsync(GetPipeName(options), "monitor", GetControlTimeout(options), cancellationToken).ConfigureAwait(false);
+        var snapshot = response.Monitor;
+
+        return HookProcessor.Process(
+            document.RootElement,
+            snapshot,
+            Environment.GetEnvironmentVariable("HATAORI_CONVERSATION_ID"),
+            Environment.GetEnvironmentVariable("HATAORI_AGENT_ID"),
+            Environment.GetEnvironmentVariable("HATAORI_MESSAGE_ID"),
+            Environment.GetEnvironmentVariable("HATAORI_MCP_URL"));
     }
 
     private static object ExecuteMonitor(string[] args)
@@ -285,7 +319,18 @@ public static class CliApplication
         {
             await new WindowsServiceManager(new SystemProcessRunner()).ExecuteAsync("status", "Hataori", null, cancellationToken).ConfigureAwait(false);
         }).ConfigureAwait(false);
-        checks.Add(new DoctorCheck("hooks", false, "Hook diagnostics are not implemented.", true));
+        await AddDoctorCheckAsync(checks, "hooks", async () =>
+        {
+            var hookOptions = configuration.GetRequiredSection(HookOptions.SectionName).Get<HookOptions>()
+                ?? throw new InvalidOperationException("Hook configuration is missing.");
+            if (!hookOptions.Enabled)
+            {
+                throw new InvalidOperationException("Hooks are disabled.");
+            }
+
+            var baseDirectory = Path.GetDirectoryName(GetConfigurationPath(options)) ?? AppContext.BaseDirectory;
+            await HookDiagnostics.CheckAsync([hookOptions.CodexConfigPath, hookOptions.ClaudeConfigPath], baseDirectory, cancellationToken).ConfigureAwait(false);
+        }).ConfigureAwait(false);
         return new { healthy = checks.All(check => check.Ok || check.Skipped), checks };
     }
 
@@ -626,7 +671,7 @@ public static class CliApplication
     private static bool IsVersionCommand(IReadOnlyList<string> args) => args[0].Equals("version", StringComparison.OrdinalIgnoreCase) || args[0].Equals("--version", StringComparison.OrdinalIgnoreCase);
     private static bool IsSubcommandHelp(IReadOnlyList<string> args) => args.Count > 1 && (args[1].Equals("help", StringComparison.OrdinalIgnoreCase) || args[1].Equals("--help", StringComparison.OrdinalIgnoreCase));
     private static string GetVersion() => typeof(CliApplication).Assembly.GetName().Version?.ToString() ?? "unknown";
-    private static string GetHelpText() => "Usage: hataori <start|stop|restart|status|service|task|agent|conversation|queue|db|config|itoguruma|mcp|doctor|logs|monitor|version|help> [command] [options]";
+    private static string GetHelpText() => "Usage: hataori <start|stop|restart|status|service|task|agent|conversation|queue|db|config|itoguruma|mcp|doctor|logs|monitor|hook|version|help> [command] [options]";
     private static string GetSubcommandHelp(string command) => $"Usage: hataori {command} <command> [arguments] [options]";
 
     private sealed record DoctorCheck(string Name, bool Ok, string? Error, bool Skipped = false);

@@ -18,7 +18,7 @@
 
 ## 次にやる
 
-- [-] Agent Hook連携とdoctor診断を実装する。
+- [X] Agent Hook連携とdoctor診断を実装する。
 - [-] 異常終了復旧とGraceful Shutdownを統合検証する。
 
 ## 後でやる

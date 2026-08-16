@@ -78,6 +78,12 @@ public sealed class CliConfigurationManager
         Add(errors, new ActivationOptionsValidator().Validate(null, Bind<ActivationOptions>(configuration, ActivationOptions.SectionName)));
         Add(errors, new ReplyRetryOptionsValidator().Validate(null, Bind<ReplyRetryOptions>(configuration, ReplyRetryOptions.SectionName)));
         Add(errors, new FileLogOptionsValidator().Validate(null, Bind<FileLogOptions>(configuration, FileLogOptions.SectionName)));
+        var hookSection = configuration.GetSection(HookOptions.SectionName);
+        var hooks = hookSection.Exists() ? hookSection.Get<HookOptions>() : null;
+        if (hooks?.Enabled == true && (string.IsNullOrWhiteSpace(hooks.CodexConfigPath) || string.IsNullOrWhiteSpace(hooks.ClaudeConfigPath)))
+        {
+            errors.Add("Enabled hooks require codexConfigPath and claudeConfigPath.");
+        }
         return errors;
     }
 
