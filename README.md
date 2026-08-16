@@ -1,60 +1,86 @@
 # Hataori
 
-Hataoriは、Codex CLIとClaude Codeの実行を調整し、タスク、会話セッション、メッセージ、Agent RunをSQLiteへ永続化するWindows向けのローカル実行基盤です。ItogurumaとMCPで連携し、Windows Service、CLI、読み取り専用Monitorを提供します。
+[English](README.md) | [日本語](README.ja.md)
 
-## 主な機能
+Hataori is a local Windows orchestration service for Codex CLI and Claude Code. It persists tasks, conversation sessions, messages, and agent runs in SQLite, integrates with Itoguruma, and exposes a Streamable HTTP MCP server, a management CLI, and a read-only monitor.
 
-- Codex CLI／Claude Codeの開始・再開とLifecycle Hook
-- Task／Conversation Session／Message Queue／Agent Runの永続化
-- Itoguruma受信、Reply Retry、MCP Server／Client連携
-- Windows Serviceによる自動運転と異常終了後の状態復旧
-- CLIによる状態確認、診断、設定、ログ、DB、Service操作
-- 読み取り専用Monitorによる稼働状況表示
+## Getting Started
 
-## 動作環境
-
-- Windows x64
-- Hataori 3.0.2.0
-- インストールには管理者権限が必要です
-
-配布標準は、Server、CLI、Monitorを含む自己完結型x64 MSIです。
-
-## インストール
-
-管理者ターミナルでMSIを実行します。標準のインストール先は64bit Program Files配下です。任意の場所へ入れる場合は、次のように指定します。
-
-```powershell
-msiexec.exe /i Hataori-3.0.2.0-x64.msi INSTALL_ROOT="F:\Hataori"
-```
-
-インストール後、Itogurumaが発行した認証トークンを表示せずService用設定へ保存し、Serviceを起動します。
+Install the x64 MSI, open an elevated PowerShell terminal, and run:
 
 ```powershell
 hataori config init
 hataori service setup
 Start-Service Hataori
 hataori service status
+hataori mcp status
 ```
 
-詳しいInstall／Upgrade／Uninstall手順は[インストールガイド](docs/installation.md)、MCPクライアント登録は[MCPセットアップ](MCP_SETUP.ja.md)、認証連携は[Itoguruma認証セットアップ](docs/setup-itoguruma.md)を参照してください。
+Pass conditions are a running `Hataori` service and an MCP status response containing `connected: true` and a positive tool count.
 
-## 標準ディレクトリ構成
+## Installation
 
-```text
-%INSTALL_ROOT%/
-├─ bin/       実行ファイルとHookテンプレート
-├─ config/    通常設定とService秘密設定
-├─ logs/      ログ
-└─ data/      SQLite等の永続データ
-```
+### Installer
 
-`config`、`logs`、`data`はUpgradeおよびUninstall後も保持されます。認証トークンをGit、ログ、チャットへ記載しないでください。
-
-## 開発と検証
+The standard artifact is the self-contained Windows x64 MSI. Double-click it and approve UAC, or specify a custom installation root from an elevated terminal:
 
 ```powershell
-dotnet test Hataori.sln --configuration Release
+msiexec.exe /i Hataori-3.0.2.0-x64.msi INSTALL_ROOT="F:\Hataori"
+```
+
+The MSI installs Server, CLI, Monitor, the Windows Service registration, the system `PATH` entry, and a Start menu shortcut. See [Installation](docs/installation.md) for Install, Upgrade, and Uninstall behavior.
+
+### Binary Archive
+
+No supported binary archive is currently published. Use the MSI or build from source.
+
+### Source Build
+
+Prerequisites are Windows x64, the .NET 9 SDK, and WiX Toolset 5.0.2 for MSI generation.
+
+```powershell
+dotnet restore Hataori.sln
+dotnet build Hataori.sln --configuration Release --no-restore
+dotnet test Hataori.sln --configuration Release --no-build
 ./scripts/Build-Installer.ps1
 ```
 
-インストーラ生成にはWiX Toolset 5.0.2を使用します。現在の実装状況は[PROGRESS.md](PROGRESS.md)、設計判断は[docs/adr](docs/adr)、実機検証結果は[docs/validation](docs/validation)で確認できます。
+Generated artifacts are written below `artifacts/` and are not tracked by Git.
+
+## Configuration
+
+The standard mutable directories are `%INSTALL_ROOT%\config`, `logs`, and `data`; they survive Upgrade and Uninstall. Generate the non-secret main settings with `hataori config init`. Link the Itoguruma token without displaying it by running `hataori service setup` from an elevated terminal.
+
+See [Configuration](CONFIG.md) for every setting, precedence rule, constraint, and safe sample.
+
+## Usage
+
+```powershell
+hataori doctor
+hataori task list --database F:\Hataori\data\hataori.db
+hataori logs --lines 100
+hataori monitor
+```
+
+CLI output is JSON except for streamed log lines and error text. See [Commands](COMMANDS.md) for command syntax, results, exit codes, and safety notes. To register an MCP client, follow [MCP Setup](MCP_SETUP.md).
+
+## Documentation
+
+- [Configuration](CONFIG.md)
+- [Commands](COMMANDS.md)
+- [MCP Setup](MCP_SETUP.md)
+- [Installation](docs/installation.md)
+- [Itoguruma Setup](docs/setup-itoguruma.md)
+- [Packages](PACKAGES.md)
+- [Security](SECURITY.md)
+- [Architecture decisions](docs/adr/)
+
+## Security
+
+Hataori binds its MCP endpoint to loopback by default. Itoguruma tokens must not be committed, logged, pasted into chat, or placed in MCP client settings. `hataori service setup` writes the service token to a separate file restricted to `SYSTEM` and `Administrators`.
+
+See [Security](SECURITY.md) before changing bind addresses, permissions, or secret storage.
+
+## License
+
+No open-source license is currently included. Copyright remains with the repository owner; source availability does not grant permission to copy, modify, or redistribute the software.
