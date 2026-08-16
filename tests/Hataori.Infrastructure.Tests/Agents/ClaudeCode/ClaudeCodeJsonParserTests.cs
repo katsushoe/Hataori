@@ -34,6 +34,29 @@ public sealed class ClaudeCodeJsonParserTests
     {
         var action = () => ClaudeCodeJsonParser.Parse("not-json");
 
-        action.Should().Throw<FormatException>();
+        action.Should().Throw<FormatException>()
+            .WithMessage("*characters=8, lines=1*");
+    }
+
+    [Fact]
+    public void Parse_NotificationBeforeJson_ReturnsLastJsonResult()
+    {
+        const string output = """
+            Claude Code has been updated.
+            {"type":"result","subtype":"success","is_error":false,"result":"done","session_id":"session-1"}
+            """;
+
+        var result = ClaudeCodeJsonParser.Parse(output);
+
+        result.NativeSessionId.Should().Be("session-1");
+        result.FinalMessage.Should().Be("done");
+    }
+
+    [Fact]
+    public void Parse_Utf8BomBeforeJson_ReturnsResult()
+    {
+        const string output = "\uFEFF{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":false,\"result\":\"done\",\"session_id\":\"session-1\"}";
+
+        ClaudeCodeJsonParser.Parse(output).FinalMessage.Should().Be("done");
     }
 }

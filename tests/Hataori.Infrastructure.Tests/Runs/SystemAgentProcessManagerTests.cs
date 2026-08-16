@@ -54,4 +54,20 @@ public sealed class SystemAgentProcessManagerTests
         result.ExitCode.Should().Be(0);
         result.StandardOutput.Should().Contain("hello");
     }
+
+    [Fact]
+    public async Task StartAsync_Utf8Output_PreservesJapaneseText()
+    {
+        var manager = new SystemAgentProcessManager(TimeProvider.System);
+        var request = new AgentProcessStartRequest(
+            "powershell.exe",
+            ["-NoProfile", "-Command", "[Console]::OutputEncoding=[Text.Encoding]::UTF8; [Console]::Write('日本語の応答')"],
+            Directory.GetCurrentDirectory(), new Dictionary<string, string?>(), 1024);
+
+        await using var process = await manager.StartAsync(request, CancellationToken.None);
+        var result = await process.WaitForExitAsync(CancellationToken.None);
+
+        result.ExitCode.Should().Be(0);
+        result.StandardOutput.Should().Be("日本語の応答");
+    }
 }
