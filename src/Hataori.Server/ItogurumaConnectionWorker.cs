@@ -1,4 +1,4 @@
-using Hataori.Application.Itoguruma;
+﻿using Hataori.Application.Itoguruma;
 using Hataori.Application.Messages;
 using Hataori.Core.Messages;
 using Hataori.Infrastructure.Itoguruma;
@@ -57,7 +57,12 @@ public sealed class ItogurumaConnectionWorker(
                 await client.DisconnectAsync(CancellationToken.None).ConfigureAwait(false);
                 if (failures >= options.Value.MaxReconnectAttempts)
                 {
-                    throw new InvalidOperationException("Itoguruma reconnect attempts were exhausted.", exception);
+                    logger.LogError(
+                        exception,
+                        "[Itoguruma] Reconnect limit reached. Hataori will continue in degraded mode and retry. Check the endpoint, network connection, and authentication token");
+                    failures = 0;
+                    await Task.Delay(TimeSpan.FromSeconds(options.Value.PollIntervalSeconds), stoppingToken).ConfigureAwait(false);
+                    continue;
                 }
 
                 var delaySeconds = Math.Min(options.Value.PollIntervalSeconds, 1 << Math.Min(failures - 1, 6));

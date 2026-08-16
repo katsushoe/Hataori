@@ -77,6 +77,26 @@ public sealed class ServerFoundationTests
     }
 
     [Fact]
+    public async Task StartupRecoveryGate_Complete_ReleasesDependentsAsReady()
+    {
+        var gate = new StartupRecoveryGate();
+
+        gate.Complete();
+
+        (await gate.Ready).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task StartupRecoveryGate_Fail_ReleasesDependentsWithoutException()
+    {
+        var gate = new StartupRecoveryGate();
+
+        gate.Fail();
+
+        (await gate.Ready).Should().BeFalse();
+    }
+
+    [Fact]
     public async Task Handle_Monitor_ReturnsReadOnlySnapshot()
     {
         var lifetime = new TestLifetime();

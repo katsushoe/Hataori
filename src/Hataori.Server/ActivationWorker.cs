@@ -14,7 +14,11 @@ public sealed class ActivationWorker(
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await recoveryGate.Ready.WaitAsync(stoppingToken).ConfigureAwait(false);
+        if (!await recoveryGate.Ready.WaitAsync(stoppingToken).ConfigureAwait(false))
+        {
+            logger.LogWarning("[Recovery] Activation was not started because startup recovery failed");
+            return;
+        }
         if (!activationOptions.Value.Enabled)
         {
             logger.LogInformation("Activation Manager is disabled");

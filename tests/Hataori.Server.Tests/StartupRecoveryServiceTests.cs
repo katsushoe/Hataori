@@ -2,6 +2,7 @@ using FluentAssertions;
 using Hataori.Application.Messages;
 using Hataori.Application.Runs;
 using Hataori.Application.Sessions;
+using Hataori.Application.Tasks;
 using Hataori.Core.Messages;
 using Hataori.Core.Runs;
 using Hataori.Core.Sessions;
@@ -71,7 +72,7 @@ public sealed class StartupRecoveryServiceTests
     private static StartupRecoveryService CreateService(IAgentRunRepository runs, IConversationSessionRepository sessions, IMessageQueueRepository messages, IAgentProcessProbe probe, DateTimeOffset now)
     {
         var timeProvider = new FixedTimeProvider(now);
-        return new StartupRecoveryService(new AgentRunService(runs, timeProvider), new ConversationSessionService(sessions, timeProvider), messages, probe, timeProvider);
+        return new StartupRecoveryService(Substitute.For<ITaskRepository>(), new AgentRunService(runs, timeProvider), runs, new ConversationSessionService(sessions, timeProvider), sessions, messages, probe, timeProvider);
     }
 
     private sealed class FixedTimeProvider(DateTimeOffset value) : TimeProvider

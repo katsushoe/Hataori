@@ -15,6 +15,7 @@
 | `src/` | Yes | Core、Application、Infrastructure、Server、CLI、Monitorの実装。 |
 | `tests/` | Yes | 自動テスト。 |
 | `docs/adr/` | Yes | アーキテクチャ判断の正本。 |
+| `docs/validation/` | Yes | 実環境検証結果。 |
 | `progress/` | Yes | 進捗グラフ。 |
 | `**/bin/`、`**/obj/` | No | build・publish生成物。 |
 
@@ -27,6 +28,7 @@
 | `TODO.md` | `TODO.md` | Yes | 短期タスクと実装計画。 |
 | `progress-chart.svg` | `progress/progress-chart.svg` | Yes | 進捗率の可視化。 |
 | ADR | `docs/adr/*.md` | Yes | 設計判断。 |
+| 実機検証結果 | `docs/validation/*.md` | Yes | 実機での合否、修正、未完了事項。 |
 
 ## Git管理外情報
 
