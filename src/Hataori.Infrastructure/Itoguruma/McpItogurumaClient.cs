@@ -13,7 +13,7 @@ public sealed class McpItogurumaClient : IItogurumaClient
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true,
     };
 
@@ -163,8 +163,7 @@ public sealed class McpItogurumaClient : IItogurumaClient
     {
         var content = result.StructuredContent
             ?? throw new InvalidOperationException("Itoguruma returned no structured content.");
-        return content.Deserialize<T>(JsonOptions)
-            ?? throw new InvalidOperationException("Itoguruma returned invalid structured content.");
+        return ItogurumaStructuredContentDeserializer.Deserialize<T>(content, JsonOptions);
     }
 
     private async ValueTask ResetAsync()
