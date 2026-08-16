@@ -26,27 +26,27 @@
 
 | 機能 | 2026.08.16 |
 | :--- | ---: |
-| **グループ全体** | **81%** |
+| **グループ全体** | **82%** |
 | Server / Core / SQLite | 88% |
-| Itoguruma連携 | 90% |
+| Itoguruma連携 | 91% |
 | Session / Activation | 90% |
 | Task管理 | 95% |
-| CLI | 93% |
+| CLI | 95% |
 | Windows Service | 70% |
 | Monitor | 80% |
 | 運用・復旧 | 97% |
-| 文書・配布 | 20% |
-| テスト | 88% |
+| 文書・配布 | 22% |
+| テスト | 90% |
 
 ## 現在フェーズ
 
 Phase 1（基盤・必須運用機能）: **89%**
 
-算定: Core 88%、Itoguruma 90%、Session / Activation 90%、Task 95%、Monitor 80%の単純平均（88.6%を整数四捨五入）です。
+算定: Core 88%、Itoguruma 91%、Session / Activation 90%、Task 95%、Monitor 80%の単純平均（88.8%を整数四捨五入）です。
 
 ## 進捗予測メモ
 
-Monitor実機表示、Itoguruma認証、Agent start / resume、Windows Serviceの実環境統合試験が主要な残量です。自動テスト102件、Server、MCP、Hook、Graceful Shutdown、起動異常時の安全停止は実機確認済みです。
+Monitor実機表示、Itoguruma実認証、Agent start / resume、Windows Serviceの実環境統合試験が主要な残量です。認証セットアップCLIを実装し、自動テスト105件、Server、MCP、Hook、Graceful Shutdown、起動異常時の安全停止は確認済みです。
 
 # 実装機能一覧（チェックリスト）
 
@@ -64,7 +64,8 @@ Monitor実機表示、Itoguruma認証、Agent start / resume、Windows Service�
 - [x] DB Maintenance、Retention purge、VACUUM、stale Task expiry
 - [x] Codex／Claude Code Lifecycle Hookランナーとdoctor診断
 - [x] 異常終了時のRun・Session・Message起動復旧
-- [x] 自動テスト102件
+- [x] Itoguruma認証トークンの非表示セットアップCLI
+- [x] 自動テスト105件
 
 ## 部分実装
 

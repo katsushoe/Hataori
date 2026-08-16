@@ -96,6 +96,10 @@ public static class CliApplication
             {
                 result = await ExecuteConfigAsync(args, cancellationToken).ConfigureAwait(false);
             }
+            else if (string.Equals(args[0], "setup", StringComparison.OrdinalIgnoreCase))
+            {
+                result = await ExecuteSetupAsync(args, cancellationToken).ConfigureAwait(false);
+            }
             else if (string.Equals(args[0], "itoguruma", StringComparison.OrdinalIgnoreCase))
             {
                 result = await ExecuteItogurumaAsync(args, cancellationToken).ConfigureAwait(false);
@@ -258,6 +262,52 @@ public static class CliApplication
         await client.ConnectAsync(cancellationToken).ConfigureAwait(false);
         var status = await client.GetStatusAsync(cancellationToken).ConfigureAwait(false);
         return new { status.Connected, status.Name, status.Version, tested = args[1].Equals("test", StringComparison.OrdinalIgnoreCase) };
+    }
+
+    private static async Task<object> ExecuteSetupAsync(string[] args, CancellationToken cancellationToken)
+    {
+        if (args.Length < 2 || !args[1].Equals("itoguruma", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException("Usage: hataori setup itoguruma [--config <path>] [--skip-test]");
+        }
+
+        var options = ParseOptions(args.Skip(2));
+        var setup = new ItogurumaSetupService(new SystemEnvironmentVariableStore()).Configure();
+        if (options.ContainsKey("skip-test"))
+        {
+            return new
+            {
+                setup.Configured,
+                setup.SourceVariable,
+                setup.TargetVariable,
+                connection_tested = false,
+                restart_required = true,
+                next_action = "Restart Hataori Server, then run 'hataori itoguruma test'.",
+            };
+        }
+
+        try
+        {
+            var connection = await ExecuteItogurumaAsync(
+                ["itoguruma", "test", "--config", GetConfigurationPath(options)],
+                cancellationToken).ConfigureAwait(false);
+            return new
+            {
+                setup.Configured,
+                setup.SourceVariable,
+                setup.TargetVariable,
+                connection_tested = true,
+                connection,
+                restart_required = true,
+                next_action = "Restart Hataori Server to load the linked token.",
+            };
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            throw new InvalidOperationException(
+                "The token was linked without displaying it, but the connection test failed. Confirm that Itoguruma is running, then run 'hataori itoguruma test'.",
+                exception);
+        }
     }
 
     private static async Task<object> ExecuteMcpAsync(string[] args, CancellationToken cancellationToken)
@@ -659,7 +709,7 @@ public static class CliApplication
     }
 
     private static string RequiredTaskId(string? taskId) => string.IsNullOrWhiteSpace(taskId) ? throw new ArgumentException("Specify a task ID as an argument or with --id.") : taskId;
-    private static bool IsFlag(string name) => name.Equals("json", StringComparison.OrdinalIgnoreCase) || name.Equals("all", StringComparison.OrdinalIgnoreCase) || name.Equals("follow", StringComparison.OrdinalIgnoreCase);
+    private static bool IsFlag(string name) => name.Equals("json", StringComparison.OrdinalIgnoreCase) || name.Equals("all", StringComparison.OrdinalIgnoreCase) || name.Equals("follow", StringComparison.OrdinalIgnoreCase) || name.Equals("skip-test", StringComparison.OrdinalIgnoreCase);
 
     private static string? Optional(IReadOnlyDictionary<string, string> options, string name) => options.TryGetValue(name, out var value) ? value : null;
     private static int ParseProgress(string value) => int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var progress) ? progress : throw new ArgumentException("--progress must be an integer.");
@@ -671,7 +721,7 @@ public static class CliApplication
     private static bool IsVersionCommand(IReadOnlyList<string> args) => args[0].Equals("version", StringComparison.OrdinalIgnoreCase) || args[0].Equals("--version", StringComparison.OrdinalIgnoreCase);
     private static bool IsSubcommandHelp(IReadOnlyList<string> args) => args.Count > 1 && (args[1].Equals("help", StringComparison.OrdinalIgnoreCase) || args[1].Equals("--help", StringComparison.OrdinalIgnoreCase));
     private static string GetVersion() => typeof(CliApplication).Assembly.GetName().Version?.ToString() ?? "unknown";
-    private static string GetHelpText() => "Usage: hataori <start|stop|restart|status|service|task|agent|conversation|queue|db|config|itoguruma|mcp|doctor|logs|monitor|hook|version|help> [command] [options]";
+    private static string GetHelpText() => "Usage: hataori <start|stop|restart|status|service|task|agent|conversation|queue|db|config|setup|itoguruma|mcp|doctor|logs|monitor|hook|version|help> [command] [options]";
     private static string GetSubcommandHelp(string command) => $"Usage: hataori {command} <command> [arguments] [options]";
 
     private sealed record DoctorCheck(string Name, bool Ok, string? Error, bool Skipped = false);

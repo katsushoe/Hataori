@@ -29,6 +29,7 @@
 | `progress-chart.svg` | `progress/progress-chart.svg` | Yes | 進捗率の可視化。 |
 | ADR | `docs/adr/*.md` | Yes | 設計判断。 |
 | 実機検証結果 | `docs/validation/*.md` | Yes | 実機での合否、修正、未完了事項。 |
+| Itoguruma認証セットアップ | `docs/setup-itoguruma.md` | Yes | 認証トークンの非表示連携と接続試験手順。 |
 
 ## Git管理外情報
 
