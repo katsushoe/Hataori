@@ -26,7 +26,7 @@
 
 | 機能 | 2026.08.16 |
 | :--- | ---: |
-| **グループ全体** | **74%** |
+| **グループ全体** | **77%** |
 | Server / Core / SQLite | 85% |
 | Itoguruma連携 | 90% |
 | Session / Activation | 90% |
@@ -34,9 +34,9 @@
 | CLI | 92% |
 | Windows Service | 70% |
 | Monitor | 80% |
-| 運用・復旧 | 45% |
+| 運用・復旧 | 70% |
 | 文書・配布 | 20% |
-| テスト | 75% |
+| テスト | 78% |
 
 ## 現在フェーズ
 
@@ -46,7 +46,7 @@ Phase 1（基盤・必須運用機能）: **88%**
 
 ## 進捗予測メモ
 
-Monitor実機表示、Hook・異常終了復旧・DB Maintenance・実環境統合試験が主要な残量です。自動テストは92件合格していますが、Itoguruma、MCP、Agent resume、Windows Service、Monitorの実機確認は未実施です。
+Monitor実機表示、Hook・異常終了復旧・実環境統合試験が主要な残量です。自動テストは93件合格していますが、Itoguruma、MCP、Agent resume、Windows Service、Monitorの実機確認は未実施です。
 
 # 実装機能一覧（チェックリスト）
 
@@ -61,7 +61,8 @@ Monitor実機表示、Hook・異常終了復旧・DB Maintenance・実環境統�
 - [x] Server・Service・Task・Agent・Conversation・Queue・Config・DB・診断CLI
 - [x] 構造化ファイルログと`logs` CLI
 - [x] 読み取り専用Monitorアプリ、Control Pipeスナップショット、`monitor` CLI
-- [x] 自動テスト92件
+- [x] DB Maintenance、Retention purge、VACUUM、stale Task expiry
+- [x] 自動テスト93件
 
 ## 部分実装
 
@@ -73,7 +74,6 @@ Monitor実機表示、Hook・異常終了復旧・DB Maintenance・実環境統�
 
 ## 未実装
 
-- [ ] DB MaintenanceとRetention purge
 - [ ] Agent Hook連携
 - [ ] 実環境統合・受入試験
 - [ ] Release配布手順とインストーラ

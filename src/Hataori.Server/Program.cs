@@ -13,6 +13,7 @@ using Hataori.Infrastructure.Runs;
 using Hataori.Infrastructure.Agents.Codex;
 using Hataori.Infrastructure.Agents.ClaudeCode;
 using Hataori.Infrastructure.Tasks;
+using Hataori.Infrastructure.Maintenance;
 using Hataori.Server;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Options;
@@ -66,6 +67,10 @@ builder.Services.AddOptions<FileLogOptions>()
     .Bind(builder.Configuration.GetRequiredSection(FileLogOptions.SectionName))
     .ValidateOnStart();
 builder.Services.AddSingleton<IValidateOptions<FileLogOptions>, FileLogOptionsValidator>();
+builder.Services.AddOptions<DatabaseMaintenanceOptions>()
+    .Bind(builder.Configuration.GetRequiredSection(DatabaseMaintenanceOptions.SectionName))
+    .ValidateOnStart();
+builder.Services.AddSingleton<IValidateOptions<DatabaseMaintenanceOptions>, DatabaseMaintenanceOptionsValidator>();
 builder.Services.AddSingleton<IItogurumaClient>(services => new McpItogurumaClient(
     services.GetRequiredService<IOptions<ItogurumaClientOptions>>().Value,
     services.GetRequiredService<ILoggerFactory>()));
@@ -126,11 +131,19 @@ builder.Services.AddSingleton(services =>
         options.BatchSize);
 });
 builder.Services.AddSingleton<ReplyRetryManager>();
+builder.Services.AddSingleton(services =>
+{
+    var options = services.GetRequiredService<IOptions<ServerOptions>>().Value;
+    var path = ServerPaths.ResolveDatabasePath(options.DatabasePath, AppContext.BaseDirectory);
+    var connectionString = new SqliteConnectionStringBuilder { DataSource = path, ForeignKeys = true }.ToString();
+    return new SqliteDatabaseMaintenance(connectionString, services.GetRequiredService<TimeProvider>());
+});
 builder.Services.AddSingleton<ControlCommandHandler>();
 builder.Services.AddHostedService<HataoriServerWorker>();
 builder.Services.AddHostedService<ItogurumaConnectionWorker>();
 builder.Services.AddHostedService<ActivationWorker>();
 builder.Services.AddHostedService<ReplyRetryWorker>();
+builder.Services.AddHostedService<DatabaseMaintenanceWorker>();
 builder.Services.AddMcpServer()
     .WithHttpTransport(options => options.Stateless = true)
     .WithTools<TaskMcpTools>();
