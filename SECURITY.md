@@ -6,7 +6,7 @@ This document describes the public security model and safe operating requirement
 
 | Version | Security support |
 | :--- | :--- |
-| `3.0.2.0` | Supported |
+| `3.0.3.0` | Supported |
 | Earlier versions | Not supported; upgrade before reporting a version-specific issue. |
 
 ## Reporting a Vulnerability
