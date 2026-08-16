@@ -1,17 +1,18 @@
 ﻿using System.Globalization;
+using Hataori.Application;
 using Microsoft.Extensions.Logging;
 
 namespace Hataori.Monitor;
 
-/// <summary>Monitorの例外をユーザー領域のログへ保存します。</summary>
+/// <summary>Monitorの例外を標準ログディレクトリへ保存します。</summary>
 public sealed class MonitorFileLogger : ILogger
 {
     private readonly object _sync = new();
 
     /// <summary>現在のMonitorログファイルパスを取得します。</summary>
     public string LogPath { get; } = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Hataori", "logs", $"hataori-monitor-{DateTimeOffset.Now:yyyyMMdd}.log");
+        InstallationLayout.Resolve(AppContext.BaseDirectory).LogsPath,
+        $"hataori-monitor-{DateTimeOffset.Now:yyyyMMdd}.log");
 
     /// <inheritdoc />
     public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;

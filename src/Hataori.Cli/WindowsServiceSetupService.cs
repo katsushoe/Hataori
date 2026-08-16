@@ -14,7 +14,7 @@ public interface IWindowsServiceCredentialStore
     Task<string> WriteAuthenticationTokenAsync(string token, CancellationToken cancellationToken);
 }
 
-/// <summary>ProgramDataへLocalSystem・Administrators限定で認証設定を保存します。</summary>
+/// <summary>標準設定ディレクトリへLocalSystem・Administrators限定で認証設定を保存します。</summary>
 [SupportedOSPlatform("windows")]
 public sealed class WindowsServiceCredentialStore : IWindowsServiceCredentialStore
 {
@@ -27,7 +27,6 @@ public sealed class WindowsServiceCredentialStore : IWindowsServiceCredentialSto
         try
         {
             Directory.CreateDirectory(directoryPath);
-            SetDirectoryAccess(directoryPath);
             var json = JsonSerializer.Serialize(new { itoguruma = new { authenticationToken = token } });
             await File.WriteAllTextAsync(path, json, new UTF8Encoding(false), cancellationToken).ConfigureAwait(false);
             SetFileAccess(path);
@@ -37,25 +36,6 @@ public sealed class WindowsServiceCredentialStore : IWindowsServiceCredentialSto
         {
             throw new InvalidOperationException("Service setup requires an administrator terminal. Run the command again as administrator.", exception);
         }
-    }
-
-    private static void SetDirectoryAccess(string path)
-    {
-        var security = new DirectorySecurity();
-        security.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
-        security.AddAccessRule(new FileSystemAccessRule(
-            new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null),
-            FileSystemRights.FullControl,
-            InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
-            PropagationFlags.None,
-            AccessControlType.Allow));
-        security.AddAccessRule(new FileSystemAccessRule(
-            new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null),
-            FileSystemRights.FullControl,
-            InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
-            PropagationFlags.None,
-            AccessControlType.Allow));
-        new DirectoryInfo(path).SetAccessControl(security);
     }
 
     private static void SetFileAccess(string path)
@@ -81,6 +61,11 @@ public sealed class WindowsServiceSetupService(IEnvironmentVariableStore environ
     public async Task<WindowsServiceSetupResult> ConfigureAsync(CancellationToken cancellationToken)
     {
         var token = environment.Get(ItogurumaSetupService.SourceVariable, EnvironmentVariableTarget.User);
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            token = environment.Get(ItogurumaSetupService.SourceVariable, EnvironmentVariableTarget.Process);
+        }
+
         if (string.IsNullOrWhiteSpace(token))
         {
             throw new InvalidOperationException("No Itoguruma authentication token was found. Install or repair Itoguruma first; its installer creates the token automatically.");

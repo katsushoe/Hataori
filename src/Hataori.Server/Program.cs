@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using Hataori.Application;
 using Hataori.Application.Itoguruma;
 using Hataori.Application.Messages;
 using Hataori.Application.Sessions;
@@ -23,11 +24,15 @@ using ModelContextProtocol.Server;
 ILogger? fatalLogger = null;
 try
 {
-    var builder = WebApplication.CreateBuilder(new WebApplicationOptions { Args = args, ContentRootPath = AppContext.BaseDirectory });
-    builder.Configuration.AddJsonFile("hataori.json", optional: false, reloadOnChange: true);
+    var layout = InstallationLayout.Resolve(AppContext.BaseDirectory);
+    layout.EnsureDirectories();
+    var configurationPath = Path.GetFullPath(Environment.GetEnvironmentVariable("HATAORI_CONFIG_PATH") ?? layout.ConfigurationPath);
+    await DefaultConfigurationWriter.EnsureAsync(configurationPath, CancellationToken.None);
+    var builder = WebApplication.CreateBuilder(new WebApplicationOptions { Args = args, ContentRootPath = layout.RootPath });
+    builder.Configuration.AddJsonFile(configurationPath, optional: false, reloadOnChange: true);
     if (WindowsServiceHelpers.IsWindowsService())
     {
-        builder.Configuration.AddJsonFile(ServiceConfigurationPath.GetDefaultPath(), optional: false, reloadOnChange: true);
+        builder.Configuration.AddJsonFile(ServiceConfigurationPath.GetDefaultPath(AppContext.BaseDirectory), optional: false, reloadOnChange: true);
     }
     builder.Configuration.AddEnvironmentVariables("HATAORI_");
     var startupFileLogOptions = builder.Configuration.GetRequiredSection(FileLogOptions.SectionName).Get<FileLogOptions>()
@@ -40,7 +45,7 @@ try
 
     if (startupFileLogOptions.Enabled)
     {
-        builder.Logging.AddProvider(new FileLoggerProvider(startupFileLogOptions, AppContext.BaseDirectory));
+        builder.Logging.AddProvider(new FileLoggerProvider(startupFileLogOptions, layout.RootPath));
     }
 
     var startupOptions = builder.Configuration.GetRequiredSection(ServerOptions.SectionName).Get<ServerOptions>()
@@ -88,7 +93,7 @@ try
     builder.Services.AddSingleton<ITaskRepository>(services =>
     {
         var options = services.GetRequiredService<IOptions<ServerOptions>>().Value;
-        var path = ServerPaths.ResolveDatabasePath(options.DatabasePath, AppContext.BaseDirectory);
+        var path = ServerPaths.ResolveDatabasePath(options.DatabasePath, layout.RootPath);
         var directory = Path.GetDirectoryName(path);
         if (!string.IsNullOrEmpty(directory))
         {
@@ -101,21 +106,21 @@ try
     builder.Services.AddSingleton<IMessageQueueRepository>(services =>
     {
         var options = services.GetRequiredService<IOptions<ServerOptions>>().Value;
-        var path = ServerPaths.ResolveDatabasePath(options.DatabasePath, AppContext.BaseDirectory);
+        var path = ServerPaths.ResolveDatabasePath(options.DatabasePath, layout.RootPath);
         var connectionString = new SqliteConnectionStringBuilder { DataSource = path, ForeignKeys = true }.ToString();
         return new SqliteMessageQueueRepository(connectionString);
     });
     builder.Services.AddSingleton<IConversationSessionRepository>(services =>
     {
         var options = services.GetRequiredService<IOptions<ServerOptions>>().Value;
-        var path = ServerPaths.ResolveDatabasePath(options.DatabasePath, AppContext.BaseDirectory);
+        var path = ServerPaths.ResolveDatabasePath(options.DatabasePath, layout.RootPath);
         var connectionString = new SqliteConnectionStringBuilder { DataSource = path, ForeignKeys = true }.ToString();
         return new SqliteConversationSessionRepository(connectionString);
     });
     builder.Services.AddSingleton<IAgentRunRepository>(services =>
     {
         var options = services.GetRequiredService<IOptions<ServerOptions>>().Value;
-        var path = ServerPaths.ResolveDatabasePath(options.DatabasePath, AppContext.BaseDirectory);
+        var path = ServerPaths.ResolveDatabasePath(options.DatabasePath, layout.RootPath);
         var connectionString = new SqliteConnectionStringBuilder { DataSource = path, ForeignKeys = true }.ToString();
         return new SqliteAgentRunRepository(connectionString);
     });
@@ -150,7 +155,7 @@ try
     builder.Services.AddSingleton(services =>
     {
         var options = services.GetRequiredService<IOptions<ServerOptions>>().Value;
-        var path = ServerPaths.ResolveDatabasePath(options.DatabasePath, AppContext.BaseDirectory);
+        var path = ServerPaths.ResolveDatabasePath(options.DatabasePath, layout.RootPath);
         var connectionString = new SqliteConnectionStringBuilder { DataSource = path, ForeignKeys = true }.ToString();
         return new SqliteDatabaseMaintenance(connectionString, services.GetRequiredService<TimeProvider>());
     });

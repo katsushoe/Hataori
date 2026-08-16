@@ -6,9 +6,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="hataori.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <EmbeddedResource Include="hataori.json" LogicalName="Hataori.Server.hataori.json" />
   </ItemGroup>
 
   <ItemGroup>

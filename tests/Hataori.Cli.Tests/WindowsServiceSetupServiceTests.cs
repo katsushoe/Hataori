@@ -29,9 +29,23 @@ public sealed class WindowsServiceSetupServiceTests
         await action.Should().ThrowAsync<InvalidOperationException>().WithMessage("*Install or repair Itoguruma*");
     }
 
-    private sealed class FakeEnvironmentStore(string? token) : IEnvironmentVariableStore
+    [Fact]
+    public async Task ConfigureAsync_ProcessTokenFallback_WritesWithoutReturningSecret()
     {
-        public string? Get(string name, EnvironmentVariableTarget target) => token;
+        var environment = new FakeEnvironmentStore(null, "process-secret");
+        var store = new FakeCredentialStore();
+        var service = new WindowsServiceSetupService(environment, store);
+
+        var result = await service.ConfigureAsync(CancellationToken.None);
+
+        store.Token.Should().Be("process-secret");
+        result.ToString().Should().NotContain("process-secret");
+    }
+
+    private sealed class FakeEnvironmentStore(string? userToken, string? processToken = null) : IEnvironmentVariableStore
+    {
+        public string? Get(string name, EnvironmentVariableTarget target) =>
+            target == EnvironmentVariableTarget.User ? userToken : processToken;
         public void Set(string name, string value, EnvironmentVariableTarget target) => throw new NotSupportedException();
     }
 

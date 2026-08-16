@@ -26,17 +26,17 @@
 
 | 機能 | 2026.08.16 |
 | :--- | ---: |
-| **グループ全体** | **89%** |
+| **グループ全体** | **94%** |
 | Server / Core / SQLite | 88% |
 | Itoguruma連携 | 98% |
 | Session / Activation | 100% |
 | Task管理 | 95% |
-| CLI | 95% |
-| Windows Service | 98% |
+| CLI | 97% |
+| Windows Service | 100% |
 | Monitor | 95% |
 | 運用・復旧 | 97% |
-| 文書・配布 | 22% |
-| テスト | 95% |
+| 文書・配布 | 75% |
+| テスト | 96% |
 
 ## 現在フェーズ
 
@@ -46,7 +46,7 @@ Phase 1（基盤・必須運用機能）: **95%**
 
 ## 進捗予測メモ
 
-利用者向け文書・配布整備が主要な残量です。Windows ServiceはProgramDataのSYSTEM・Administrators限定認証設定、install、start、Running維持、Itoguruma接続、restart、Windows再起動後のAutomatic起動、stop、uninstallを実機確認済みです。Monitorはデータ入り表示、手動更新、異常時の案内・ログ、Itoguruma MCPの実接続状態表示を確認済みです。Codex CLI 0.147.0とClaude Code 2.1.220はstart・resume・Reply・ACKを実機確認し、自動テスト118件、Server、MCP、Hook、Graceful Shutdown、起動異常時の安全停止は確認済みです。
+利用者向けREADMEと運用文書の拡充が主要な残量です。Windows Serviceは標準`bin/config/logs/data`構成、SYSTEM・Administrators限定認証設定、x64 MSIのInstall・Major Upgrade・Uninstall保持、Automatic起動、Running、Itoguruma接続を実機確認済みです。Monitorはデータ入り表示、手動更新、異常時の案内・ログ、Itoguruma MCPの実接続状態表示を確認済みです。Codex CLI 0.147.0とClaude Code 2.1.220はstart・resume・Reply・ACKを実機確認し、自動テスト124件、Server、MCP、Hook、Graceful Shutdown、起動異常時の安全停止は確認済みです。
 
 # 実装機能一覧（チェックリスト）
 
@@ -65,15 +65,11 @@ Phase 1（基盤・必須運用機能）: **95%**
 - [x] Codex／Claude Code Lifecycle Hookランナーとdoctor診断
 - [x] 異常終了時のRun・Session・Message起動復旧
 - [x] Itoguruma認証トークンの非表示セットアップCLI
-- [x] 自動テスト118件
+- [x] 標準ディレクトリ構成とx64 MSIのInstall・Upgrade・Uninstall
+- [x] 自動テスト124件
 
 ## 部分実装
 
 - [x] Windows Service実機検証
 - [x] Monitor実機表示検証
 - [ ] 利用者向けREADME、設定、コマンド文書
-
-## 未実装
-
-- [ ] Agent・Windows Serviceの実環境統合・受入試験
-- [ ] Release配布手順とインストーラ

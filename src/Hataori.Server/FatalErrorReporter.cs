@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using Hataori.Application;
 using Microsoft.Extensions.Options;
 
 namespace Hataori.Server;
@@ -10,10 +11,7 @@ public static class FatalErrorReporter
     public static async Task<FatalErrorReport> WriteAsync(Exception exception, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(exception);
-        var logDirectory = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Hataori",
-            "logs");
+        var logDirectory = InstallationLayout.Resolve(AppContext.BaseDirectory).LogsPath;
         var logPath = Path.Combine(logDirectory, $"hataori-fatal-{DateTimeOffset.Now:yyyyMMdd}.log");
         var saved = false;
         try
