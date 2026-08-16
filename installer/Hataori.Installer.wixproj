@@ -4,7 +4,7 @@
     <Platform>x64</Platform>
     <InstallerPlatform>x64</InstallerPlatform>
     <PublishRoot Condition="'$(PublishRoot)' == ''">$(MSBuildThisFileDirectory)..\artifacts\publish</PublishRoot>
-    <ProductVersion Condition="'$(ProductVersion)' == ''">3.0.2.0</ProductVersion>
+    <ProductVersion Condition="'$(ProductVersion)' == ''">3.0.3.0</ProductVersion>
     <DefineConstants>PublishRoot=$(PublishRoot);ProductVersion=$(ProductVersion)</DefineConstants>
     <OutputPath>$(MSBuildThisFileDirectory)..\artifacts\installer\</OutputPath>
     <OutputName>Hataori-$(ProductVersion)-x64</OutputName>
