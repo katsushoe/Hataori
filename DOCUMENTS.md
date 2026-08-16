@@ -25,6 +25,7 @@
 
 | 文書名 | 正本パス | Git管理 | 用途 |
 | :--- | :--- | :--- | :--- |
+| `README.md` | `README.md` | Yes | GitHubと利用者向けのプロジェクト入口。 |
 | `DOCUMENTS.md` | `DOCUMENTS.md` | Yes | 文書正本配置一覧。 |
 | `PROGRESS.md` | `PROGRESS.md` | Yes | 機能別進捗率、完了内容、残作業。 |
 | `TODO.md` | `TODO.md` | Yes | 短期タスクと実装計画。 |

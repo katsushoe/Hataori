@@ -46,7 +46,7 @@ Phase 1（基盤・必須運用機能）: **95%**
 
 ## 進捗予測メモ
 
-利用者向けREADMEと運用文書の拡充が主要な残量です。Windows Serviceは標準`bin/config/logs/data`構成、SYSTEM・Administrators限定認証設定、x64 MSIのInstall・Major Upgrade・Uninstall保持、Automatic起動、Running、Itoguruma接続を実機確認済みです。Monitorはデータ入り表示、手動更新、異常時の案内・ログ、Itoguruma MCPの実接続状態表示を確認済みです。Codex CLI 0.147.0とClaude Code 2.1.220はstart・resume・Reply・ACKを実機確認し、自動テスト124件、Server、MCP、Hook、Graceful Shutdown、起動異常時の安全停止は確認済みです。
+設定・コマンド・運用文書の拡充が主要な残量です。GitHubと利用者向けREADME、MSIインストールガイドは整備済みです。Windows Serviceは標準`bin/config/logs/data`構成、SYSTEM・Administrators限定認証設定、x64 MSIのInstall・Major Upgrade・Uninstall保持、Automatic起動、Running、Itoguruma接続を実機確認済みです。Monitorはデータ入り表示、手動更新、異常時の案内・ログ、Itoguruma MCPの実接続状態表示を確認済みです。Codex CLI 0.147.0とClaude Code 2.1.220はstart・resume・Reply・ACKを実機確認し、自動テスト124件、Server、MCP、Hook、Graceful Shutdown、起動異常時の安全停止は確認済みです。
 
 # 実装機能一覧（チェックリスト）
 
@@ -72,4 +72,5 @@ Phase 1（基盤・必須運用機能）: **95%**
 
 - [x] Windows Service実機検証
 - [x] Monitor実機表示検証
-- [ ] 利用者向けREADME、設定、コマンド文書
+- [x] GitHub・利用者向けREADME
+- [ ] 設定、コマンド、運用文書
