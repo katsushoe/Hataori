@@ -12,7 +12,18 @@ public sealed class CodexCommandBuilderTests
 
         var arguments = CodexCommandBuilder.BuildStart(options, "C:\\workspace");
 
-        arguments.Should().Equal("exec", "--json", "--color", "never", "--sandbox", "workspace-write", "--approve-for-me", "--model", "test-model", "--cd", "C:\\workspace", "-");
+        arguments.Should().Equal("exec", "--json", "--color", "never", "--approve-for-me", "--model", "test-model", "--cd", "C:\\workspace", "-");
+    }
+
+    [Fact]
+    public void BuildStart_WithoutAutomaticApproval_UsesConfiguredSandbox()
+    {
+        var options = new CodexDriverOptions { SandboxMode = "read-only", ApproveForMe = false };
+
+        var arguments = CodexCommandBuilder.BuildStart(options, "C:\\workspace");
+
+        arguments.Should().ContainInOrder("--sandbox", "read-only");
+        arguments.Should().NotContain("--approve-for-me");
     }
 
     [Fact]

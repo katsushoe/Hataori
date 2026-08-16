@@ -18,6 +18,11 @@ public sealed class CodexDriverOptionsValidator : IValidateOptions<CodexDriverOp
             errors.Add("Codex sandboxMode must be read-only or workspace-write.");
         }
 
+        if (options.ApproveForMe && options.SandboxMode != "workspace-write")
+        {
+            errors.Add("Codex approveForMe requires workspace-write because the CLI applies that sandbox automatically.");
+        }
+
         if (options.MaxCapturedCharacters is < 1024 or > 16 * 1024 * 1024)
         {
             errors.Add("Codex maxCapturedCharacters must be between 1024 and 16777216.");

@@ -20,4 +20,12 @@ public sealed class CodexDriverOptionsValidatorTests
 
         result.Failed.Should().BeTrue();
     }
+
+    [Fact]
+    public void Validate_AutomaticApprovalWithReadOnly_ReturnsFailure()
+    {
+        var options = new CodexDriverOptions { SandboxMode = "read-only", ApproveForMe = true };
+
+        new CodexDriverOptionsValidator().Validate(null, options).Failed.Should().BeTrue();
+    }
 }
