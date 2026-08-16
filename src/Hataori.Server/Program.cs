@@ -168,7 +168,8 @@ try
     builder.Services.AddHostedService<DatabaseMaintenanceWorker>();
     builder.Services.AddMcpServer()
         .WithHttpTransport(options => options.Stateless = true)
-        .WithTools<TaskMcpTools>();
+        .WithTools<TaskMcpTools>()
+        .WithTools<SystemMcpTools>();
 
     var app = builder.Build();
     fatalLogger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Hataori.Server.Fatal");
