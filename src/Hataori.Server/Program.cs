@@ -25,6 +25,10 @@ try
 {
     var builder = WebApplication.CreateBuilder(new WebApplicationOptions { Args = args, ContentRootPath = AppContext.BaseDirectory });
     builder.Configuration.AddJsonFile("hataori.json", optional: false, reloadOnChange: true);
+    if (WindowsServiceHelpers.IsWindowsService())
+    {
+        builder.Configuration.AddJsonFile(ServiceConfigurationPath.GetDefaultPath(), optional: false, reloadOnChange: true);
+    }
     builder.Configuration.AddEnvironmentVariables("HATAORI_");
     var startupFileLogOptions = builder.Configuration.GetRequiredSection(FileLogOptions.SectionName).Get<FileLogOptions>()
         ?? throw new InvalidOperationException("File logging configuration is missing.");

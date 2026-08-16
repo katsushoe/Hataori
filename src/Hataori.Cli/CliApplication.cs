@@ -433,7 +433,18 @@ public static class CliApplication
     {
         if (args.Length < 2)
         {
-            throw new ArgumentException("Usage: hataori service <install|uninstall|start|stop|restart|status> [options]");
+            throw new ArgumentException("Usage: hataori service <setup|install|uninstall|start|stop|restart|status> [options]");
+        }
+
+        if (args[1].Equals("setup", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!OperatingSystem.IsWindows())
+            {
+                throw new PlatformNotSupportedException("Windows Service setup is available only on Windows.");
+            }
+
+            return await new WindowsServiceSetupService(new SystemEnvironmentVariableStore(), new WindowsServiceCredentialStore())
+                .ConfigureAsync(cancellationToken).ConfigureAwait(false);
         }
 
         var options = ParseOptions(args.Skip(2));
