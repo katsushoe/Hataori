@@ -1,6 +1,5 @@
 using System.Text.Json;
 using Hataori.Application.Control;
-using Hataori.Core.Tasks;
 
 namespace Hataori.Cli;
 
@@ -10,7 +9,7 @@ public static class HookProcessor
     public static object Process(JsonElement input, MonitorSnapshot? snapshot, string? conversationId, string? agentId, string? messageId, string? mcpUrl)
     {
         var eventName = GetString(input, "hook_event_name") ?? GetString(input, "hook_event") ?? throw new ArgumentException("Hook input requires hook_event_name.");
-        var tasks = snapshot?.Tasks.Where(task => task.Status == HataoriTaskStatus.Active && Matches(task, conversationId, agentId)).ToArray() ?? [];
+        var tasks = snapshot?.Tasks.Where(task => string.Equals(task.Status, "active", StringComparison.OrdinalIgnoreCase) && Matches(task, conversationId, agentId)).ToArray() ?? [];
         var context = BuildContext(conversationId, agentId, messageId, mcpUrl, tasks);
         return eventName.ToLowerInvariant() switch
         {
@@ -22,7 +21,7 @@ public static class HookProcessor
         };
     }
 
-    private static object PreToolUse(JsonElement input, IReadOnlyList<HataoriTask> tasks)
+    private static object PreToolUse(JsonElement input, IReadOnlyList<MonitorTask> tasks)
     {
         var tool = GetString(input, "tool_name") ?? string.Empty;
         if (!IsMutation(tool, input) || tasks.Count > 0)
@@ -33,7 +32,7 @@ public static class HookProcessor
         return new { hookSpecificOutput = new { hookEventName = "PreToolUse", permissionDecision = "deny", permissionDecisionReason = "変更作業の前にHataoriへTaskを登録してください。" } };
     }
 
-    private static object Stop(JsonElement input, IReadOnlyList<HataoriTask> tasks)
+    private static object Stop(JsonElement input, IReadOnlyList<MonitorTask> tasks)
     {
         var alreadyContinued = input.TryGetProperty("stop_hook_active", out var value) && value.ValueKind == JsonValueKind.True;
         return tasks.Count > 0 && !alreadyContinued
@@ -43,11 +42,11 @@ public static class HookProcessor
 
     private static object Context(string eventName, string context) => new { hookSpecificOutput = new { hookEventName = eventName, additionalContext = context } };
 
-    private static bool Matches(HataoriTask task, string? conversationId, string? agentId) =>
+    private static bool Matches(MonitorTask task, string? conversationId, string? agentId) =>
         (string.IsNullOrWhiteSpace(conversationId) || string.Equals(task.ConversationId, conversationId, StringComparison.Ordinal)) &&
         (string.IsNullOrWhiteSpace(agentId) || string.Equals(task.AgentId, agentId, StringComparison.OrdinalIgnoreCase));
 
-    private static string BuildContext(string? conversationId, string? agentId, string? messageId, string? mcpUrl, IReadOnlyList<HataoriTask> tasks) =>
+    private static string BuildContext(string? conversationId, string? agentId, string? messageId, string? mcpUrl, IReadOnlyList<MonitorTask> tasks) =>
         $"Hataori Task Protocol: 変更前にTaskをstartし、進捗をheartbeatし、終了時にcomplete/cancelしてください。 conversation_id={conversationId ?? "(none)"}; agent_id={agentId ?? "(none)"}; origin_message_id={messageId ?? "(none)"}; mcp={mcpUrl ?? "(none)"}; active_tasks={string.Join(',', tasks.Select(task => task.TaskId))}.";
 
     private static bool IsMutation(string tool, JsonElement input)

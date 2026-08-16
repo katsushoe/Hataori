@@ -1,4 +1,5 @@
 using Hataori.Application.Control;
+using Microsoft.Extensions.Logging;
 
 namespace Hataori.Monitor;
 
@@ -7,13 +8,18 @@ public partial class MonitorForm : Form
 {
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(5);
     private readonly string _pipeName;
-    private readonly MonitorControlClient _client = new();
+    private readonly MonitorControlClient _client;
+    private readonly MonitorErrorHandler _errors;
     private bool _refreshing;
 
-    public MonitorForm(string pipeName)
+    public MonitorForm(string pipeName, MonitorControlClient client, MonitorErrorHandler errors)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(pipeName);
+        ArgumentNullException.ThrowIfNull(client);
+        ArgumentNullException.ThrowIfNull(errors);
         _pipeName = pipeName;
+        _client = client;
+        _errors = errors;
         InitializeComponent();
     }
 
@@ -49,9 +55,11 @@ public partial class MonitorForm : Form
             sqliteValueLabel.Text = snapshot.System.Sqlite;
             connectionStatusLabel.Text = $"接続中: {_pipeName} / {DateTimeOffset.Now:T}";
         }
-        catch (Exception exception) when (exception is IOException or TimeoutException)
+        catch (Exception exception)
         {
-            connectionStatusLabel.Text = $"接続エラー: {exception.Message}";
+            var transient = exception is IOException or TimeoutException;
+            connectionStatusLabel.Text = transient ? $"接続エラー: {exception.Message}" : "表示データの取得に失敗しました。詳細はログを確認してください。";
+            _errors.Report(exception, this, transient ? "Serverへ接続できませんでした。Serverが起動しているか確認してください。" : "表示データを読み込めませんでした。Monitorを再起動し、解消しない場合はログを管理者へ共有してください。", showDialog: !transient);
         }
         finally
         {

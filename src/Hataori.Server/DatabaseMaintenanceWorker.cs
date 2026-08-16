@@ -37,6 +37,10 @@ public sealed class DatabaseMaintenanceWorker(SqliteDatabaseMaintenance maintena
             {
                 logger.LogError(exception, "[Maintenance] Database maintenance failed");
             }
+            catch (Exception exception)
+            {
+                logger.LogError(exception, "[Maintenance] Unexpected database maintenance failure");
+            }
         }
         while (await timer.WaitForNextTickAsync(stoppingToken).ConfigureAwait(false));
     }

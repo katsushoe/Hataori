@@ -17,8 +17,9 @@ public sealed class ControlCommandHandler
     private readonly IConversationSessionRepository _sessions;
     private readonly IAgentRunRepository _runs;
     private readonly IMessageQueueRepository _queue;
+    private readonly ItogurumaConnectionState _itogurumaState;
 
-    public ControlCommandHandler(IHostApplicationLifetime lifetime, TimeProvider timeProvider, ITaskRepository tasks, IConversationSessionRepository sessions, IAgentRunRepository runs, IMessageQueueRepository queue)
+    public ControlCommandHandler(IHostApplicationLifetime lifetime, TimeProvider timeProvider, ITaskRepository tasks, IConversationSessionRepository sessions, IAgentRunRepository runs, IMessageQueueRepository queue, ItogurumaConnectionState itogurumaState)
     {
         ArgumentNullException.ThrowIfNull(lifetime);
         ArgumentNullException.ThrowIfNull(timeProvider);
@@ -26,12 +27,14 @@ public sealed class ControlCommandHandler
         ArgumentNullException.ThrowIfNull(sessions);
         ArgumentNullException.ThrowIfNull(runs);
         ArgumentNullException.ThrowIfNull(queue);
+        ArgumentNullException.ThrowIfNull(itogurumaState);
         _lifetime = lifetime;
         _timeProvider = timeProvider;
         _tasks = tasks;
         _sessions = sessions;
         _runs = runs;
         _queue = queue;
+        _itogurumaState = itogurumaState;
     }
 
     public async Task<ControlResponse> HandleAsync(ControlRequest request, CancellationToken cancellationToken)
@@ -74,7 +77,16 @@ public sealed class ControlCommandHandler
             var state = active.Length > 0 ? "running" : group.Any(run => run.Status == AgentRunStatus.Queued) ? "queued" : "idle";
             return new MonitorAgentStatus(group.Key, active.FirstOrDefault()?.ConversationId ?? latest.ConversationId, state, active.Length);
         }).OrderBy(agent => agent.AgentId, StringComparer.OrdinalIgnoreCase).ToArray();
-        var snapshot = new MonitorSnapshot(tasks, agents, sessions, runs, queued.Count, new MonitorSystemStatus("running", "configured", "running", "connected"));
+        var monitorTasks = tasks.Select(task => new MonitorTask(
+            task.TaskId, task.TaskName, task.AgentId, task.ConversationId, task.Status.ToString().ToLowerInvariant(),
+            task.CurrentWork, task.ProgressPercent, task.LastActivityAtUtc)).ToArray();
+        var monitorSessions = sessions.Select(session => new MonitorSession(
+            session.ConversationId, session.AgentId, session.NativeSessionId,
+            session.Status.ToString().ToLowerInvariant(), session.LastUsedAtUtc)).ToArray();
+        var monitorRuns = runs.Select(run => new MonitorRun(
+            run.RunId, run.MessageId, run.ConversationId, run.AgentId, run.Status.ToString().ToLowerInvariant(),
+            run.QueuedAtUtc, run.StartedAtUtc, run.EndedAtUtc, run.Error)).ToArray();
+        var snapshot = new MonitorSnapshot(monitorTasks, agents, monitorSessions, monitorRuns, queued.Count, new MonitorSystemStatus("running", _itogurumaState.Value, "running", "connected"));
         return new ControlResponse(true, "running", _timeProvider.GetUtcNow(), snapshot);
     }
 }

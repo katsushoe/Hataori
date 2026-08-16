@@ -7,6 +7,8 @@ namespace Hataori.Server;
 public sealed class ReplyRetryWorker(
     ReplyRetryManager retryManager,
     IMessageQueueRepository messageQueue,
+    DatabaseInitializationGate initializationGate,
+    StartupRecoveryGate recoveryGate,
     IOptions<ReplyRetryOptions> options,
     TimeProvider timeProvider,
     ILogger<ReplyRetryWorker> logger) : BackgroundService
@@ -16,6 +18,13 @@ public sealed class ReplyRetryWorker(
         if (!options.Value.Enabled)
         {
             logger.LogInformation("Reply retry worker is disabled");
+            return;
+        }
+
+        if (!await initializationGate.Ready.WaitAsync(stoppingToken).ConfigureAwait(false)
+            || !await recoveryGate.Ready.WaitAsync(stoppingToken).ConfigureAwait(false))
+        {
+            logger.LogWarning("[Startup] Reply retry was not started because database initialization or startup recovery failed");
             return;
         }
 

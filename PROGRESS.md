@@ -26,27 +26,27 @@
 
 | 機能 | 2026.08.16 |
 | :--- | ---: |
-| **グループ全体** | **84%** |
+| **グループ全体** | **86%** |
 | Server / Core / SQLite | 88% |
 | Itoguruma連携 | 98% |
 | Session / Activation | 100% |
 | Task管理 | 95% |
 | CLI | 95% |
 | Windows Service | 70% |
-| Monitor | 80% |
+| Monitor | 95% |
 | 運用・復旧 | 97% |
 | 文書・配布 | 22% |
-| テスト | 94% |
+| テスト | 95% |
 
 ## 現在フェーズ
 
-Phase 1（基盤・必須運用機能）: **92%**
+Phase 1（基盤・必須運用機能）: **95%**
 
-算定: Core 88%、Itoguruma 98%、Session / Activation 100%、Task 95%、Monitor 80%の単純平均（92.2%）です。
+算定: Core 88%、Itoguruma 98%、Session / Activation 100%、Task 95%、Monitor 95%の単純平均（95.2%）です。
 
 ## 進捗予測メモ
 
-Monitor実機表示とWindows Serviceの実環境統合試験が主要な残量です。Codex CLI 0.147.0とClaude Code 2.1.220はstart・resume・Reply・ACKを実機確認し、自動テスト114件、Server、MCP、Hook、Graceful Shutdown、起動異常時の安全停止は確認済みです。
+Windows Serviceの実環境統合試験と利用者向け文書・配布整備が主要な残量です。Monitorはデータ入り表示、手動更新、異常時の案内・ログ、Itoguruma MCPの実接続状態表示を確認済みです。Codex CLI 0.147.0とClaude Code 2.1.220はstart・resume・Reply・ACKを実機確認し、自動テスト116件、Server、MCP、Hook、Graceful Shutdown、起動異常時の安全停止は確認済みです。
 
 # 実装機能一覧（チェックリスト）
 
@@ -65,15 +65,15 @@ Monitor実機表示とWindows Serviceの実環境統合試験が主要な残量�
 - [x] Codex／Claude Code Lifecycle Hookランナーとdoctor診断
 - [x] 異常終了時のRun・Session・Message起動復旧
 - [x] Itoguruma認証トークンの非表示セットアップCLI
-- [x] 自動テスト114件
+- [x] 自動テスト116件
 
 ## 部分実装
 
 - [ ] Windows Service実機検証
-- [ ] Monitor実機表示検証
+- [x] Monitor実機表示検証
 - [ ] 利用者向けREADME、設定、コマンド文書
 
 ## 未実装
 
-- [ ] Agent・Monitor・Windows Serviceの実環境統合・受入試験
+- [ ] Agent・Windows Serviceの実環境統合・受入試験
 - [ ] Release配布手順とインストーラ

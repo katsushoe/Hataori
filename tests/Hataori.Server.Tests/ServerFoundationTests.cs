@@ -1,5 +1,7 @@
 ﻿using FluentAssertions;
 using Hataori.Application.Control;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Hataori.Application.Messages;
 using Hataori.Application.Runs;
 using Hataori.Application.Sessions;
@@ -97,6 +99,16 @@ public sealed class ServerFoundationTests
     }
 
     [Fact]
+    public async Task DatabaseInitializationGate_Complete_ReleasesDependentsAsReady()
+    {
+        var gate = new DatabaseInitializationGate();
+
+        gate.Complete();
+
+        (await gate.Ready).Should().BeTrue();
+    }
+
+    [Fact]
     public async Task Handle_Monitor_ReturnsReadOnlySnapshot()
     {
         var lifetime = new TestLifetime();
@@ -116,7 +128,9 @@ public sealed class ServerFoundationTests
         sessions.ListAsync(null, null, Arg.Any<CancellationToken>()).Returns(Array.Empty<ConversationSession>());
         runs.ListAsync(null, null, Arg.Any<CancellationToken>()).Returns(new[] { run });
         queue.ListAsync(null, Arg.Any<CancellationToken>()).Returns(new[] { queued });
-        var handler = new ControlCommandHandler(lifetime, TimeProvider.System, tasks, sessions, runs, queue);
+        var itogurumaState = new ItogurumaConnectionState();
+        itogurumaState.Set("degraded");
+        var handler = new ControlCommandHandler(lifetime, TimeProvider.System, tasks, sessions, runs, queue, itogurumaState);
 
         var response = await handler.HandleAsync(new ControlRequest("monitor"), CancellationToken.None);
 
@@ -125,7 +139,38 @@ public sealed class ServerFoundationTests
         response.Monitor!.QueueCount.Should().Be(1);
         response.Monitor.Tasks.Single().ProgressPercent.Should().Be(60);
         response.Monitor.Agents.Single().State.Should().Be("running");
+        response.Monitor.System.Itoguruma.Should().Be("degraded");
         response.Monitor.System.Sqlite.Should().Be("connected");
+    }
+
+    [Fact]
+    public async Task Handle_Monitor_WithPopulatedDomainObjects_RoundTripsJson()
+    {
+        var lifetime = new TestLifetime();
+        var tasks = Substitute.For<ITaskRepository>();
+        var sessions = Substitute.For<IConversationSessionRepository>();
+        var runs = Substitute.For<IAgentRunRepository>();
+        var queue = Substitute.For<IMessageQueueRepository>();
+        var now = DateTimeOffset.UtcNow;
+        tasks.ListAsync(null, null, Arg.Any<CancellationToken>()).Returns(new[] { HataoriTask.Start("task-1", "Monitor", "codex", "conversation-1", null, "監視", "実行中", now) });
+        sessions.ListAsync(null, null, Arg.Any<CancellationToken>()).Returns(new[] { ConversationSession.Create("conversation-1", "codex", "native-1", now) });
+        runs.ListAsync(null, null, Arg.Any<CancellationToken>()).Returns(new[] { AgentRun.Queue("run-1", "message-1", "conversation-1", "codex", now) });
+        queue.ListAsync(null, Arg.Any<CancellationToken>()).Returns(Array.Empty<QueuedMessage>());
+        var handler = new ControlCommandHandler(lifetime, TimeProvider.System, tasks, sessions, runs, queue, new ItogurumaConnectionState());
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+            Converters = { new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower) },
+        };
+
+        var response = await handler.HandleAsync(new ControlRequest("monitor"), CancellationToken.None);
+        var json = JsonSerializer.Serialize(response, options);
+        var restored = JsonSerializer.Deserialize<ControlResponse>(json, options);
+
+        restored.Should().NotBeNull();
+        restored!.Monitor!.Tasks.Should().ContainSingle(task => task.TaskId == "task-1");
+        restored.Monitor.Sessions.Should().ContainSingle(session => session.NativeSessionId == "native-1");
+        restored.Monitor.Runs.Should().ContainSingle(run => run.RunId == "run-1");
     }
 
     private static ControlCommandHandler CreateHandler(IHostApplicationLifetime lifetime)
@@ -136,7 +181,8 @@ public sealed class ServerFoundationTests
             Substitute.For<ITaskRepository>(),
             Substitute.For<IConversationSessionRepository>(),
             Substitute.For<IAgentRunRepository>(),
-            Substitute.For<IMessageQueueRepository>());
+            Substitute.For<IMessageQueueRepository>(),
+            new ItogurumaConnectionState());
     }
 
     private sealed class TestLifetime : IHostApplicationLifetime

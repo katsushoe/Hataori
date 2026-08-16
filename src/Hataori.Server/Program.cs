@@ -139,7 +139,9 @@ try
             options.BatchSize);
     });
     builder.Services.AddSingleton<ReplyRetryManager>();
+    builder.Services.AddSingleton<ItogurumaConnectionState>();
     builder.Services.AddSingleton<StartupRecoveryService>();
+    builder.Services.AddSingleton<DatabaseInitializationGate>();
     builder.Services.AddSingleton<StartupRecoveryGate>();
     builder.Services.AddSingleton(services =>
     {
@@ -172,9 +174,16 @@ catch (OperationCanceledException)
 }
 catch (Exception exception)
 {
-    fatalLogger?.LogCritical(exception, "[Fatal] Hataori Server stopped because an unhandled application error reached the process boundary");
+    try
+    {
+        fatalLogger?.LogCritical(exception, "[Fatal] Hataori Server stopped because an unhandled application error reached the process boundary");
+    }
+    catch (Exception loggingException)
+    {
+        Console.Error.WriteLine($"致命的エラーのロガー出力にも失敗しました: {loggingException.Message}");
+    }
     var report = await FatalErrorReporter.WriteAsync(exception, CancellationToken.None);
     Console.Error.WriteLine(report.UserMessage);
-    Console.Error.WriteLine($"詳細ログ: {report.LogPath}");
+    Console.Error.WriteLine(report.LogPath is null ? "詳細ログは保存できませんでした。" : $"詳細ログ: {report.LogPath}");
     return 1;
 }
