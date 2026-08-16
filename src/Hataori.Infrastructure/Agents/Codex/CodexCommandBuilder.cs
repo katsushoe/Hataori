@@ -6,10 +6,15 @@ public static class CodexCommandBuilder
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentException.ThrowIfNullOrWhiteSpace(workingDirectory);
-        var arguments = new List<string> { "exec", "--json", "--color", "never", "--sandbox", options.SandboxMode };
+        var arguments = new List<string> { "exec", "--json", "--color", "never" };
         if (options.ApproveForMe)
         {
             arguments.Add("--approve-for-me");
+        }
+        else
+        {
+            arguments.Add("--sandbox");
+            arguments.Add(options.SandboxMode);
         }
 
         AddModel(arguments, options.Model);
