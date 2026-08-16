@@ -26,17 +26,17 @@
 
 | 機能 | 2026.08.16 |
 | :--- | ---: |
-| **グループ全体** | **77%** |
+| **グループ全体** | **78%** |
 | Server / Core / SQLite | 85% |
 | Itoguruma連携 | 90% |
 | Session / Activation | 90% |
 | Task管理 | 95% |
-| CLI | 92% |
+| CLI | 93% |
 | Windows Service | 70% |
 | Monitor | 80% |
-| 運用・復旧 | 70% |
+| 運用・復旧 | 80% |
 | 文書・配布 | 20% |
-| テスト | 78% |
+| テスト | 80% |
 
 ## 現在フェーズ
 
@@ -46,7 +46,7 @@ Phase 1（基盤・必須運用機能）: **88%**
 
 ## 進捗予測メモ
 
-Monitor実機表示、Hook・異常終了復旧・実環境統合試験が主要な残量です。自動テストは93件合格していますが、Itoguruma、MCP、Agent resume、Windows Service、Monitorの実機確認は未実施です。
+Monitor実機表示、異常終了復旧・実環境統合試験が主要な残量です。自動テストは98件合格していますが、Hook、Itoguruma、MCP、Agent resume、Windows Service、Monitorの実機確認は未実施です。
 
 # 実装機能一覧（チェックリスト）
 
@@ -62,18 +62,17 @@ Monitor実機表示、Hook・異常終了復旧・実環境統合試験が主要
 - [x] 構造化ファイルログと`logs` CLI
 - [x] 読み取り専用Monitorアプリ、Control Pipeスナップショット、`monitor` CLI
 - [x] DB Maintenance、Retention purge、VACUUM、stale Task expiry
-- [x] 自動テスト93件
+- [x] Codex／Claude Code Lifecycle Hookランナーとdoctor診断
+- [x] 自動テスト98件
 
 ## 部分実装
 
 - [ ] Windows Service実機検証
 - [ ] Monitor実機表示検証
-- [ ] doctorのHook診断
 - [ ] 異常終了時のRun・Session・Message復旧
 - [ ] 利用者向けREADME、設定、コマンド文書
 
 ## 未実装
 
-- [ ] Agent Hook連携
 - [ ] 実環境統合・受入試験
 - [ ] Release配布手順とインストーラ

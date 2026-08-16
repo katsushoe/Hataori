@@ -1,0 +1,17 @@
+{
+  "description": "Hataori Task Protocol guardrails",
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "hataori hook", "timeout": 10 } ] }
+    ],
+    "UserPromptSubmit": [
+      { "hooks": [ { "type": "command", "command": "hataori hook", "timeout": 10 } ] }
+    ],
+    "PreToolUse": [
+      { "matcher": "^(Bash|apply_patch|Edit|Write)$", "hooks": [ { "type": "command", "command": "hataori hook", "timeout": 10, "statusMessage": "Checking Hataori Task Protocol" } ] }
+    ],
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "hataori hook", "timeout": 10 } ] }
+    ]
+  }
+}
