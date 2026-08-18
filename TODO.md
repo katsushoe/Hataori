@@ -3,6 +3,7 @@
 
 # 変更履歴
 
+- 2026.08.18: 全仕様書143節の11項目に基づきPhase 2の内訳を実装状況で更新。
 - 2026.08.18
 - 2026.08.16
 
@@ -58,6 +59,16 @@
 
 ## Phase 2: 運用強化
 
-- [-] Dynamic Permission Approval
-- [-] Priority Queue、強化Retry、Session recovery
-- [-] Workspace・Monitor管理操作
+Obsidian「Hataori 全仕様書」143節の11項目に対する実装状況（2026-08-18時点）。
+
+- [X] Priority Queue（`message_queue.priority`によるDESC優先順位付けは実装済み）
+- [X] Retry Policy（`replyRetry.*`設定による再試行方針は実装済み）
+- [X] Pending Reply管理（`PendingReply`とReply Retryは実装済み）
+- [ ] Dynamic Permission Approval
+- [ ] Agent Run cancel強化（`agent cancel`／`agent run`のCLI・MCPは未実装）
+- [ ] Session recovery強化（異常終了時の基本復旧は完了。追加の堅牢化は未着手）
+- [ ] Workspace管理（`workspace_id`概念は未導入）
+- [ ] Monitor管理操作（Monitorは引き続き読み取り専用）
+- [ ] Agent definitions DB化（Agent定義は設定fileのまま）
+- [ ] Task conflict detection強化（`task_find_conflicts`は未実装）
+- [ ] 詳細なMetrics
