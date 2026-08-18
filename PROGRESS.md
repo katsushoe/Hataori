@@ -27,7 +27,7 @@
 
 | 機能 | 2026.08.16 | 2026.08.18 |
 | :--- | ---: | ---: |
-| **グループ全体** | **94%** | **94%** |
+| **グループ全体** | **94%** | **96%** |
 | Server / Core / SQLite | 88% | 88% |
 | Itoguruma連携 | 98% | 98% |
 | Session / Activation | 100% | 100% |
@@ -36,7 +36,7 @@
 | Windows Service | 100% | 100% |
 | Monitor | 95% | 95% |
 | 運用・復旧 | 97% | 98% |
-| 文書・配布 | 75% | 75% |
+| 文書・配布 | 75% | 90% |
 | テスト | 96% | 96% |
 
 ## 現在フェーズ
@@ -50,6 +50,8 @@ Phase 1（基盤・必須運用機能）: **95%**
 設定・コマンド・運用文書の拡充が主要な残量です。GitHubと利用者向けREADME、MSIインストールガイド、英語・日本語MCPセットアップは整備済みです。Windows Serviceは標準`bin/config/logs/data`構成、SYSTEM・Administrators限定認証設定、x64 MSIのInstall・Major Upgrade・Uninstall保持、Automatic起動、Running、Itoguruma接続を実機確認済みです。Monitorはデータ入り表示、手動更新、異常時の案内・ログ、Itoguruma MCPの実接続状態表示を確認済みです。Codex CLI 0.147.0とClaude Code 2.1.220はstart・resume・Reply・ACKを実機確認し、自動テスト125件、Server、MCP、Hook、Graceful Shutdown、起動異常時の安全停止は確認済みです。
 
 2026.08.17に3.0.3.0（MCP読み取り専用ツール`get_version`追加、`tool_count` 11→12）をWiX MSIでMajor Upgrade実機検証済みです（`docs/validation/2026-08-17-installer-3.0.3.0.md`）。同検証でUninstall実機検証のみ本番環境保護のため未実施のまま残っています。2026.08.18に`hataori doctor`の`server`チェックがSYSTEM以外の実行では原理的に必ず失敗する誤検知を修正し（`Skipped`判定を追加、commit `044f69a`）、ビルド・自動テスト125件・実機確認で反映を確認しました。専用の自動テストは未追加のため、運用・復旧の進捗は満点にしていません。
+
+同日、`DOCUMENTS.md`が2026.08.16のまま更新されておらず`COMMANDS.md`／`CONFIG.md`／`PACKAGES.md`／`SECURITY.md`／`README.ja.md`（いずれも2026.08.17追加）を記載していなかった不一致を修正しました。あわせて`PACKAGES.ja.md`／`SECURITY.ja.md`を新規作成し、実際には手順化されていなかったRelease公開手順を`RELEASE.md`／`RELEASE.ja.md`として文書化しました（既存のtag・`gh release create`運用を明文化）。文書・配布は75%→90%とし、残りはドキュメント間リンクの自動整合チェックが手動レビュー頼みである点とUninstall実機検証未実施を反映しています。
 
 # 実装機能一覧（チェックリスト）
 
@@ -79,4 +81,5 @@ Phase 1（基盤・必須運用機能）: **95%**
 - [x] Monitor実機表示検証
 - [x] GitHub・利用者向けREADME
 - [x] Codex／Claude Code向けMCPセットアップ（英語・日本語）
-- [ ] 設定、コマンド、運用文書
+- [x] 設定、コマンド、パッケージ、セキュリティ文書（英語・日本語）
+- [x] Release作成・公開手順の文書化（`RELEASE.md`／`RELEASE.ja.md`）

@@ -1,12 +1,15 @@
 # PACKAGES.md Version
 
-2026.08.17
+2026.08.18
 
 # Change History
 
+- 2026.08.18: Added the Japanese translation link.
 - 2026.08.17
 
 # Hataori Package Inventory
+
+[English](PACKAGES.md) | [日本語](PACKAGES.ja.md)
 
 This document is the source of truth for Hataori package references, their purpose, sources, and update policy.
 

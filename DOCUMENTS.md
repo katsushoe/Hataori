@@ -33,8 +33,12 @@
 | `COMMANDS.ja.md` | `COMMANDS.ja.md` | Yes | CLIコマンドリファレンス日本語版。 |
 | `CONFIG.md` | `CONFIG.md` | Yes | 設定項目リファレンス英語正本。 |
 | `CONFIG.ja.md` | `CONFIG.ja.md` | Yes | 設定項目リファレンス日本語版。 |
-| `PACKAGES.md` | `PACKAGES.md` | Yes | NuGetパッケージ台帳（英語のみ）。 |
-| `SECURITY.md` | `SECURITY.md` | Yes | セキュリティ方針・脆弱性報告手順（英語のみ）。 |
+| `RELEASE.md` | `RELEASE.md` | Yes | Release作成・公開手順（Version決定、build、実機検証、MSI、GitHub Release）英語正本。 |
+| `RELEASE.ja.md` | `RELEASE.ja.md` | Yes | Release作成・公開手順日本語版。 |
+| `PACKAGES.md` | `PACKAGES.md` | Yes | NuGetパッケージ台帳英語正本。 |
+| `PACKAGES.ja.md` | `PACKAGES.ja.md` | Yes | NuGetパッケージ台帳日本語版。 |
+| `SECURITY.md` | `SECURITY.md` | Yes | セキュリティ方針・脆弱性報告手順英語正本。GitHubのSecurity機能はこのfile名を参照するため、正本パスは変更しない。 |
+| `SECURITY.ja.md` | `SECURITY.ja.md` | Yes | セキュリティ方針・脆弱性報告手順日本語版。 |
 | `DOCUMENTS.md` | `DOCUMENTS.md` | Yes | 文書正本配置一覧。 |
 | `PROGRESS.md` | `PROGRESS.md` | Yes | 機能別進捗率、完了内容、残作業。 |
 | `TODO.md` | `TODO.md` | Yes | 短期タスクと実装計画。 |
