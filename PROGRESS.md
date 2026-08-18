@@ -35,7 +35,7 @@
 | CLI | 97% | 98% |
 | Windows Service | 100% | 100% |
 | Monitor | 95% | 95% |
-| 運用・復旧 | 97% | 98% |
+| 運用・復旧 | 97% | 99% |
 | 文書・配布 | 75% | 90% |
 | テスト | 96% | 96% |
 
@@ -54,6 +54,8 @@ Phase 1（基盤・必須運用機能）: **95%**
 同日、`DOCUMENTS.md`が2026.08.16のまま更新されておらず`COMMANDS.md`／`CONFIG.md`／`PACKAGES.md`／`SECURITY.md`／`README.ja.md`（いずれも2026.08.17追加）を記載していなかった不一致を修正しました。あわせて`PACKAGES.ja.md`／`SECURITY.ja.md`を新規作成し、実際には手順化されていなかったRelease公開手順を`RELEASE.md`／`RELEASE.ja.md`として文書化しました（既存のtag・`gh release create`運用を明文化）。文書・配布は75%→90%とし、残りはドキュメント間リンクの自動整合チェックが手動レビュー頼みである点とUninstall実機検証未実施を反映しています。
 
 同日、Phase 2（全仕様書143節）から3項目を実装しました。Agent Run cancel（`agent_run_cancel` MCP tool、`hataori agent cancel` CLI、Control Pipe経由。実装時に`agent cancel`が不要な`--database`を要求していた不具合をテストのdeadlockから検出し修正）、Task conflict detection（`task_find_conflicts` MCP tool、CJK bigram＋汎用語stopwordによる簡易キーワード一致）、Dynamic Permission Approval（通知専用v1。原設計の一時停止・再開は現行アーキテクチャ上不可能と判断し、PreToolUseのdeny時にItogurumaへ事後通知するのみに縮小、`docs/adr/0014-dynamic-approval-notify-only.md`参照）。自動テストは125件→133件。CLIを97%→98%としました。実機での動作確認は未実施です。
+
+2026.08.19に3.0.4.0をリリースしました（`docs/validation/2026-08-19-installer-3.0.4.0.md`）。実機（`F:\Hataori`→`C:\Hataori`への移設先）でMSI Install直後のService自動起動未実施を発見し、`installer/Package.wxs`へ`ServiceControl Start="install"`を追加。その過程で、Hataori ServerがItoguruma未連携（`hataori.service.json`未作成）だとWindows Serviceとして起動できない実バグを発見・修正しました（`ItogurumaConnectionWorker`のdegraded運用という設計意図と矛盾していた、`docs/adr/0015`）。あわせて`hataori doctor`の`itoguruma`チェックがCLI実行アカウントの環境変数を見てしまい、稼働中Serviceの実際の接続状態と食い違う場合がある不具合も修正（Control Pipeの`monitor`応答から実際の状態を取得するよう変更）。自動テストは133件→134件。実機でMajor Upgrade（3.0.3.0→3.0.4.0）、Service自動起動、`hataori.service.json`欠落状態からの新規起動、`service setup`による復旧まで確認済みです。運用・復旧を98%→99%としました。
 
 # 実装機能一覧（チェックリスト）
 
@@ -78,7 +80,11 @@ Phase 1（基盤・必須運用機能）: **95%**
 - [x] Agent Run cancel（`agent_run_cancel` MCP tool、`hataori agent cancel` CLI、2026-08-18）
 - [x] Task conflict detection（`task_find_conflicts` MCP tool、2026-08-18）
 - [x] Dynamic Permission Approval 通知専用v1（`docs/adr/0014`、2026-08-18）
-- [x] 自動テスト133件
+- [x] MSI Install直後のService自動起動（`ServiceControl Start="install"`、2026-08-19）
+- [x] Itoguruma未連携でもHataori Serverが起動できる修正（`docs/adr/0015`、2026-08-19）
+- [x] `hataori doctor`の`itoguruma`チェックがライブなServer状態を参照するよう修正（2026-08-19）
+- [x] 3.0.4.0 MSI Major Upgrade実機検証（2026-08-19）
+- [x] 自動テスト134件
 
 ## 部分実装
 
