@@ -14,14 +14,14 @@ public sealed class ItogurumaClientOptionsValidatorTests
     }
 
     [Fact]
-    public void Validate_MissingAuthenticationToken_ReturnsFailure()
+    public void Validate_MissingAuthenticationToken_ReturnsSuccess()
     {
+        // 未連携のItoguruma tokenは起動を止める理由にしない。ItogurumaConnectionWorkerがdegraded状態として扱う。
         var options = CreateValidOptions(authenticationToken: string.Empty);
 
         var result = new ItogurumaClientOptionsValidator().Validate(null, options);
 
-        result.Failed.Should().BeTrue();
-        result.Failures.Should().Contain(message => message.Contains("authentication token", StringComparison.Ordinal));
+        result.Succeeded.Should().BeTrue();
     }
 
     [Fact]
