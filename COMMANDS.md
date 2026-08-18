@@ -321,7 +321,7 @@ Commands: [`start`](#hataori-task-start), [`get`](#hataori-task-get), [`list`](#
 
 ### Agent Commands
 
-Commands: [`list`](#hataori-agent-list), [`status`](#hataori-agent-status), [`runs`](#hataori-agent-runs). All require a database path; `list` and `status` also load configuration.
+Commands: [`list`](#hataori-agent-list), [`status`](#hataori-agent-status), [`runs`](#hataori-agent-runs), [`cancel`](#hataori-agent-cancel). `list`, `status`, and `runs` require a database path; `cancel` uses the Control Pipe instead.
 
 #### `hataori agent list`
 
@@ -358,6 +358,18 @@ Commands: [`list`](#hataori-agent-list), [`status`](#hataori-agent-status), [`ru
 | Result | JSON run array whose membership varies with filters and persisted state. |
 | Example | `hataori agent runs --status running --database F:\Hataori\data\hataori.db` |
 | Safety | Read-only. |
+
+#### `hataori agent cancel`
+
+| Item | Specification |
+| :--- | :--- |
+| Purpose | Cancel a queued, starting, or running agent run and terminate its process if live. |
+| Syntax | `hataori agent cancel <run-id> [--pipe <name>] [--timeout-seconds <1..300>]` |
+| Arguments | Run ID is positional or `--run`; does not take `--database` (the run is reached through the running Server, not the database directly). |
+| Processing | Sends `agent-cancel` with the run ID over the Control Pipe. The `agent_run_cancel` MCP tool reaches the same live process registry directly and does not have this limitation. |
+| Result | `{ "run_id": ..., "status": "cancelled" \| "cancelled_db_only" }`; unknown run ID exits `4`. |
+| Example | `hataori agent cancel run-1a2b3c` |
+| Safety | Destructive. Like `start`/`stop`/`restart`/`status`, the Control Pipe is restricted to the account that runs the Hataori Service, so this CLI path only reaches a live process when invoked from that same account; prefer the MCP tool for reliable cancellation from an agent. |
 
 ### Conversation Commands
 

@@ -3,33 +3,38 @@ using Hataori.Application.Control;
 
 namespace Hataori.Cli;
 
+/// <summary>Hook処理の結果です。Payloadが実際にstdoutへ書き出すJSON、PermissionDeniedはPreToolUseがtool呼び出しを拒否したかを示します。</summary>
+public sealed record HookResult(object Payload, bool PermissionDenied, string? DenialReason);
+
 /// <summary>Codex／Claude CodeのLifecycle Hook入力をHataori Task Protocolへ接続します。</summary>
 public static class HookProcessor
 {
-    public static object Process(JsonElement input, MonitorSnapshot? snapshot, string? conversationId, string? agentId, string? messageId, string? mcpUrl)
+    public static HookResult Process(JsonElement input, MonitorSnapshot? snapshot, string? conversationId, string? agentId, string? messageId, string? mcpUrl)
     {
         var eventName = GetString(input, "hook_event_name") ?? GetString(input, "hook_event") ?? throw new ArgumentException("Hook input requires hook_event_name.");
         var tasks = snapshot?.Tasks.Where(task => string.Equals(task.Status, "active", StringComparison.OrdinalIgnoreCase) && Matches(task, conversationId, agentId)).ToArray() ?? [];
         var context = BuildContext(conversationId, agentId, messageId, mcpUrl, tasks);
         return eventName.ToLowerInvariant() switch
         {
-            "sessionstart" or "userpromptsubmit" => Context(eventName, context),
+            "sessionstart" or "userpromptsubmit" => new HookResult(Context(eventName, context), false, null),
             "pretooluse" => PreToolUse(input, tasks),
-            "stop" => Stop(input, tasks),
-            "sessionend" => new { @continue = true },
+            "stop" => new HookResult(Stop(input, tasks), false, null),
+            "sessionend" => new HookResult(new { @continue = true }, false, null),
             _ => throw new ArgumentException($"Unsupported hook event '{eventName}'."),
         };
     }
 
-    private static object PreToolUse(JsonElement input, IReadOnlyList<MonitorTask> tasks)
+    private static HookResult PreToolUse(JsonElement input, IReadOnlyList<MonitorTask> tasks)
     {
         var tool = GetString(input, "tool_name") ?? string.Empty;
         if (!IsMutation(tool, input) || tasks.Count > 0)
         {
-            return new { hookSpecificOutput = new { hookEventName = "PreToolUse", additionalContext = tasks.Count > 0 ? $"Active Hataori task: {tasks[0].TaskId}." : "" } };
+            var payload = new { hookSpecificOutput = new { hookEventName = "PreToolUse", additionalContext = tasks.Count > 0 ? $"Active Hataori task: {tasks[0].TaskId}." : "" } };
+            return new HookResult(payload, false, null);
         }
 
-        return new { hookSpecificOutput = new { hookEventName = "PreToolUse", permissionDecision = "deny", permissionDecisionReason = "変更作業の前にHataoriへTaskを登録してください。" } };
+        const string reason = "変更作業の前にHataoriへTaskを登録してください。";
+        return new HookResult(new { hookSpecificOutput = new { hookEventName = "PreToolUse", permissionDecision = "deny", permissionDecisionReason = reason } }, true, reason);
     }
 
     private static object Stop(JsonElement input, IReadOnlyList<MonitorTask> tasks)

@@ -23,7 +23,7 @@
 - MCP endpointは現時点でbearer token認証を持ちません。loopback bindとhost filteringがネットワーク境界であり、独立してレビューされた認証層を追加せずにproxyやport forward経由でendpointを公開しないでください。
 - Control Pipeはローカル限定で、foreground管理のためcurrent-userアクセス制限付きで作成されます。
 - Windows Serviceは`LocalSystem`として実行されます。Service install、setup、start、stop、removeには適切な管理者権限が必要です。
-- Task cancel、fail、expire、queue cancel、conversation reset、service制御、Uninstallは状態を変更または削除できます。実行前に対象ID、Service名、インストール先を確認してください。
+- Task cancel、fail、expire、Agent Run cancel、queue cancel、conversation reset、service制御、Uninstallは状態を変更または削除できます。実行前に対象ID、Service名、インストール先を確認してください。
 - Agent実行は設定済みの作業ディレクトリと、CodexまたはClaude Codeの権限モードを継承します。Hataoriは各AgentのSandbox、Workspace trust、承認ポリシーを代替しません。
 
 ## Secretの取り扱い

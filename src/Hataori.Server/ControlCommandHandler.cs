@@ -1,3 +1,4 @@
+using Hataori.Application.Activation;
 using Hataori.Application.Control;
 using Hataori.Application.Messages;
 using Hataori.Application.Runs;
@@ -18,8 +19,9 @@ public sealed class ControlCommandHandler
     private readonly IAgentRunRepository _runs;
     private readonly IMessageQueueRepository _queue;
     private readonly ItogurumaConnectionState _itogurumaState;
+    private readonly ActivationManager _activation;
 
-    public ControlCommandHandler(IHostApplicationLifetime lifetime, TimeProvider timeProvider, ITaskRepository tasks, IConversationSessionRepository sessions, IAgentRunRepository runs, IMessageQueueRepository queue, ItogurumaConnectionState itogurumaState)
+    public ControlCommandHandler(IHostApplicationLifetime lifetime, TimeProvider timeProvider, ITaskRepository tasks, IConversationSessionRepository sessions, IAgentRunRepository runs, IMessageQueueRepository queue, ItogurumaConnectionState itogurumaState, ActivationManager activation)
     {
         ArgumentNullException.ThrowIfNull(lifetime);
         ArgumentNullException.ThrowIfNull(timeProvider);
@@ -28,6 +30,7 @@ public sealed class ControlCommandHandler
         ArgumentNullException.ThrowIfNull(runs);
         ArgumentNullException.ThrowIfNull(queue);
         ArgumentNullException.ThrowIfNull(itogurumaState);
+        ArgumentNullException.ThrowIfNull(activation);
         _lifetime = lifetime;
         _timeProvider = timeProvider;
         _tasks = tasks;
@@ -35,6 +38,7 @@ public sealed class ControlCommandHandler
         _runs = runs;
         _queue = queue;
         _itogurumaState = itogurumaState;
+        _activation = activation;
     }
 
     public async Task<ControlResponse> HandleAsync(ControlRequest request, CancellationToken cancellationToken)
@@ -61,7 +65,30 @@ public sealed class ControlCommandHandler
             return new ControlResponse(true, "reload_on_change_enabled", _timeProvider.GetUtcNow());
         }
 
+        if (string.Equals(request.Command, "agent-cancel", StringComparison.OrdinalIgnoreCase))
+        {
+            return await HandleAgentCancelAsync(request.Argument, cancellationToken).ConfigureAwait(false);
+        }
+
         return new ControlResponse(false, "unknown_command", _timeProvider.GetUtcNow());
+    }
+
+    private async Task<ControlResponse> HandleAgentCancelAsync(string? runId, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(runId))
+        {
+            return new ControlResponse(false, "missing_argument", _timeProvider.GetUtcNow());
+        }
+
+        try
+        {
+            var hadLiveProcess = await _activation.RequestRunCancellationAsync(runId, cancellationToken).ConfigureAwait(false);
+            return new ControlResponse(true, hadLiveProcess ? "cancelled" : "cancelled_db_only", _timeProvider.GetUtcNow());
+        }
+        catch (KeyNotFoundException)
+        {
+            return new ControlResponse(false, "not_found", _timeProvider.GetUtcNow());
+        }
     }
 
     private async Task<ControlResponse> CreateMonitorResponseAsync(CancellationToken cancellationToken)

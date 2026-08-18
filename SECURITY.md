@@ -23,7 +23,7 @@ Include the affected Hataori version, operating system, impact, sanitized reprod
 - The MCP endpoint currently has no bearer-token authentication. Loopback binding and host filtering are the network boundary; do not expose the endpoint through a proxy or port forward without adding an independently reviewed authentication layer.
 - The Control Pipe is local and created with current-user access restrictions for foreground management.
 - The Windows Service runs as `LocalSystem`. Service installation, setup, start, stop, and removal require appropriate administrator rights.
-- Task cancellation, failure, expiration, queue cancellation, conversation reset, service control, and Uninstall can change or remove state. Confirm the target IDs, service name, and installation root before execution.
+- Task cancellation, failure, expiration, agent run cancellation, queue cancellation, conversation reset, service control, and Uninstall can change or remove state. Confirm the target IDs, service name, and installation root before execution.
 - Agent execution inherits the configured working directory and Codex or Claude Code permission mode. Hataori does not replace each agent's sandbox, workspace trust, or approval policy.
 
 ## Secrets Handling

@@ -26,6 +26,36 @@ public sealed class TaskMcpToolsTests : IDisposable
         (await tools.ListAsync(null, "codex", CancellationToken.None)).Should().ContainSingle();
     }
 
+    [Fact]
+    public async Task FindConflictsAsync_OverlappingKeyword_ReturnsOtherAgentsTaskAndExcludesOwn()
+    {
+        var connectionString = new SqliteConnectionStringBuilder { DataSource = _databasePath, ForeignKeys = true, Pooling = false }.ToString();
+        var repository = new SqliteTaskRepository(connectionString);
+        await repository.InitializeAsync(CancellationToken.None);
+        var tools = new TaskMcpTools(new TaskService(repository, TimeProvider.System));
+        await tools.StartAsync("task-codex", "認証処理を修正", "codex", null, null, "ログイン周りの改修", "調査中", CancellationToken.None);
+        await tools.StartAsync("task-claude-own", "認証処理のドキュメント", "claude-code", null, null, "認証仕様の記述", "執筆中", CancellationToken.None);
+        await tools.StartAsync("task-unrelated", "READMEを更新", "codex", null, null, "誤字修正", "作業中", CancellationToken.None);
+
+        var conflicts = await tools.FindConflictsAsync("認証処理のバグ修正", "ログイン画面の不具合対応", "claude-code", CancellationToken.None);
+
+        conflicts.Should().ContainSingle().Which.TaskId.Should().Be("task-codex");
+    }
+
+    [Fact]
+    public async Task FindConflictsAsync_NoOverlap_ReturnsEmpty()
+    {
+        var connectionString = new SqliteConnectionStringBuilder { DataSource = _databasePath, ForeignKeys = true, Pooling = false }.ToString();
+        var repository = new SqliteTaskRepository(connectionString);
+        await repository.InitializeAsync(CancellationToken.None);
+        var tools = new TaskMcpTools(new TaskService(repository, TimeProvider.System));
+        await tools.StartAsync("task-unrelated", "READMEを更新", "codex", null, null, "誤字修正", "作業中", CancellationToken.None);
+
+        var conflicts = await tools.FindConflictsAsync("データベース移行スクリプト", "SQLiteのMigration追加", null, CancellationToken.None);
+
+        conflicts.Should().BeEmpty();
+    }
+
     public void Dispose()
     {
         SqliteConnection.ClearAllPools();

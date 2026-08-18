@@ -59,6 +59,100 @@ public sealed class TaskService
         return _repository.ListAsync(status, agentId, cancellationToken);
     }
 
+    /// <summary>
+    /// 提案するTaskの名称・概要と、他Agentのactive Taskとのキーワード重複を検索します。
+    /// 構造化されたscope項目がないため、あくまで簡易な参考情報です。
+    /// </summary>
+    public async Task<IReadOnlyList<HataoriTask>> FindConflictsAsync(string taskName, string? summary, string? excludeAgentId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(taskName);
+        var active = await _repository.ListAsync(HataoriTaskStatus.Active, null, cancellationToken).ConfigureAwait(false);
+        var keywords = Tokenize(taskName).Concat(Tokenize(summary ?? string.Empty)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (keywords.Count == 0)
+        {
+            return [];
+        }
+
+        return active
+            .Where(task => string.IsNullOrWhiteSpace(excludeAgentId) || !string.Equals(task.AgentId, excludeAgentId, StringComparison.OrdinalIgnoreCase))
+            .Where(task => Tokenize(task.TaskName).Concat(Tokenize(task.Summary)).Concat(Tokenize(task.CurrentWork)).Any(keywords.Contains))
+            .ToArray();
+    }
+
+    /// <summary>
+    /// 「修正」「作業」のような、どのTaskにもほぼ必ず現れる汎用的な作業動詞・名詞です。
+    /// 2文字bigramマッチではこれらが無関係なTask同士を誤って一致させるため、キーワードから除外します。
+    /// </summary>
+    private static readonly HashSet<string> GenericWorkTerms = new(StringComparer.Ordinal)
+    {
+        "修正", "作業", "実装", "対応", "確認", "変更", "更新", "追加", "削除",
+        "完了", "開始", "終了", "実行", "調査", "改修", "検討", "設定", "管理",
+    };
+
+    /// <summary>
+    /// 空白・記号を境界に文字種の連続区間へ分割し、日本語（CJK）区間はさらに2文字ずつの重なる部分文字列へ展開します。
+    /// 単語分かち書きのない日本語のTask名・概要でも部分一致を検出するための簡易処理で、形態素解析等は使用しません。
+    /// </summary>
+    private static IEnumerable<string> Tokenize(string text)
+    {
+        foreach (var run in SplitScriptRuns(text))
+        {
+            if (IsCjk(run[0]))
+            {
+                for (var i = 0; i < run.Length - 1; i++)
+                {
+                    var bigram = run.Substring(i, 2);
+                    if (!GenericWorkTerms.Contains(bigram))
+                    {
+                        yield return bigram;
+                    }
+                }
+            }
+            else if (run.Length >= 2)
+            {
+                yield return run;
+            }
+        }
+    }
+
+    private static IEnumerable<string> SplitScriptRuns(string text)
+    {
+        var run = new System.Text.StringBuilder();
+        bool? runIsCjk = null;
+        foreach (var character in text)
+        {
+            if (char.IsWhiteSpace(character) || char.IsPunctuation(character) || char.IsSymbol(character))
+            {
+                if (run.Length > 0)
+                {
+                    yield return run.ToString();
+                    run.Clear();
+                }
+
+                runIsCjk = null;
+                continue;
+            }
+
+            var isCjk = IsCjk(character);
+            if (runIsCjk is not null && runIsCjk != isCjk)
+            {
+                yield return run.ToString();
+                run.Clear();
+            }
+
+            run.Append(character);
+            runIsCjk = isCjk;
+        }
+
+        if (run.Length > 0)
+        {
+            yield return run.ToString();
+        }
+    }
+
+    private static bool IsCjk(char character) =>
+        character is (>= '぀' and <= 'ヿ') or (>= '一' and <= '鿿') or (>= 'ｦ' and <= 'ﾝ');
+
     public Task<HataoriTask?> GetAsync(string taskId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(taskId);

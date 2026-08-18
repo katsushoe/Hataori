@@ -9,7 +9,7 @@
     <text x="40" y="122">Itoguruma</text><rect x="250" y="106" width="595" height="20" rx="4" fill="#dce3ed"/><rect x="250" y="106" width="583" height="20" rx="4" fill="#3978c5"/><text x="860" y="122">98%</text>
     <text x="40" y="162">Session / Activation</text><rect x="250" y="146" width="595" height="20" rx="4" fill="#dce3ed"/><rect x="250" y="146" width="595" height="20" rx="4" fill="#3978c5"/><text x="860" y="162">100%</text>
     <text x="40" y="202">Task</text><rect x="250" y="186" width="595" height="20" rx="4" fill="#dce3ed"/><rect x="250" y="186" width="565" height="20" rx="4" fill="#3978c5"/><text x="860" y="202">95%</text>
-    <text x="40" y="242">CLI</text><rect x="250" y="226" width="595" height="20" rx="4" fill="#dce3ed"/><rect x="250" y="226" width="577" height="20" rx="4" fill="#3978c5"/><text x="860" y="242">97%</text>
+    <text x="40" y="242">CLI</text><rect x="250" y="226" width="595" height="20" rx="4" fill="#dce3ed"/><rect x="250" y="226" width="583" height="20" rx="4" fill="#3978c5"/><text x="860" y="242">98%</text>
     <text x="40" y="282">Windows Service</text><rect x="250" y="266" width="595" height="20" rx="4" fill="#dce3ed"/><rect x="250" y="266" width="595" height="20" rx="4" fill="#3978c5"/><text x="860" y="282">100%</text>
     <text x="40" y="322">Monitor</text><rect x="250" y="306" width="595" height="20" rx="4" fill="#dce3ed"/><rect x="250" y="306" width="565" height="20" rx="4" fill="#3978c5"/><text x="860" y="322">95%</text>
     <text x="40" y="362">Operations / Recovery</text><rect x="250" y="346" width="595" height="20" rx="4" fill="#dce3ed"/><rect x="250" y="346" width="583" height="20" rx="4" fill="#3978c5"/><text x="860" y="362">98%</text>

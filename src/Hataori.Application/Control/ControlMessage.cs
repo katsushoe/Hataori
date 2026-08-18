@@ -3,7 +3,7 @@ namespace Hataori.Application.Control;
 /// <summary>
 /// ローカルControl Pipeの入力です。
 /// </summary>
-public sealed record ControlRequest(string Command);
+public sealed record ControlRequest(string Command, string? Argument = null);
 
 /// <summary>
 /// ローカルControl Pipeの応答です。

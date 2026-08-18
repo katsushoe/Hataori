@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Hataori.Application.Agents;
 using Hataori.Application.Messages;
 using Hataori.Application.Runs;
@@ -24,6 +25,7 @@ public sealed class ActivationManager
     private readonly TimeProvider _timeProvider;
     private readonly IItogurumaClient _itoguruma;
     private readonly ReplyRetryManager _replyRetries;
+    private readonly ConcurrentDictionary<string, CancellationTokenSource> _runCancellations = new(StringComparer.Ordinal);
 
     public ActivationManager(
         IMessageQueueRepository messageQueue,
@@ -72,6 +74,8 @@ public sealed class ActivationManager
         var session = await _sessions.GetAsync(message.ConversationId, message.AgentId, cancellationToken).ConfigureAwait(false);
         var canResume = session is { Status: ConversationSessionStatus.Idle };
 
+        using var runCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        _runCancellations[runId] = runCts;
         try
         {
             if (canResume)
@@ -80,15 +84,15 @@ public sealed class ActivationManager
             }
 
             await _messageQueue.MarkRunningAsync(message.MessageId, cancellationToken).ConfigureAwait(false);
-            var environment = CreateEnvironment(request, message.MessageId, message.ConversationId, message.AgentId);
+            var environment = CreateEnvironment(request, message.MessageId, message.ConversationId, message.AgentId, message.SenderAgentId);
             var driverRequest = new AgentDriverRequest(
                 message.Body,
                 request.WorkingDirectory,
                 environment,
                 (processId, token) => _runs.MarkRunningAsync(runId, processId, token));
             var result = canResume
-                ? await driver.ResumeAsync(session!.NativeSessionId, driverRequest, cancellationToken).ConfigureAwait(false)
-                : await driver.StartAsync(driverRequest, cancellationToken).ConfigureAwait(false);
+                ? await driver.ResumeAsync(session!.NativeSessionId, driverRequest, runCts.Token).ConfigureAwait(false)
+                : await driver.StartAsync(driverRequest, runCts.Token).ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(result.FinalMessage))
             {
                 throw new InvalidOperationException("Agent completed without a final message.");
@@ -138,11 +142,43 @@ public sealed class ActivationManager
             await CancelRunAsync(runId, session, message.MessageId).ConfigureAwait(false);
             throw;
         }
+        catch (OperationCanceledException) when (runCts.IsCancellationRequested)
+        {
+            await CancelRunAsync(runId, session, message.MessageId).ConfigureAwait(false);
+            return new ActivationResult(message.MessageId, runId, null, false, "Run was cancelled by request.");
+        }
         catch (Exception exception)
         {
             await FailRunAsync(runId, session, message.MessageId, exception).ConfigureAwait(false);
             return new ActivationResult(message.MessageId, runId, null, false, exception.Message);
         }
+        finally
+        {
+            _runCancellations.TryRemove(runId, out _);
+        }
+    }
+
+    /// <summary>
+    /// 実行中または待機中のAgent Runを外部から中断要求します。
+    /// 進行中のRunが見つかった場合はProcessNextAsync側のcatchがDB状態を更新するため、ここでは直接更新しません。
+    /// </summary>
+    public async Task<bool> RequestRunCancellationAsync(string runId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(runId);
+        if (_runCancellations.TryGetValue(runId, out var runCts))
+        {
+            runCts.Cancel();
+            return true;
+        }
+
+        var run = await _runs.GetAsync(runId, cancellationToken).ConfigureAwait(false)
+            ?? throw new KeyNotFoundException($"Agent run '{runId}' was not found.");
+        if (run.Status is AgentRunStatus.Queued or AgentRunStatus.Starting or AgentRunStatus.Running)
+        {
+            await _runs.CancelAsync(runId, cancellationToken).ConfigureAwait(false);
+        }
+
+        return false;
     }
 
     private async Task CancelRunAsync(string runId, ConversationSession? session, string messageId)
@@ -184,7 +220,7 @@ public sealed class ActivationManager
         }
     }
 
-    private static IReadOnlyDictionary<string, string?> CreateEnvironment(ActivationRequest request, string messageId, string conversationId, string agentId) =>
+    private static IReadOnlyDictionary<string, string?> CreateEnvironment(ActivationRequest request, string messageId, string conversationId, string agentId, string senderAgentId) =>
         new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
         {
             ["HATAORI_ROOT"] = request.HataoriRoot,
@@ -192,5 +228,6 @@ public sealed class ActivationManager
             ["HATAORI_MESSAGE_ID"] = messageId,
             ["HATAORI_AGENT_ID"] = agentId,
             ["HATAORI_MCP_URL"] = request.McpUrl,
+            ["HATAORI_SENDER_AGENT_ID"] = senderAgentId,
         };
 }
