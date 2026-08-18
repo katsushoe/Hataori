@@ -12,7 +12,7 @@
     <text x="40" y="242">CLI</text><rect x="250" y="226" width="595" height="20" rx="4" fill="#dce3ed"/><rect x="250" y="226" width="583" height="20" rx="4" fill="#3978c5"/><text x="860" y="242">98%</text>
     <text x="40" y="282">Windows Service</text><rect x="250" y="266" width="595" height="20" rx="4" fill="#dce3ed"/><rect x="250" y="266" width="595" height="20" rx="4" fill="#3978c5"/><text x="860" y="282">100%</text>
     <text x="40" y="322">Monitor</text><rect x="250" y="306" width="595" height="20" rx="4" fill="#dce3ed"/><rect x="250" y="306" width="565" height="20" rx="4" fill="#3978c5"/><text x="860" y="322">95%</text>
-    <text x="40" y="362">Operations / Recovery</text><rect x="250" y="346" width="595" height="20" rx="4" fill="#dce3ed"/><rect x="250" y="346" width="583" height="20" rx="4" fill="#3978c5"/><text x="860" y="362">98%</text>
+    <text x="40" y="362">Operations / Recovery</text><rect x="250" y="346" width="595" height="20" rx="4" fill="#dce3ed"/><rect x="250" y="346" width="589" height="20" rx="4" fill="#3978c5"/><text x="860" y="362">99%</text>
     <text x="40" y="402">Documentation / Release</text><rect x="250" y="386" width="595" height="20" rx="4" fill="#dce3ed"/><rect x="250" y="386" width="536" height="20" rx="4" fill="#3978c5"/><text x="860" y="402">90%</text>
     <text x="40" y="442">Testing</text><rect x="250" y="426" width="595" height="20" rx="4" fill="#dce3ed"/><rect x="250" y="426" width="571" height="20" rx="4" fill="#3978c5"/><text x="860" y="442">96%</text>
   </g>
