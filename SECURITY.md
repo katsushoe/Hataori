@@ -1,5 +1,7 @@
 # Security
 
+[English](SECURITY.md) | [日本語](SECURITY.ja.md)
+
 This document describes the public security model and safe operating requirements for Hataori.
 
 ## Supported Versions

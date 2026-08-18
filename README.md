@@ -71,8 +71,9 @@ CLI output is JSON except for streamed log lines and error text. See [Commands](
 - [MCP Setup](MCP_SETUP.md)
 - [Installation](docs/installation.md)
 - [Itoguruma Setup](docs/setup-itoguruma.md)
-- [Packages](PACKAGES.md)
-- [Security](SECURITY.md)
+- [Release process](RELEASE.md) ([日本語](RELEASE.ja.md))
+- [Packages](PACKAGES.md) ([日本語](PACKAGES.ja.md))
+- [Security](SECURITY.md) ([日本語](SECURITY.ja.md))
 - [Architecture decisions](docs/adr/)
 
 ## Security
