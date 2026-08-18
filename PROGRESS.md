@@ -1,8 +1,9 @@
 # PROGRESS.md Version
-2026.08.16
+2026.08.18
 
 # 変更履歴
 
+- 2026.08.18
 - 2026.08.16
 
 # Hataori 進捗率履歴
@@ -24,19 +25,19 @@
 
 ### ≪Hataori≫
 
-| 機能 | 2026.08.16 |
-| :--- | ---: |
-| **グループ全体** | **94%** |
-| Server / Core / SQLite | 88% |
-| Itoguruma連携 | 98% |
-| Session / Activation | 100% |
-| Task管理 | 95% |
-| CLI | 97% |
-| Windows Service | 100% |
-| Monitor | 95% |
-| 運用・復旧 | 97% |
-| 文書・配布 | 75% |
-| テスト | 96% |
+| 機能 | 2026.08.16 | 2026.08.18 |
+| :--- | ---: | ---: |
+| **グループ全体** | **94%** | **94%** |
+| Server / Core / SQLite | 88% | 88% |
+| Itoguruma連携 | 98% | 98% |
+| Session / Activation | 100% | 100% |
+| Task管理 | 95% | 95% |
+| CLI | 97% | 97% |
+| Windows Service | 100% | 100% |
+| Monitor | 95% | 95% |
+| 運用・復旧 | 97% | 98% |
+| 文書・配布 | 75% | 75% |
+| テスト | 96% | 96% |
 
 ## 現在フェーズ
 
@@ -46,7 +47,9 @@ Phase 1（基盤・必須運用機能）: **95%**
 
 ## 進捗予測メモ
 
-設定・コマンド・運用文書の拡充が主要な残量です。GitHubと利用者向けREADME、MSIインストールガイド、英語・日本語MCPセットアップは整備済みです。Windows Serviceは標準`bin/config/logs/data`構成、SYSTEM・Administrators限定認証設定、x64 MSIのInstall・Major Upgrade・Uninstall保持、Automatic起動、Running、Itoguruma接続を実機確認済みです。Monitorはデータ入り表示、手動更新、異常時の案内・ログ、Itoguruma MCPの実接続状態表示を確認済みです。Codex CLI 0.147.0とClaude Code 2.1.220はstart・resume・Reply・ACKを実機確認し、自動テスト124件、Server、MCP、Hook、Graceful Shutdown、起動異常時の安全停止は確認済みです。
+設定・コマンド・運用文書の拡充が主要な残量です。GitHubと利用者向けREADME、MSIインストールガイド、英語・日本語MCPセットアップは整備済みです。Windows Serviceは標準`bin/config/logs/data`構成、SYSTEM・Administrators限定認証設定、x64 MSIのInstall・Major Upgrade・Uninstall保持、Automatic起動、Running、Itoguruma接続を実機確認済みです。Monitorはデータ入り表示、手動更新、異常時の案内・ログ、Itoguruma MCPの実接続状態表示を確認済みです。Codex CLI 0.147.0とClaude Code 2.1.220はstart・resume・Reply・ACKを実機確認し、自動テスト125件、Server、MCP、Hook、Graceful Shutdown、起動異常時の安全停止は確認済みです。
+
+2026.08.17に3.0.3.0（MCP読み取り専用ツール`get_version`追加、`tool_count` 11→12）をWiX MSIでMajor Upgrade実機検証済みです（`docs/validation/2026-08-17-installer-3.0.3.0.md`）。同検証でUninstall実機検証のみ本番環境保護のため未実施のまま残っています。2026.08.18に`hataori doctor`の`server`チェックがSYSTEM以外の実行では原理的に必ず失敗する誤検知を修正し（`Skipped`判定を追加、commit `044f69a`）、ビルド・自動テスト125件・実機確認で反映を確認しました。専用の自動テストは未追加のため、運用・復旧の進捗は満点にしていません。
 
 # 実装機能一覧（チェックリスト）
 
@@ -66,7 +69,9 @@ Phase 1（基盤・必須運用機能）: **95%**
 - [x] 異常終了時のRun・Session・Message起動復旧
 - [x] Itoguruma認証トークンの非表示セットアップCLI
 - [x] 標準ディレクトリ構成とx64 MSIのInstall・Upgrade・Uninstall
-- [x] 自動テスト124件
+- [x] MCP `get_version`ツール追加とMSI Major Upgrade実機検証（3.0.3.0、2026-08-17）
+- [x] `hataori doctor`の`server`チェック誤検知修正（非SYSTEM実行時はSkipped扱い、2026-08-18）
+- [x] 自動テスト125件
 
 ## 部分実装
 
