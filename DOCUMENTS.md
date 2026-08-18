@@ -1,5 +1,5 @@
 # DOCUMENTS.md Version
-2026.08.16
+2026.08.18
 
 この文書は、Hataoriリポジトリ内のディレクトリ構成と文書正本配置を管理します。
 
@@ -25,9 +25,16 @@
 
 | 文書名 | 正本パス | Git管理 | 用途 |
 | :--- | :--- | :--- | :--- |
-| `README.md` | `README.md` | Yes | GitHubと利用者向けのプロジェクト入口。 |
+| `README.md` | `README.md` | Yes | GitHubと利用者向けのプロジェクト入口（英語正本）。 |
+| `README.ja.md` | `README.ja.md` | Yes | プロジェクト入口の日本語版。 |
 | `MCP_SETUP.md` | `MCP_SETUP.md` | Yes | Codex／Claude Code向けMCPセットアップ英語正本。 |
 | `MCP_SETUP.ja.md` | `MCP_SETUP.ja.md` | Yes | Codex／Claude Code向けMCPセットアップ日本語版。 |
+| `COMMANDS.md` | `COMMANDS.md` | Yes | CLIコマンドリファレンス英語正本。 |
+| `COMMANDS.ja.md` | `COMMANDS.ja.md` | Yes | CLIコマンドリファレンス日本語版。 |
+| `CONFIG.md` | `CONFIG.md` | Yes | 設定項目リファレンス英語正本。 |
+| `CONFIG.ja.md` | `CONFIG.ja.md` | Yes | 設定項目リファレンス日本語版。 |
+| `PACKAGES.md` | `PACKAGES.md` | Yes | NuGetパッケージ台帳（英語のみ）。 |
+| `SECURITY.md` | `SECURITY.md` | Yes | セキュリティ方針・脆弱性報告手順（英語のみ）。 |
 | `DOCUMENTS.md` | `DOCUMENTS.md` | Yes | 文書正本配置一覧。 |
 | `PROGRESS.md` | `PROGRESS.md` | Yes | 機能別進捗率、完了内容、残作業。 |
 | `TODO.md` | `TODO.md` | Yes | 短期タスクと実装計画。 |
