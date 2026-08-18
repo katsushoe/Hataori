@@ -27,7 +27,7 @@ hataori service setup
 Start-Service Hataori
 ```
 
-`service setup`はItogurumaが発行した認証トークンを表示せず`config/hataori.service.json`へ保存し、ACLをSYSTEMとAdministratorsだけに制限します。初回インストールでは認証設定前の誤起動を防ぐため、サービスはAutomaticで登録しますが自動起動しません。
+`service setup`はItogurumaが発行した認証トークンを表示せず`config/hataori.service.json`へ保存し、ACLをSYSTEMとAdministratorsだけに制限します。このfileが無くてもServerは起動でき、Itoguruma未連携のままdegraded状態で動作します（Task管理・MCP・CLIは利用可能）。`service setup`は後から実行しても構いません。
 
 ## Upgrade
 
