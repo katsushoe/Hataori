@@ -347,7 +347,7 @@ public static class CliApplication
         await AddDoctorCheckAsync(checks, "server", async () =>
         {
             await new ControlPipeClient().SendAsync(serverOptions.ControlPipeName, "status", GetControlTimeout(options), cancellationToken).ConfigureAwait(false);
-        }).ConfigureAwait(false);
+        }, skipPredicate: static exception => exception is UnauthorizedAccessException).ConfigureAwait(false);
         await AddDoctorCheckAsync(checks, "itoguruma", async () =>
         {
             await ExecuteItogurumaAsync(["itoguruma", "status", "--config", GetConfigurationPath(options)], cancellationToken).ConfigureAwait(false);
@@ -401,7 +401,7 @@ public static class CliApplication
         }
     }
 
-    private static async Task AddDoctorCheckAsync(List<DoctorCheck> checks, string name, Func<Task> action)
+    private static async Task AddDoctorCheckAsync(List<DoctorCheck> checks, string name, Func<Task> action, Func<Exception, bool>? skipPredicate = null)
     {
         try
         {
@@ -410,6 +410,12 @@ public static class CliApplication
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
+            if (skipPredicate is not null && skipPredicate(exception))
+            {
+                checks.Add(new DoctorCheck(name, false, $"Skipped: this check requires the same account as the Hataori Service (e.g. SYSTEM). {exception.Message}", Skipped: true));
+                return;
+            }
+
             checks.Add(new DoctorCheck(name, false, exception.Message));
         }
     }
