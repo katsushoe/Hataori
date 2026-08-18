@@ -75,6 +75,22 @@ public sealed class CliApplicationTests : IDisposable
     }
 
     [Fact]
+    public async Task RunAsync_AgentCancel_SendsRunIdAsControlPipeArgument()
+    {
+        var pipeName = $"hataori-cli-test-{Guid.NewGuid():N}";
+        await using var server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+        var serverTask = RespondToAgentCancelAsync(server);
+
+        var response = await RunAsync("agent", "cancel", "run-1", "--pipe", pipeName, "--timeout-seconds", "5");
+        await serverTask;
+
+        response.ExitCode.Should().Be(0);
+        using var document = JsonDocument.Parse(response.Output);
+        document.RootElement.GetProperty("run_id").GetString().Should().Be("run-1");
+        document.RootElement.GetProperty("status").GetString().Should().Be("cancelled");
+    }
+
+    [Fact]
     public async Task RunAsync_AgentRuns_ReturnsPersistedRuns()
     {
         var repository = new SqliteAgentRunRepository(GetConnectionString());
@@ -273,6 +289,17 @@ public sealed class CliApplicationTests : IDisposable
         var request = await reader.ReadLineAsync(CancellationToken.None);
         request.Should().Contain("status");
         await writer.WriteLineAsync("{\"success\":true,\"status\":\"running\",\"timestamp_utc\":\"2026-08-15T00:00:00+00:00\"}");
+    }
+
+    private static async Task RespondToAgentCancelAsync(NamedPipeServerStream server)
+    {
+        await server.WaitForConnectionAsync(CancellationToken.None);
+        using var reader = new StreamReader(server, Encoding.UTF8, false, leaveOpen: true);
+        await using var writer = new StreamWriter(server, new UTF8Encoding(false), leaveOpen: true) { AutoFlush = true };
+        var request = await reader.ReadLineAsync(CancellationToken.None);
+        request.Should().Contain("agent-cancel");
+        request.Should().Contain("run-1");
+        await writer.WriteLineAsync("{\"success\":true,\"status\":\"cancelled\",\"timestamp_utc\":\"2026-08-15T00:00:00+00:00\"}");
     }
 
     private sealed record CliResponse(int ExitCode, string Output, string Error);

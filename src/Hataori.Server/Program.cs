@@ -169,6 +169,7 @@ try
     builder.Services.AddMcpServer()
         .WithHttpTransport(options => options.Stateless = true)
         .WithTools<TaskMcpTools>()
+        .WithTools<AgentRunMcpTools>()
         .WithTools<SystemMcpTools>();
 
     var app = builder.Build();

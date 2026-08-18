@@ -17,7 +17,10 @@ public sealed class ControlPipeClient
         Converters = { new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower) },
     };
 
-    public async Task<ControlResponse> SendAsync(string pipeName, string command, TimeSpan timeout, CancellationToken cancellationToken)
+    public Task<ControlResponse> SendAsync(string pipeName, string command, TimeSpan timeout, CancellationToken cancellationToken) =>
+        SendAsync(pipeName, command, null, timeout, cancellationToken);
+
+    public async Task<ControlResponse> SendAsync(string pipeName, string command, string? argument, TimeSpan timeout, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(pipeName);
         ArgumentException.ThrowIfNullOrWhiteSpace(command);
@@ -34,7 +37,7 @@ public sealed class ControlPipeClient
             await pipe.ConnectAsync(timeoutSource.Token).ConfigureAwait(false);
             await using var writer = new StreamWriter(pipe, new UTF8Encoding(false), leaveOpen: true) { AutoFlush = true };
             using var reader = new StreamReader(pipe, Encoding.UTF8, false, leaveOpen: true);
-            await writer.WriteLineAsync(JsonSerializer.Serialize(new ControlRequest(command), JsonOptions)).ConfigureAwait(false);
+            await writer.WriteLineAsync(JsonSerializer.Serialize(new ControlRequest(command, argument), JsonOptions)).ConfigureAwait(false);
             var line = await reader.ReadLineAsync(timeoutSource.Token).ConfigureAwait(false);
             return JsonSerializer.Deserialize<ControlResponse>(line ?? string.Empty, JsonOptions)
                 ?? throw new IOException("Control Pipe returned an empty response.");

@@ -3,6 +3,7 @@
 
 # 変更履歴
 
+- 2026.08.18: Agent Run cancel、Task conflict detection、Dynamic Permission Approval（通知専用v1）を実装。
 - 2026.08.18: 全仕様書143節の11項目に基づきPhase 2の内訳を実装状況で更新。
 - 2026.08.18
 - 2026.08.16
@@ -64,11 +65,11 @@ Obsidian「Hataori 全仕様書」143節の11項目に対する実装状況（20
 - [X] Priority Queue（`message_queue.priority`によるDESC優先順位付けは実装済み）
 - [X] Retry Policy（`replyRetry.*`設定による再試行方針は実装済み）
 - [X] Pending Reply管理（`PendingReply`とReply Retryは実装済み）
-- [ ] Dynamic Permission Approval
-- [ ] Agent Run cancel強化（`agent cancel`／`agent run`のCLI・MCPは未実装）
+- [X] Dynamic Permission Approval（通知専用v1。PreToolUseのdeny時にItogurumaへ事後通知。原設計の一時停止・再開は現行アーキテクチャ上不可能と判断し不採用、`docs/adr/0014-dynamic-approval-notify-only.md`参照）
+- [X] Agent Run cancel強化（`agent_run_cancel` MCP tool、`hataori agent cancel` CLIを実装。CLI経路はServiceと同一アカウントが必要）
+- [X] Task conflict detection強化（`task_find_conflicts` MCP toolを実装。CJK bigramベースの簡易キーワード一致、参考情報扱い）
 - [ ] Session recovery強化（異常終了時の基本復旧は完了。追加の堅牢化は未着手）
 - [ ] Workspace管理（`workspace_id`概念は未導入）
 - [ ] Monitor管理操作（Monitorは引き続き読み取り専用）
 - [ ] Agent definitions DB化（Agent定義は設定fileのまま）
-- [ ] Task conflict detection強化（`task_find_conflicts`は未実装）
 - [ ] 詳細なMetrics
