@@ -38,7 +38,7 @@ $HataoriRoot = 'F:\Hataori'
 & "$HataoriRoot\bin\cli\Hataori.Cli.exe" mcp status
 ```
 
-ServiceがRunningで、MCP JSONに`connected: true`、期待URL、3.0.3.0では`tool_count: 12`があれば合格です。
+ServiceがRunningで、MCP JSONに`connected: true`、期待URL、3.0.5.0では`tool_count: 12`があれば合格です。
 
 ## Register Clients
 
@@ -95,7 +95,7 @@ Project scopeではWorkspace trustとMCP承認が必要な場合があります�
 
 ## Multiple Workspaces
 
-1つのHataori Serviceは、`activation.workingDirectory`で設定した1 Workspace上のAgentを調整できます。3.0.3.0にはClient別MCP Workspace allowlistがありません。自動Agent Workspaceを変更する場合は絶対`activation.workingDirectory`を更新し、`hataori config check`後にServiceを再起動します。
+1つのHataori Serviceは、`activation.workingDirectory`で設定した1 Workspace上のAgentを調整できます。3.0.5.0にはClient別MCP Workspace allowlistがありません。自動Agent Workspaceを変更する場合は絶対`activation.workingDirectory`を更新し、`hataori config check`後にServiceを再起動します。
 
 ClientのUser/Project scopeは登録表示範囲だけを変えます。Agent working directoryを選択せず、Agent sandboxやWorkspace trustを回避しません。
 
@@ -104,7 +104,7 @@ ClientのUser/Project scopeは登録表示範囲だけを変えます。Agent wo
 最初に失敗した段階で停止します。
 
 1. **Server Endpoint:** `hataori mcp status`を実行します。合格: `connected: true`と期待Endpoint。
-2. **Tool検出:** `tool_count`を確認します。3.0.3.0の合格値は`12`で、`task_start`、`task_get`、`task_list`、`task_heartbeat`、`task_complete`、`task_cancel`、`task_fail`、`task_expire`、`task_history`、`task_relations`、`task_relation_add`、`get_version`です。
+2. **Tool検出:** `tool_count`を確認します。3.0.5.0の合格値は`12`で、`task_start`、`task_get`、`task_list`、`task_heartbeat`、`task_complete`、`task_cancel`、`task_fail`、`task_expire`、`task_history`、`task_relations`、`task_relation_add`、`get_version`です。
 3. **Client登録:** Codex `/mcp`または`claude mcp get hataori`がconnectedを示します。
 4. **Read-only Tool call:** Status/Agent filterなしで`task_list`を呼びます。合格: 該当なしの空arrayを含む構造化Task array。
 5. **全体診断:** `hataori doctor`を実行します。合格: `healthy: true`で、skip以外の全checkが`ok: true`。
