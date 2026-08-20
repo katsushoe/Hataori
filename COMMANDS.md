@@ -500,10 +500,10 @@ Commands: [`init`](#hataori-config-init), [`show`](#hataori-config-show), [`path
 | Item | Specification |
 | :--- | :--- |
 | Purpose | Create the embedded non-secret default main configuration. |
-| Syntax | `hataori config init [--config <path>]` |
-| Arguments | Destination defaults to the standard main settings path. |
+| Syntax | `hataori config init [--config <path>] [--language <ja-JP\|en-US>]` |
+| Arguments | Destination defaults to the standard main settings path; language defaults to the embedded `ja-JP` value. |
 | Processing | Creates directories and uses create-new semantics; existing files are preserved. |
-| Result | JSON `path` and `created`; `created` is false when a file already exists. |
+| Result | JSON `path`, `created`, and `language`; `created` is false when a file already exists. |
 | Example | `hataori config init` |
 | Safety | Does not overwrite existing configuration. |
 

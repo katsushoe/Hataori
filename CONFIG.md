@@ -8,15 +8,15 @@ This document is the source of truth for Hataori configuration files, precedence
 
 | File | Standard location | Owner | Purpose |
 | :--- | :--- | :--- | :--- |
-| Main settings | `%INSTALL_ROOT%\config\hataori.json` | User or `hataori config init` | Non-secret Server, agent, retry, logging, maintenance, and hook settings. |
+| Main settings | `%INSTALL_ROOT%\config\hataori.json` | MSI, user, or `hataori config init` | Non-secret application language, Server, agent, retry, logging, maintenance, and hook settings. |
 | Service secret settings | `%INSTALL_ROOT%\config\hataori.service.json` | `hataori service setup` | Itoguruma token for the `LocalSystem` Windows Service. |
 
 Relative `databasePath`, log, and hook paths are resolved from `%INSTALL_ROOT%`. An explicitly supplied `HATAORI_CONFIG_PATH` may point to another absolute main settings file.
 
 ## File Generation
 
-- The MSI creates `%INSTALL_ROOT%\config`, `logs`, and `data` but does not package mutable configuration or secrets.
-- `hataori config init` creates the embedded default `hataori.json` only when the destination does not exist.
+- On a new installation, the MSI creates `hataori.json` with the selected language. It preserves an existing file during upgrades.
+- `hataori config init [--language <ja-JP|en-US>]` creates the embedded default `hataori.json` only when the destination does not exist.
 - `hataori service setup` creates or replaces `hataori.service.json` and restricts its ACL to `SYSTEM` and `Administrators`.
 - Do not hand-create a token value in examples, source control, logs, or chat.
 
@@ -38,6 +38,12 @@ All sections in the default file are required for Server startup except `hooks`,
 Hataori has no named profile file. Runtime variants are selected by the main file path, environment overrides, and whether the process runs as the Windows Service. MCP access is unauthenticated and loopback-only; Itoguruma authentication is a separate outbound-client setting.
 
 ## Settings Reference
+
+### `application.language`
+
+- Type/required: string, required.
+- Default: `ja-JP`; supported values are `ja-JP` and `en-US`.
+- Behavior: stores the application display language selected during installation.
 
 ### `server`
 

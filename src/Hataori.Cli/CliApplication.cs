@@ -483,8 +483,9 @@ public static class CliApplication
             var layout = InstallationLayout.Resolve(AppContext.BaseDirectory);
             layout.EnsureDirectories();
             var configurationPath = GetConfigurationPath(options);
-            var created = await DefaultConfigurationWriter.EnsureAsync(configurationPath, cancellationToken).ConfigureAwait(false);
-            return new { path = configurationPath, created };
+            var language = Optional(options, "language");
+            var created = await DefaultConfigurationWriter.EnsureAsync(configurationPath, language, cancellationToken).ConfigureAwait(false);
+            return new { path = configurationPath, created, language };
         }
 
         if (args[1].Equals("reload", StringComparison.OrdinalIgnoreCase))

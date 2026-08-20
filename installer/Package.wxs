@@ -1,13 +1,40 @@
-<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
   <Package Name="Hataori"
            Manufacturer="sazysoft"
            Version="$(var.ProductVersion)"
            UpgradeCode="1EC49A4B-879B-4F59-8B54-53A4761068C7"
            Scope="perMachine"
            Language="1041"
+           Codepage="932"
            InstallerVersion="500">
     <MajorUpgrade DowngradeErrorMessage="A newer version of Hataori is already installed." />
     <MediaTemplate EmbedCab="yes" />
+    <Property Id="HATAORI_LANGUAGE" Value="ja-JP" Secure="yes" />
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALL_ROOT" />
+
+    <UI>
+      <Dialog Id="LanguageDlg" Width="370" Height="210" Title="Hataori Setup / セットアップ">
+        <Control Id="Title" Type="Text" X="20" Y="15" Width="330" Height="24" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Bigger}Select language / 言語を選択" />
+        <Control Id="Description" Type="Text" X="20" Y="47" Width="330" Height="30" Text="Select the language used by Hataori.&#13;&#10;Hataoriで使用する言語を選択してください。" />
+        <Control Id="Language" Type="RadioButtonGroup" X="30" Y="85" Width="300" Height="50" Property="HATAORI_LANGUAGE">
+          <RadioButtonGroup Property="HATAORI_LANGUAGE">
+            <RadioButton Value="ja-JP" X="0" Y="0" Width="250" Height="17" Text="日本語 (Japanese)" />
+            <RadioButton Value="en-US" X="0" Y="24" Width="250" Height="17" Text="English (英語)" />
+          </RadioButtonGroup>
+        </Control>
+        <Control Id="Next" Type="PushButton" X="236" Y="176" Width="56" Height="17" Default="yes" Text="Next / 次へ">
+          <Publish Event="EndDialog" Value="Return" />
+        </Control>
+        <Control Id="Cancel" Type="PushButton" X="300" Y="176" Width="56" Height="17" Cancel="yes" Text="Cancel / 中止">
+          <Publish Event="EndDialog" Value="Exit" />
+        </Control>
+      </Dialog>
+    </UI>
+
+    <InstallUISequence>
+      <Show Dialog="LanguageDlg" Before="CostFinalize" Condition="NOT Installed AND UILevel &gt;= 4" />
+    </InstallUISequence>
 
     <StandardDirectory Id="ProgramFiles6432Folder">
       <Directory Id="INSTALL_ROOT" Name="Hataori">
@@ -87,5 +114,15 @@
       <ComponentRef Id="PreservedLogsDirectory" />
       <ComponentRef Id="PreservedDataDirectory" />
     </Feature>
+
+    <CustomAction Id="InitializeConfiguration"
+                  FileRef="CliExe"
+                  ExeCommand="config init --config &quot;[CONFIGDIR]hataori.json&quot; --language &quot;[HATAORI_LANGUAGE]&quot;"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="check" />
+    <InstallExecuteSequence>
+      <Custom Action="InitializeConfiguration" After="InstallFiles" Condition="NOT Installed" />
+    </InstallExecuteSequence>
   </Package>
 </Wix>
