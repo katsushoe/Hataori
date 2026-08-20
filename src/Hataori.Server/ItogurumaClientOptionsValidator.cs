@@ -7,6 +7,8 @@ public sealed class ItogurumaClientOptionsValidator : IValidateOptions<Itoguruma
 {
     public ValidateOptionsResult Validate(string? name, ItogurumaClientOptions options)
     {
+        // AuthenticationTokenは意図的に必須としない。未設定の場合、ItogurumaConnectionWorkerが
+        // 接続失敗としてdegraded状態を報告し続けるだけで、Hataori自体はItoguruma未連携でも起動できる。
         var errors = new List<string>();
         if (options.Endpoint is null || !options.Endpoint.IsAbsoluteUri)
         {
@@ -15,11 +17,6 @@ public sealed class ItogurumaClientOptionsValidator : IValidateOptions<Itoguruma
         else if (!options.Endpoint.IsLoopback || (options.Endpoint.Scheme != Uri.UriSchemeHttp && options.Endpoint.Scheme != Uri.UriSchemeHttps))
         {
             errors.Add("Itoguruma endpoint must be an HTTP(S) loopback URI.");
-        }
-
-        if (string.IsNullOrWhiteSpace(options.AuthenticationToken))
-        {
-            errors.Add("Itoguruma authentication token is required.");
         }
 
         if (string.IsNullOrWhiteSpace(options.AgentId) || string.IsNullOrWhiteSpace(options.AgentType))

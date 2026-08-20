@@ -32,7 +32,9 @@ try
     builder.Configuration.AddJsonFile(configurationPath, optional: false, reloadOnChange: true);
     if (WindowsServiceHelpers.IsWindowsService())
     {
-        builder.Configuration.AddJsonFile(ServiceConfigurationPath.GetDefaultPath(AppContext.BaseDirectory), optional: false, reloadOnChange: true);
+        // optional: true — hataori.service.jsonはItogurumaトークン連携（`hataori service setup`）でのみ作られる。
+        // 未作成でもHataori自体はItoguruma未連携（degraded）で起動できるため、file不在で起動を止めない。
+        builder.Configuration.AddJsonFile(ServiceConfigurationPath.GetDefaultPath(AppContext.BaseDirectory), optional: true, reloadOnChange: true);
     }
     builder.Configuration.AddEnvironmentVariables("HATAORI_");
     var startupFileLogOptions = builder.Configuration.GetRequiredSection(FileLogOptions.SectionName).Get<FileLogOptions>()
@@ -169,6 +171,7 @@ try
     builder.Services.AddMcpServer()
         .WithHttpTransport(options => options.Stateless = true)
         .WithTools<TaskMcpTools>()
+        .WithTools<AgentRunMcpTools>()
         .WithTools<SystemMcpTools>();
 
     var app = builder.Build();

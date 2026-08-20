@@ -75,6 +75,51 @@ public sealed class CliApplicationTests : IDisposable
     }
 
     [Fact]
+    public async Task RunAsync_AgentCancel_SendsRunIdAsControlPipeArgument()
+    {
+        var pipeName = $"hataori-cli-test-{Guid.NewGuid():N}";
+        await using var server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+        var serverTask = RespondToAgentCancelAsync(server);
+
+        var response = await RunAsync("agent", "cancel", "run-1", "--pipe", pipeName, "--timeout-seconds", "5");
+        await serverTask;
+
+        response.ExitCode.Should().Be(0);
+        using var document = JsonDocument.Parse(response.Output);
+        document.RootElement.GetProperty("run_id").GetString().Should().Be("run-1");
+        document.RootElement.GetProperty("status").GetString().Should().Be("cancelled");
+    }
+
+    [Fact]
+    public async Task RunAsync_DoctorItoguruma_ReflectsLiveServerConnectionStateNotCliSideReconnect()
+    {
+        var pipeName = $"hataori-cli-test-{Guid.NewGuid():N}";
+        var configPath = Path.Combine(Path.GetTempPath(), $"hataori-doctor-test-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(configPath, $$"""
+            {
+              "server": {
+                "databasePath": "{{Path.GetTempPath().Replace("\\", "\\\\")}}hataori-doctor-test-{{Guid.NewGuid():N}}.db",
+                "controlPipeName": "{{pipeName}}",
+                "mcpHost": "127.0.0.1",
+                "mcpPort": 45999,
+                "mcpPath": "/mcp"
+              }
+            }
+            """);
+        var serverTask = RespondToStatusThenMonitorAsync(pipeName, itogurumaState: "degraded");
+
+        var response = await RunAsync("doctor", "--config", configPath, "--timeout-seconds", "5");
+        await serverTask;
+
+        using var document = JsonDocument.Parse(response.Output);
+        var itogurumaCheck = document.RootElement.GetProperty("checks").EnumerateArray()
+            .Single(check => check.GetProperty("name").GetString() == "itoguruma");
+        itogurumaCheck.GetProperty("ok").GetBoolean().Should().BeFalse();
+        itogurumaCheck.GetProperty("error").GetString().Should().Contain("degraded");
+        File.Delete(configPath);
+    }
+
+    [Fact]
     public async Task RunAsync_AgentRuns_ReturnsPersistedRuns()
     {
         var repository = new SqliteAgentRunRepository(GetConnectionString());
@@ -273,6 +318,39 @@ public sealed class CliApplicationTests : IDisposable
         var request = await reader.ReadLineAsync(CancellationToken.None);
         request.Should().Contain("status");
         await writer.WriteLineAsync("{\"success\":true,\"status\":\"running\",\"timestamp_utc\":\"2026-08-15T00:00:00+00:00\"}");
+    }
+
+    private static async Task RespondToStatusThenMonitorAsync(string pipeName, string itogurumaState)
+    {
+        for (var i = 0; i < 2; i++)
+        {
+            await using var server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+            await server.WaitForConnectionAsync(CancellationToken.None);
+            using var reader = new StreamReader(server, Encoding.UTF8, false, leaveOpen: true);
+            await using var writer = new StreamWriter(server, new UTF8Encoding(false), leaveOpen: true) { AutoFlush = true };
+            var request = await reader.ReadLineAsync(CancellationToken.None);
+            if (request!.Contains("monitor", StringComparison.OrdinalIgnoreCase))
+            {
+                var body = """{"success":true,"status":"running","timestamp_utc":"2026-08-15T00:00:00+00:00","monitor":{"tasks":[],"agents":[],"sessions":[],"runs":[],"queue_count":0,"system":{"server":"running","itoguruma":"__ITOGURUMA_STATE__","mcp":"running","sqlite":"connected"}}}"""
+                    .Replace("__ITOGURUMA_STATE__", itogurumaState);
+                await writer.WriteLineAsync(body);
+            }
+            else
+            {
+                await writer.WriteLineAsync("""{"success":true,"status":"running","timestamp_utc":"2026-08-15T00:00:00+00:00"}""");
+            }
+        }
+    }
+
+    private static async Task RespondToAgentCancelAsync(NamedPipeServerStream server)
+    {
+        await server.WaitForConnectionAsync(CancellationToken.None);
+        using var reader = new StreamReader(server, Encoding.UTF8, false, leaveOpen: true);
+        await using var writer = new StreamWriter(server, new UTF8Encoding(false), leaveOpen: true) { AutoFlush = true };
+        var request = await reader.ReadLineAsync(CancellationToken.None);
+        request.Should().Contain("agent-cancel");
+        request.Should().Contain("run-1");
+        await writer.WriteLineAsync("{\"success\":true,\"status\":\"cancelled\",\"timestamp_utc\":\"2026-08-15T00:00:00+00:00\"}");
     }
 
     private sealed record CliResponse(int ExitCode, string Output, string Error);
