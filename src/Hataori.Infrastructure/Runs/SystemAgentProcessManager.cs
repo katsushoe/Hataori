@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text;
+using Hataori.Application;
 using Hataori.Application.Runs;
 
 namespace Hataori.Infrastructure.Runs;
@@ -23,7 +24,7 @@ public sealed class SystemAgentProcessManager(TimeProvider timeProvider) : IAgen
         cancellationToken.ThrowIfCancellationRequested();
         var startInfo = new ProcessStartInfo
         {
-            FileName = request.FileName,
+            FileName = ExecutableResolver.Resolve(request.FileName),
             WorkingDirectory = request.WorkingDirectory,
             UseShellExecute = false,
             CreateNoWindow = true,
