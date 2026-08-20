@@ -1,25 +1,27 @@
-# Hataori インストール
+# Hataori Installation
 
-HataoriのWindows標準成果物はx64 MSIです。MSIはServer、CLI、Monitor、Windows Service、CLIのシステムPATH、Monitorのスタートメニューショートカットを管理します。
+[English](installation.md) | [日本語](installation.ja.md)
 
-## 標準構成
+The supported Windows artifact is the x64 MSI. It manages the Server, CLI, Monitor, Windows Service, system `PATH`, and Monitor Start menu shortcut.
 
-| パス | 用途 | Upgrade／Uninstall |
+## Standard Layout
+
+| Path | Purpose | Upgrade / Uninstall |
 | :--- | :--- | :--- |
-| `%INSTALL_ROOT%/bin` | 実行ファイルとHookテンプレート | MSIが更新・削除 |
-| `%INSTALL_ROOT%/config` | 通常設定とサービス秘密設定 | 保持 |
-| `%INSTALL_ROOT%/logs` | ログ | 保持 |
-| `%INSTALL_ROOT%/data` | SQLite等のアプリデータ | 保持 |
+| `%INSTALL_ROOT%\bin` | Executables and hook templates | Updated and removed by the MSI |
+| `%INSTALL_ROOT%\config` | Main and service-secret settings | Preserved |
+| `%INSTALL_ROOT%\logs` | Logs | Preserved |
+| `%INSTALL_ROOT%\data` | SQLite and application data | Preserved |
 
-既定の`%INSTALL_ROOT%`は64bit Program Files配下の`Hataori`です。別の場所へ導入する場合は、管理者ターミナルから`INSTALL_ROOT`を指定します。
+The default `%INSTALL_ROOT%` is `Hataori` under 64-bit Program Files. To use another location, run this from an elevated terminal:
 
 ```powershell
-msiexec.exe /i Hataori-3.0.3.0-x64.msi INSTALL_ROOT="D:\Hataori"
+msiexec.exe /i Hataori-3.0.5.0-x64.msi INSTALL_ROOT="F:\Hataori"
 ```
 
-## 初回設定
+## Initial Configuration
 
-MSIは設定、秘密情報、利用者データ、ログを同梱しません。初期設定はCLIで生成し、既存ファイルがある場合は変更しません。
+The MSI does not include settings, secrets, user data, or logs. These commands preserve existing files:
 
 ```powershell
 hataori config init
@@ -27,27 +29,27 @@ hataori service setup
 Start-Service Hataori
 ```
 
-`service setup`はItogurumaが発行した認証トークンを表示せず`config/hataori.service.json`へ保存し、ACLをSYSTEMとAdministratorsだけに制限します。このfileが無くてもServerは起動でき、Itoguruma未連携のままdegraded状態で動作します（Task管理・MCP・CLIは利用可能）。`service setup`は後から実行しても構いません。
+`service setup` copies the Itoguruma authentication token without displaying it and restricts `config\hataori.service.json` to `SYSTEM` and `Administrators`. To prevent an unauthenticated first start, the MSI registers the Service as Automatic but does not start it. If started manually without this file, the Server runs in a degraded, unlinked state while task management, MCP, and CLI remain available.
 
 ## Upgrade
 
-新しいVersionのMSIを同じ`INSTALL_ROOT`で実行します。MSIは旧バイナリとサービス登録を置換し、`config`、`logs`、`data`を保持します。Upgrade後はサービスを起動してください。
+Run the newer MSI with the same `INSTALL_ROOT`. It replaces binaries and service registration while preserving `config`, `logs`, and `data`. Start the Service after the upgrade.
 
 ## Uninstall
 
-Windowsの「インストールされているアプリ」または次のコマンドで削除します。
+Use Windows Installed apps or:
 
 ```powershell
-msiexec.exe /x Hataori-3.0.3.0-x64.msi
+msiexec.exe /x Hataori-3.0.5.0-x64.msi
 ```
 
-Uninstallはバイナリ、サービス、PATH、ショートカットを削除します。設定、秘密情報、データ、ログは保持します。不要な場合だけ、利用者が内容を確認して`%INSTALL_ROOT%/config`、`logs`、`data`を別途削除してください。
+Uninstall removes binaries, the Service, `PATH`, and shortcuts. Review and manually remove preserved mutable directories only when their data is no longer needed.
 
-## MSI生成とHash確認
+## Build and Verify the MSI
 
 ```powershell
 ./scripts/Build-Installer.ps1
-Get-FileHash ./artifacts/installer/Hataori-3.0.3.0-x64.msi -Algorithm SHA256
+Get-FileHash ./artifacts/installer/Hataori-3.0.5.0-x64.msi -Algorithm SHA256
 ```
 
-生成スクリプトはServer、CLI、Monitorをwin-x64 self-contained single-fileとしてpublishし、WiX Toolset 5.0.2でMSIを作成します。
+The script publishes self-contained, single-file `win-x64` Server, CLI, and Monitor executables and builds the MSI with WiX Toolset 5.0.2.

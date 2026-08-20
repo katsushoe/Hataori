@@ -25,7 +25,7 @@ hataori mcp status
 標準成果物は自己完結型Windows x64 MSIです。ダブルクリックしてUACを承認するか、管理者ターミナルから任意のインストール先を指定します。
 
 ```powershell
-msiexec.exe /i Hataori-3.0.3.0-x64.msi INSTALL_ROOT="F:\Hataori"
+msiexec.exe /i Hataori-3.0.5.0-x64.msi INSTALL_ROOT="F:\Hataori"
 ```
 
 MSIはServer、CLI、Monitor、Windows Service登録、System `PATH`、Start Menu Shortcutを導入します。Install、Upgrade、Uninstallの動作は[インストール](docs/installation.ja.md)を参照してください。
@@ -84,4 +84,4 @@ bind address、権限、秘密情報の保存方法を変更する前に[セキ�
 
 ## License
 
-現在、Open Source Licenseは同梱されていません。著作権はRepository所有者に帰属し、Sourceを閲覧できることは複製、変更、再配布の許諾を意味しません。
+Hataoriは[MIT License](LICENSE)で配布します。
