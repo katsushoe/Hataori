@@ -25,7 +25,7 @@ Pass conditions are a running `Hataori` service and an MCP status response conta
 The standard artifact is the self-contained Windows x64 MSI. Double-click it and approve UAC, or specify a custom installation root from an elevated terminal:
 
 ```powershell
-msiexec.exe /i Hataori-3.0.3.0-x64.msi INSTALL_ROOT="F:\Hataori"
+msiexec.exe /i Hataori-3.0.5.0-x64.msi INSTALL_ROOT="F:\Hataori"
 ```
 
 The MSI installs Server, CLI, Monitor, the Windows Service registration, the system `PATH` entry, and a Start menu shortcut. See [Installation](docs/installation.md) for Install, Upgrade, and Uninstall behavior.
@@ -83,4 +83,4 @@ See [Security](SECURITY.md) before changing bind addresses, permissions, or secr
 
 ## License
 
-No open-source license is currently included. Copyright remains with the repository owner; source availability does not grant permission to copy, modify, or redistribute the software.
+Hataori is distributed under the [MIT License](LICENSE).
