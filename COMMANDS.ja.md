@@ -255,7 +255,7 @@ Command: [`start`](#hataori-task-start)、[`get`](#hataori-task-get)、[`list`](
 
 ### Agent Commands
 
-Command: [`list`](#hataori-agent-list)、[`status`](#hataori-agent-status)、[`runs`](#hataori-agent-runs)。全commandでDB path、`list/status`では設定も読みます。
+Command: [`list`](#hataori-agent-list)、[`status`](#hataori-agent-status)、[`runs`](#hataori-agent-runs)、[`cancel`](#hataori-agent-cancel)。`list/status/runs`はDB path必須、`cancel`はControl Pipeを使用しDBを使いません。
 
 #### `hataori agent list`
 
@@ -283,6 +283,15 @@ Command: [`list`](#hataori-agent-list)、[`status`](#hataori-agent-status)、[`r
 - 処理・戻り値: Filterと永続状態に応じたRun JSON arrayを返します。
 - 例: `hataori agent runs --status running --database F:\Hataori\data\hataori.db`。
 - 安全: 読み取り専用です。
+
+#### `hataori agent cancel`
+
+- 目的: queued／starting／running状態のAgent Runを中断し、実行中Processがあれば終了させます。
+- 構文: `hataori agent cancel <run-id> [--pipe <name>] [--timeout-seconds <1..300>]`。
+- 引数: Run IDは位置引数または`--run`です。`--database`は使いません（DBを直接触らず、稼働中のServer経由でRunへ到達するため）。
+- 処理・戻り値: Run IDをControl Pipe経由で`agent-cancel`として送信します。`{"run_id": ..., "status": "cancelled" | "cancelled_db_only"}`を返し、未知のRun IDは終了`4`です。MCP tool `agent_run_cancel`は同じ実行中Process registryへ直接到達するため、下記の制約を受けません。
+- 例: `hataori agent cancel run-1a2b3c`。
+- 安全: 破壊的操作です。`start/stop/restart/status`と同様、Control PipeはHataori Serviceを実行しているアカウントに限定されるため、このCLI経路は同一アカウントから呼び出した場合のみ実行中Processへ到達できます。確実にAgentから中断する場合はMCP toolを使用してください。
 
 ### Conversation Commands
 

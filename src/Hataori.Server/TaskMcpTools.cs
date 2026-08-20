@@ -34,6 +34,11 @@ public sealed class TaskMcpTools
     public Task<IReadOnlyList<HataoriTask>> ListAsync(HataoriTaskStatus? status, string? agentId, CancellationToken cancellationToken)
         => _service.ListAsync(status, agentId, cancellationToken);
 
+    [McpServerTool(Name = "task_find_conflicts", ReadOnly = true, OpenWorld = false, UseStructuredContent = true)]
+    [Description("Finds other agents' active tasks that may overlap with a proposed task, by keyword match on name, summary, and current work. A best-effort hint, not authoritative.")]
+    public Task<IReadOnlyList<HataoriTask>> FindConflictsAsync(string taskName, string? summary, string? agentId, CancellationToken cancellationToken)
+        => _service.FindConflictsAsync(taskName, summary, agentId, cancellationToken);
+
     [McpServerTool(Name = "task_heartbeat", Destructive = false, Idempotent = true, OpenWorld = false, UseStructuredContent = true)]
     [Description("Updates the current work and progress percentage of an active task.")]
     public Task<HataoriTask> HeartbeatAsync(string taskId, string currentWork, int progressPercent, CancellationToken cancellationToken)

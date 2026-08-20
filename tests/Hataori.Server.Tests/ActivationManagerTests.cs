@@ -107,6 +107,60 @@ public sealed class ActivationManagerTests : IDisposable
         (await fixture.Sessions.GetAsync("conversation-1", "codex", CancellationToken.None))!.Status.Should().Be(ConversationSessionStatus.Idle);
     }
 
+    [Fact]
+    public async Task RequestRunCancellationAsync_LiveRun_CancelsDriverAndMarksRunCancelled()
+    {
+        var fixture = await CreateFixtureAsync();
+        await fixture.Queue.EnqueueAsync(CreateMessage("message-5"), 0, CancellationToken.None);
+        fixture.Driver.StartAsync(Arg.Any<AgentDriverRequest>(), Arg.Any<CancellationToken>())
+            .Returns(call => RunUntilCancelledAsync(call.Arg<AgentDriverRequest>(), call.Arg<CancellationToken>()));
+
+        var processTask = fixture.Manager.ProcessNextAsync(CreateRequest(), CancellationToken.None);
+        var runId = await WaitForRunIdAsync(fixture.Runs, "codex");
+
+        var hadLiveProcess = await fixture.Manager.RequestRunCancellationAsync(runId, CancellationToken.None);
+        var result = await processTask;
+
+        hadLiveProcess.Should().BeTrue();
+        result!.Succeeded.Should().BeFalse();
+        result.Error.Should().Be("Run was cancelled by request.");
+        (await fixture.Runs.GetAsync(runId, CancellationToken.None))!.Status.Should().Be(AgentRunStatus.Cancelled);
+    }
+
+    [Fact]
+    public async Task RequestRunCancellationAsync_UnknownRunId_ThrowsKeyNotFound()
+    {
+        var fixture = await CreateFixtureAsync();
+
+        var act = () => fixture.Manager.RequestRunCancellationAsync("missing-run", CancellationToken.None);
+
+        await act.Should().ThrowAsync<KeyNotFoundException>();
+    }
+
+    private static async Task<AgentDriverResult> RunUntilCancelledAsync(AgentDriverRequest request, CancellationToken token)
+    {
+        await request.ProcessStarted!(4321, CancellationToken.None);
+        await Task.Delay(Timeout.Infinite, token).ConfigureAwait(false);
+        throw new InvalidOperationException("unreachable");
+    }
+
+    private static async Task<string> WaitForRunIdAsync(AgentRunService runs, string agentId)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        while (DateTime.UtcNow < deadline)
+        {
+            var running = await runs.ListAsync(AgentRunStatus.Running, agentId, CancellationToken.None);
+            if (running.Count > 0)
+            {
+                return running[0].RunId;
+            }
+
+            await Task.Delay(10);
+        }
+
+        throw new TimeoutException("Run did not reach Running status in time.");
+    }
+
     public void Dispose()
     {
         SqliteConnection.ClearAllPools();

@@ -1,7 +1,10 @@
 ﻿using FluentAssertions;
+using Hataori.Application.Activation;
+using Hataori.Application.Agents;
 using Hataori.Application.Control;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Hataori.Application.Itoguruma;
 using Hataori.Application.Messages;
 using Hataori.Application.Runs;
 using Hataori.Application.Sessions;
@@ -130,7 +133,7 @@ public sealed class ServerFoundationTests
         queue.ListAsync(null, Arg.Any<CancellationToken>()).Returns(new[] { queued });
         var itogurumaState = new ItogurumaConnectionState();
         itogurumaState.Set("degraded");
-        var handler = new ControlCommandHandler(lifetime, TimeProvider.System, tasks, sessions, runs, queue, itogurumaState);
+        var handler = new ControlCommandHandler(lifetime, TimeProvider.System, tasks, sessions, runs, queue, itogurumaState, CreateActivationManager());
 
         var response = await handler.HandleAsync(new ControlRequest("monitor"), CancellationToken.None);
 
@@ -156,7 +159,7 @@ public sealed class ServerFoundationTests
         sessions.ListAsync(null, null, Arg.Any<CancellationToken>()).Returns(new[] { ConversationSession.Create("conversation-1", "codex", "native-1", now) });
         runs.ListAsync(null, null, Arg.Any<CancellationToken>()).Returns(new[] { AgentRun.Queue("run-1", "message-1", "conversation-1", "codex", now) });
         queue.ListAsync(null, Arg.Any<CancellationToken>()).Returns(Array.Empty<QueuedMessage>());
-        var handler = new ControlCommandHandler(lifetime, TimeProvider.System, tasks, sessions, runs, queue, new ItogurumaConnectionState());
+        var handler = new ControlCommandHandler(lifetime, TimeProvider.System, tasks, sessions, runs, queue, new ItogurumaConnectionState(), CreateActivationManager());
         var options = new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
@@ -182,7 +185,23 @@ public sealed class ServerFoundationTests
             Substitute.For<IConversationSessionRepository>(),
             Substitute.For<IAgentRunRepository>(),
             Substitute.For<IMessageQueueRepository>(),
-            new ItogurumaConnectionState());
+            new ItogurumaConnectionState(),
+            CreateActivationManager());
+    }
+
+    private static ActivationManager CreateActivationManager()
+    {
+        var queue = Substitute.For<IMessageQueueRepository>();
+        var itoguruma = Substitute.For<IItogurumaClient>();
+        return new ActivationManager(
+            queue,
+            Substitute.For<IConversationMutex>(),
+            new ConversationSessionService(Substitute.For<IConversationSessionRepository>(), TimeProvider.System),
+            new AgentRunService(Substitute.For<IAgentRunRepository>(), TimeProvider.System),
+            Array.Empty<IAgentDriver>(),
+            TimeProvider.System,
+            itoguruma,
+            new ReplyRetryManager(queue, itoguruma, new ReplyRetrySettings(3, TimeSpan.FromSeconds(1), TimeSpan.FromMinutes(1), 10)));
     }
 
     private sealed class TestLifetime : IHostApplicationLifetime

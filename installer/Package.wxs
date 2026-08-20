@@ -26,6 +26,7 @@
                               Vital="yes" />
               <ServiceControl Id="HataoriServiceControl"
                               Name="Hataori"
+                              Start="install"
                               Stop="both"
                               Remove="uninstall"
                               Wait="yes" />

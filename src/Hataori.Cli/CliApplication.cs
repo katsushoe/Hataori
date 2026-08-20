@@ -195,14 +195,50 @@ public static class CliApplication
         using var document = JsonDocument.Parse(json);
         var response = await new ControlPipeClient().SendAsync(GetPipeName(options), "monitor", GetControlTimeout(options), cancellationToken).ConfigureAwait(false);
         var snapshot = response.Monitor;
+        var conversationId = Environment.GetEnvironmentVariable("HATAORI_CONVERSATION_ID");
+        var messageId = Environment.GetEnvironmentVariable("HATAORI_MESSAGE_ID");
+        var senderAgentId = Environment.GetEnvironmentVariable("HATAORI_SENDER_AGENT_ID");
 
-        return HookProcessor.Process(
+        var hookResult = HookProcessor.Process(
             document.RootElement,
             snapshot,
-            Environment.GetEnvironmentVariable("HATAORI_CONVERSATION_ID"),
+            conversationId,
             Environment.GetEnvironmentVariable("HATAORI_AGENT_ID"),
-            Environment.GetEnvironmentVariable("HATAORI_MESSAGE_ID"),
+            messageId,
             Environment.GetEnvironmentVariable("HATAORI_MCP_URL"));
+
+        if (hookResult.PermissionDenied && !string.IsNullOrWhiteSpace(senderAgentId) && !string.IsNullOrWhiteSpace(conversationId) && !string.IsNullOrWhiteSpace(messageId))
+        {
+            await TryNotifyPermissionDeniedAsync(options, senderAgentId, conversationId, messageId, hookResult.DenialReason, cancellationToken).ConfigureAwait(false);
+        }
+
+        return hookResult.Payload;
+    }
+
+    /// <summary>
+    /// PreToolUseがtool呼び出しをdenyした際、Itogurumaへ事後通知します（Dynamic Permission Approvalの通知専用v1、docs/adr/0014参照）。
+    /// 通知に失敗してもHookの応答自体には影響させません。
+    /// </summary>
+    private static async Task TryNotifyPermissionDeniedAsync(IReadOnlyDictionary<string, string> options, string senderAgentId, string conversationId, string messageId, string? denialReason, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var configuration = LoadConfiguration(options);
+            var clientOptions = configuration.GetSection(ItogurumaClientOptions.SectionName).Get<ItogurumaClientOptions>();
+            if (clientOptions is null)
+            {
+                return;
+            }
+
+            await using var client = new McpItogurumaClient(clientOptions, NullLoggerFactory.Instance);
+            await client.ConnectAsync(cancellationToken).ConfigureAwait(false);
+            var body = $"Hataoriがtool呼び出しをblockしました: {denialReason}";
+            await client.ReplyAsync(senderAgentId, body, conversationId, messageId, $"hataori-hook-deny:{messageId}", cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            // 通知は best-effort。失敗してもHookの応答（deny判定そのもの）は変えない。
+        }
     }
 
     private static object ExecuteMonitor(string[] args)
@@ -347,11 +383,19 @@ public static class CliApplication
         await AddDoctorCheckAsync(checks, "server", async () =>
         {
             await new ControlPipeClient().SendAsync(serverOptions.ControlPipeName, "status", GetControlTimeout(options), cancellationToken).ConfigureAwait(false);
-        }).ConfigureAwait(false);
+        }, skipPredicate: static exception => exception is UnauthorizedAccessException).ConfigureAwait(false);
         await AddDoctorCheckAsync(checks, "itoguruma", async () =>
         {
-            await ExecuteItogurumaAsync(["itoguruma", "status", "--config", GetConfigurationPath(options)], cancellationToken).ConfigureAwait(false);
-        }).ConfigureAwait(false);
+            // 稼働中のHataori Server自身が実際に持つItoguruma接続状態をControl Pipe経由で確認する。
+            // CLI側で独立に再接続すると、CLIプロセスの実行アカウント（対話ユーザーのUser環境変数）と
+            // Service本体（hataori.service.json）でtokenの出所が異なり、実態と食い違う結果を返すことがある。
+            var response = await new ControlPipeClient().SendAsync(serverOptions.ControlPipeName, "monitor", GetControlTimeout(options), cancellationToken).ConfigureAwait(false);
+            var itogurumaState = response.Monitor?.System.Itoguruma;
+            if (itogurumaState != "connected")
+            {
+                throw new InvalidOperationException($"Itoguruma connection state is '{itogurumaState ?? "unknown"}' (expected 'connected').");
+            }
+        }, skipPredicate: static exception => exception is UnauthorizedAccessException).ConfigureAwait(false);
         await AddDoctorCheckAsync(checks, "mcp", async () =>
         {
             await ExecuteMcpAsync(["mcp", "status", "--config", GetConfigurationPath(options)], cancellationToken).ConfigureAwait(false);
@@ -401,7 +445,7 @@ public static class CliApplication
         }
     }
 
-    private static async Task AddDoctorCheckAsync(List<DoctorCheck> checks, string name, Func<Task> action)
+    private static async Task AddDoctorCheckAsync(List<DoctorCheck> checks, string name, Func<Task> action, Func<Exception, bool>? skipPredicate = null)
     {
         try
         {
@@ -410,6 +454,12 @@ public static class CliApplication
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
+            if (skipPredicate is not null && skipPredicate(exception))
+            {
+                checks.Add(new DoctorCheck(name, false, $"Skipped: this check requires the same account as the Hataori Service (e.g. SYSTEM). {exception.Message}", Skipped: true));
+                return;
+            }
+
             checks.Add(new DoctorCheck(name, false, exception.Message));
         }
     }
@@ -486,6 +536,11 @@ public static class CliApplication
         var hasPositional = args.Length > 2 && !args[2].StartsWith("--", StringComparison.Ordinal);
         var positional = hasPositional ? args[2] : null;
         var options = ParseOptions(args.Skip(hasPositional ? 3 : 2));
+        if (args[0].Equals("agent", StringComparison.OrdinalIgnoreCase) && args[1].Equals("cancel", StringComparison.OrdinalIgnoreCase))
+        {
+            return await ExecuteAgentCancelAsync(positional, options, cancellationToken).ConfigureAwait(false);
+        }
+
         var databasePath = GetDatabasePath(options);
         var connectionString = new SqliteConnectionStringBuilder { DataSource = databasePath, ForeignKeys = true }.ToString();
         return args[0].ToLowerInvariant() switch
@@ -496,6 +551,15 @@ public static class CliApplication
             "db" => await CliDatabaseDiagnostics.ExecuteAsync(args[1], databasePath, cancellationToken).ConfigureAwait(false),
             _ => throw new ArgumentException($"Unknown command '{args[0]}'."),
         };
+    }
+
+    private static async Task<object> ExecuteAgentCancelAsync(string? positional, IReadOnlyDictionary<string, string> options, CancellationToken cancellationToken)
+    {
+        var runId = positional ?? Required(options, "run");
+        var response = await new ControlPipeClient().SendAsync(GetPipeName(options), "agent-cancel", runId, GetControlTimeout(options), cancellationToken).ConfigureAwait(false);
+        return response.Status == "not_found"
+            ? throw new KeyNotFoundException($"Agent run '{runId}' was not found.")
+            : new { run_id = runId, status = response.Status };
     }
 
     private static async Task<object> ExecuteAgentAsync(string command, string? positional, IReadOnlyDictionary<string, string> options, string connectionString, CancellationToken cancellationToken)

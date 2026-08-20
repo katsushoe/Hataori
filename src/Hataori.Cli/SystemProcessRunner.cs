@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using Hataori.Application;
 
 namespace Hataori.Cli;
 
@@ -15,7 +16,7 @@ public sealed class SystemProcessRunner : IProcessRunner
 
         var startInfo = new ProcessStartInfo
         {
-            FileName = fileName,
+            FileName = ExecutableResolver.Resolve(fileName),
             UseShellExecute = false,
             CreateNoWindow = true,
             RedirectStandardOutput = true,

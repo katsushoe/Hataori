@@ -71,15 +71,16 @@ streamされるlog行とerror textを除き、CLI出力はJSONです。Command�
 - [MCPセットアップ](MCP_SETUP.ja.md)
 - [インストール](docs/installation.ja.md)
 - [Itogurumaセットアップ](docs/setup-itoguruma.ja.md)
-- [パッケージ](PACKAGES.md)（英語）
-- [セキュリティ](SECURITY.md)（英語）
+- [Release手順](RELEASE.ja.md)（[English](RELEASE.md)）
+- [パッケージ](PACKAGES.ja.md)（[English](PACKAGES.md)）
+- [セキュリティ](SECURITY.ja.md)（[English](SECURITY.md)）
 - [アーキテクチャ判断](docs/adr/)
 
 ## Security
 
 Hataoriは既定でMCP endpointをloopbackへbindします。Itoguruma tokenをGit、log、chat、MCP Client設定へ記載しないでください。`hataori service setup`はService tokenを別fileへ保存し、ACLを`SYSTEM`と`Administrators`だけに制限します。
 
-bind address、権限、秘密情報の保存方法を変更する前に[セキュリティ](SECURITY.md)（英語）を確認してください。
+bind address、権限、秘密情報の保存方法を変更する前に[セキュリティ](SECURITY.ja.md)を確認してください。
 
 ## License
 
