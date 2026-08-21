@@ -23,6 +23,7 @@ partial class MonitorForm
     private Label mcpValueLabel = null!;
     private Label sqliteValueLabel = null!;
     private Label queueValueLabel = null!;
+    private Label queueNameLabel = null!;
     private System.Windows.Forms.Timer refreshTimer = null!;
 
     protected override void Dispose(bool disposing)
@@ -56,6 +57,7 @@ partial class MonitorForm
         mcpValueLabel = new Label();
         sqliteValueLabel = new Label();
         queueValueLabel = new Label();
+        queueNameLabel = new Label();
         refreshTimer = new System.Windows.Forms.Timer(components);
         SuspendLayout();
         rootLayout.ColumnCount = 1;
@@ -93,7 +95,7 @@ partial class MonitorForm
         AddStatusRow("Itoguruma", itogurumaValueLabel, 1);
         AddStatusRow("MCP", mcpValueLabel, 2);
         AddStatusRow("SQLite", sqliteValueLabel, 3);
-        AddStatusRow("Queue件数", queueValueLabel, 4);
+        AddStatusRow(queueNameLabel, "Queue件数", queueValueLabel, 4);
         statusPage.Controls.Add(statusLayout);
         rootLayout.Controls.Add(toolbar, 0, 0);
         rootLayout.Controls.Add(tabs, 0, 1);
@@ -112,10 +114,14 @@ partial class MonitorForm
         return new DataGridView { AllowUserToAddRows = false, AllowUserToDeleteRows = false, AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill, Dock = DockStyle.Fill, ReadOnly = true, RowHeadersVisible = false };
     }
 
-    private void AddStatusRow(string name, Label value, int row)
+    private void AddStatusRow(string name, Label value, int row) => AddStatusRow(new Label(), name, value, row);
+
+    private void AddStatusRow(Label nameLabel, string name, Label value, int row)
     {
         statusLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 42F));
-        statusLayout.Controls.Add(new Label { AutoSize = true, Text = name }, 0, row);
+        nameLabel.AutoSize = true;
+        nameLabel.Text = name;
+        statusLayout.Controls.Add(nameLabel, 0, row);
         value.AutoSize = true;
         value.Text = "-";
         statusLayout.Controls.Add(value, 1, row);

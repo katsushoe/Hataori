@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Hataori.Application;
 using Hataori.Application.Control;
+using Hataori.Application.Localization;
 using Hataori.Application.Sessions;
 using Hataori.Application.Tasks;
 using Hataori.Core.Runs;
@@ -74,7 +75,7 @@ public static class CliApplication
             {
                 if (args.Length < 2)
                 {
-                    throw new ArgumentException("Usage: hataori task <command> [options]");
+                    throw new ArgumentException(GetSubcommandHelp("task"));
                 }
 
                 var hasPositional = args.Length > 2 && !args[2].StartsWith("--", StringComparison.Ordinal);
@@ -295,7 +296,7 @@ public static class CliApplication
     {
         if (args.Length < 2 || (!args[1].Equals("status", StringComparison.OrdinalIgnoreCase) && !args[1].Equals("test", StringComparison.OrdinalIgnoreCase)))
         {
-            throw new ArgumentException("Usage: hataori itoguruma <status|test> [options]");
+            throw new ArgumentException(GetSubcommandHelp("itoguruma"));
         }
 
         var options = ParseOptions(args.Skip(2));
@@ -312,7 +313,7 @@ public static class CliApplication
     {
         if (args.Length < 2 || !args[1].Equals("itoguruma", StringComparison.OrdinalIgnoreCase))
         {
-            throw new ArgumentException("Usage: hataori setup itoguruma [--config <path>] [--skip-test]");
+            throw new ArgumentException(DisplayLanguage.Text("使い方: hataori setup itoguruma [--config <パス>] [--skip-test]", "Usage: hataori setup itoguruma [--config <path>] [--skip-test]"));
         }
 
         var options = ParseOptions(args.Skip(2));
@@ -358,7 +359,7 @@ public static class CliApplication
     {
         if (args.Length < 2 || !args[1].Equals("status", StringComparison.OrdinalIgnoreCase))
         {
-            throw new ArgumentException("Usage: hataori mcp status [options]");
+            throw new ArgumentException(DisplayLanguage.Text("使い方: hataori mcp status [オプション]", "Usage: hataori mcp status [options]"));
         }
 
         var options = ParseOptions(args.Skip(2));
@@ -474,7 +475,7 @@ public static class CliApplication
     {
         if (args.Length < 2)
         {
-            throw new ArgumentException("Usage: hataori config <init|show|path|check|reload> [options]");
+            throw new ArgumentException(GetSubcommandHelp("config"));
         }
 
         var options = ParseOptions(args.Skip(2));
@@ -501,7 +502,7 @@ public static class CliApplication
     {
         if (args.Length < 2)
         {
-            throw new ArgumentException("Usage: hataori service <setup|install|uninstall|start|stop|restart|status> [options]");
+            throw new ArgumentException(GetSubcommandHelp("service"));
         }
 
         if (args[1].Equals("setup", StringComparison.OrdinalIgnoreCase))
@@ -531,7 +532,7 @@ public static class CliApplication
     {
         if (args.Length < 2)
         {
-            throw new ArgumentException($"Usage: hataori {args[0]} <command> [options]");
+            throw new ArgumentException(GetSubcommandHelp(args[0]));
         }
 
         var hasPositional = args.Length > 2 && !args[2].StartsWith("--", StringComparison.Ordinal);
@@ -814,8 +815,10 @@ public static class CliApplication
     private static bool IsVersionCommand(IReadOnlyList<string> args) => args[0].Equals("version", StringComparison.OrdinalIgnoreCase) || args[0].Equals("--version", StringComparison.OrdinalIgnoreCase);
     private static bool IsSubcommandHelp(IReadOnlyList<string> args) => args.Count > 1 && (args[1].Equals("help", StringComparison.OrdinalIgnoreCase) || args[1].Equals("--help", StringComparison.OrdinalIgnoreCase));
     private static string GetVersion() => typeof(CliApplication).Assembly.GetName().Version?.ToString() ?? "unknown";
-    private static string GetHelpText() => "Usage: hataori <start|stop|restart|status|service|task|agent|conversation|queue|db|config|setup|itoguruma|mcp|doctor|logs|monitor|hook|version|help> [command] [options]";
-    private static string GetSubcommandHelp(string command) => $"Usage: hataori {command} <command> [arguments] [options]";
+    private static string GetHelpText() => DisplayLanguage.Text(
+        "使い方: hataori <start|stop|restart|status|service|task|agent|conversation|queue|db|config|setup|itoguruma|mcp|doctor|logs|monitor|hook|version|help> [コマンド] [オプション]",
+        "Usage: hataori <start|stop|restart|status|service|task|agent|conversation|queue|db|config|setup|itoguruma|mcp|doctor|logs|monitor|hook|version|help> [command] [options]");
+    private static string GetSubcommandHelp(string command) => DisplayLanguage.Text($"使い方: hataori {command} <コマンド> [引数] [オプション]", $"Usage: hataori {command} <command> [arguments] [options]");
 
     private sealed record DoctorCheck(string Name, bool Ok, string? Error, bool Skipped = false);
     private sealed record AgentSummary(string AgentId, bool Enabled, int Running, int MaxRuns);

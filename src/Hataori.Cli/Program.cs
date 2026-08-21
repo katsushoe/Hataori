@@ -1,5 +1,9 @@
 ﻿using Hataori.Cli;
 
+var layout = Hataori.Application.InstallationLayout.Resolve(AppContext.BaseDirectory);
+Hataori.Application.Localization.DisplayLanguage.ApplyFromConfiguration(
+    Path.GetFullPath(Environment.GetEnvironmentVariable("HATAORI_CONFIG_PATH") ?? layout.ConfigurationPath));
+
 using var cancellation = new CancellationTokenSource();
 Console.CancelKeyPress += (_, eventArgs) =>
 {

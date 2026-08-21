@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using Hataori.Application;
 using Hataori.Application.Itoguruma;
+using Hataori.Application.Localization;
 using Hataori.Application.Messages;
 using Hataori.Application.Sessions;
 using Hataori.Application.Runs;
@@ -28,6 +29,7 @@ try
     layout.EnsureDirectories();
     var configurationPath = Path.GetFullPath(Environment.GetEnvironmentVariable("HATAORI_CONFIG_PATH") ?? layout.ConfigurationPath);
     await DefaultConfigurationWriter.EnsureAsync(configurationPath, CancellationToken.None);
+    DisplayLanguage.ApplyFromConfiguration(configurationPath);
     var builder = WebApplication.CreateBuilder(new WebApplicationOptions { Args = args, ContentRootPath = layout.RootPath });
     builder.Configuration.AddJsonFile(configurationPath, optional: false, reloadOnChange: true);
     if (WindowsServiceHelpers.IsWindowsService())
@@ -193,10 +195,12 @@ catch (Exception exception)
     }
     catch (Exception loggingException)
     {
-        Console.Error.WriteLine($"致命的エラーのロガー出力にも失敗しました: {loggingException.Message}");
+        Console.Error.WriteLine(DisplayLanguage.Text($"致命的エラーのロガー出力にも失敗しました: {loggingException.Message}", $"Fatal error logging also failed: {loggingException.Message}"));
     }
     var report = await FatalErrorReporter.WriteAsync(exception, CancellationToken.None);
     Console.Error.WriteLine(report.UserMessage);
-    Console.Error.WriteLine(report.LogPath is null ? "詳細ログは保存できませんでした。" : $"詳細ログ: {report.LogPath}");
+    Console.Error.WriteLine(report.LogPath is null
+        ? DisplayLanguage.Text("詳細ログは保存できませんでした。", "The detailed log could not be saved.")
+        : DisplayLanguage.Text($"詳細ログ: {report.LogPath}", $"Detailed log: {report.LogPath}"));
     return 1;
 }
