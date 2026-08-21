@@ -13,14 +13,14 @@ public sealed class StartupRecoveryWorker(
         if (!await initializationGate.Ready.WaitAsync(stoppingToken).ConfigureAwait(false))
         {
             gate.Fail();
-            logger.LogWarning("[Startup][Database] Startup recovery was not started because database initialization failed");
+            logger.LogWarning(Hataori.Application.Localization.DisplayLanguage.Text("[起動][データベース] データベース初期化に失敗したため起動時リカバリを開始しませんでした", "[Startup][Database] Startup recovery was not started because database initialization failed"));
             return;
         }
 
         try
         {
             var result = await recovery.RecoverAsync(stoppingToken).ConfigureAwait(false);
-            logger.LogInformation("[Recovery] Completed: failed_runs={FailedRuns} failed_messages={FailedMessages} invalidated_sessions={InvalidatedSessions} surviving_runs={SurvivingRuns}", result.FailedRuns, result.FailedMessages, result.InvalidatedSessions, result.SurvivingRuns);
+            logger.LogInformation(Hataori.Application.Localization.DisplayLanguage.Text("[リカバリ] 完了: 失敗run={FailedRuns} 失敗message={FailedMessages} 無効session={InvalidatedSessions} 継続run={SurvivingRuns}", "[Recovery] Completed: failed_runs={FailedRuns} failed_messages={FailedMessages} invalidated_sessions={InvalidatedSessions} surviving_runs={SurvivingRuns}"), result.FailedRuns, result.FailedMessages, result.InvalidatedSessions, result.SurvivingRuns);
             gate.Complete();
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)

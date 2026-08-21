@@ -13,7 +13,7 @@ public sealed class ServerProcessLauncher
         var fullPath = Path.GetFullPath(executablePath);
         if (!File.Exists(fullPath))
         {
-            throw new FileNotFoundException("Hataori Server executable was not found.", fullPath);
+            throw new FileNotFoundException(Hataori.Application.Localization.DisplayLanguage.Text("Hataori Server実行ファイルが見つかりません。", "Hataori Server executable was not found."), fullPath);
         }
 
         var process = Process.Start(new ProcessStartInfo
@@ -22,7 +22,7 @@ public sealed class ServerProcessLauncher
             UseShellExecute = false,
             CreateNoWindow = true,
             WorkingDirectory = Path.GetDirectoryName(fullPath) ?? AppContext.BaseDirectory,
-        }) ?? throw new InvalidOperationException("Hataori Server could not be started.");
+        }) ?? throw new InvalidOperationException(Hataori.Application.Localization.DisplayLanguage.Text("Hataori Serverを起動できませんでした。", "Hataori Server could not be started."));
         return new ServerProcessResult(process.Id, "starting");
     }
 }

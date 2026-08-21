@@ -73,7 +73,7 @@ public sealed class HataoriServerWorker : BackgroundService
             _applicationLifetime.StopApplication();
             return;
         }
-        _logger.LogInformation("[Startup][ControlPipe] Hataori Server started with pipe {PipeName}", _options.ControlPipeName);
+        _logger.LogInformation(Hataori.Application.Localization.DisplayLanguage.Text("[起動][ControlPipe] Hataori Serverをpipe {PipeName}で開始しました", "[Startup][ControlPipe] Hataori Server started with pipe {PipeName}"), _options.ControlPipeName);
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -99,7 +99,7 @@ public sealed class HataoriServerWorker : BackgroundService
             }
         }
 
-        _logger.LogInformation("[Shutdown][ControlPipe] Hataori Server stopped");
+        _logger.LogInformation(Hataori.Application.Localization.DisplayLanguage.Text("[停止][ControlPipe] Hataori Serverを停止しました", "[Shutdown][ControlPipe] Hataori Server stopped"));
     }
 
     private async Task AcceptClientAsync(CancellationToken cancellationToken)

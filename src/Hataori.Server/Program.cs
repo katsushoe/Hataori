@@ -40,7 +40,7 @@ try
     }
     builder.Configuration.AddEnvironmentVariables("HATAORI_");
     var startupFileLogOptions = builder.Configuration.GetRequiredSection(FileLogOptions.SectionName).Get<FileLogOptions>()
-        ?? throw new InvalidOperationException("File logging configuration is missing.");
+        ?? throw new InvalidOperationException(DisplayLanguage.Text("ファイルログ設定がありません。", "File logging configuration is missing."));
     var fileLogValidation = new FileLogOptionsValidator().Validate(null, startupFileLogOptions);
     if (fileLogValidation.Failed)
     {
@@ -53,7 +53,7 @@ try
     }
 
     var startupOptions = builder.Configuration.GetRequiredSection(ServerOptions.SectionName).Get<ServerOptions>()
-        ?? throw new InvalidOperationException("Server configuration is missing.");
+        ?? throw new InvalidOperationException(DisplayLanguage.Text("Server設定がありません。", "Server configuration is missing."));
     builder.WebHost.ConfigureKestrel(options => options.Listen(IPAddress.Parse(startupOptions.McpHost), startupOptions.McpPort));
     if (WindowsServiceHelpers.IsWindowsService())
     {

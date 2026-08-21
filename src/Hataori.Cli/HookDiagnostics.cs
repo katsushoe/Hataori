@@ -13,13 +13,13 @@ public static class HookDiagnostics
         {
             if (string.IsNullOrWhiteSpace(configuredPath))
             {
-                throw new InvalidOperationException("Hook configuration path is missing.");
+                throw new InvalidOperationException(Hataori.Application.Localization.DisplayLanguage.Text("Hook設定パスがありません。", "Hook configuration path is missing."));
             }
 
             var path = Path.IsPathFullyQualified(configuredPath) ? configuredPath : Path.Combine(baseDirectory, configuredPath);
             if (!File.Exists(path))
             {
-                throw new FileNotFoundException("Hook configuration file was not found.", path);
+                throw new FileNotFoundException(Hataori.Application.Localization.DisplayLanguage.Text("Hook設定ファイルが見つかりません。", "Hook configuration file was not found."), path);
             }
 
             await using var stream = File.OpenRead(path);
@@ -30,7 +30,7 @@ public static class HookDiagnostics
             {
                 if (!hooks.TryGetProperty(eventName, out var handlers) || handlers.ValueKind != JsonValueKind.Array || handlers.GetArrayLength() == 0)
                 {
-                    throw new InvalidOperationException($"Hook configuration '{path}' is missing {eventName}.");
+                    throw new InvalidOperationException(Hataori.Application.Localization.DisplayLanguage.Text($"Hook設定'{path}'に{eventName}がありません。", $"Hook configuration '{path}' is missing {eventName}."));
                 }
             }
         }

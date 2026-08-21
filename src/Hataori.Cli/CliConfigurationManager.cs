@@ -45,7 +45,7 @@ public sealed class CliConfigurationManager
             return Task.FromResult<object>(new { path = fullPath, valid = errors.Count == 0, errors });
         }
 
-        throw new ArgumentException($"Unknown config command '{command}'.");
+        throw new ArgumentException(Hataori.Application.Localization.DisplayLanguage.Text($"不明なconfigコマンドです: '{command}'。", $"Unknown config command '{command}'."));
     }
 
     /// <summary>
@@ -55,7 +55,7 @@ public sealed class CliConfigurationManager
     {
         if (!File.Exists(fullPath))
         {
-            throw new FileNotFoundException("Hataori configuration file was not found.", fullPath);
+            throw new FileNotFoundException(Hataori.Application.Localization.DisplayLanguage.Text("Hataori設定ファイルが見つかりません。", "Hataori configuration file was not found."), fullPath);
         }
 
         return new ConfigurationBuilder()

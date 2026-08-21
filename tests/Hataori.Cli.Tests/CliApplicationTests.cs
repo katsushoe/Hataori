@@ -39,7 +39,7 @@ public sealed class CliApplicationTests : IDisposable
         var response = await RunAsync("task", "get", "missing", "--database", _databasePath);
 
         response.ExitCode.Should().Be(4);
-        response.Error.Should().Contain("not found");
+        response.Error.Should().Contain("見つかりません");
     }
 
     [Fact]
@@ -266,7 +266,7 @@ public sealed class CliApplicationTests : IDisposable
         var response = await RunAsync("monitor", "--monitor", missingPath);
 
         response.ExitCode.Should().Be(3);
-        response.Error.Should().Contain("was not found");
+        response.Error.Should().Contain("見つかりません");
     }
 
     [Fact]

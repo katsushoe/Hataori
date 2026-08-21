@@ -45,7 +45,7 @@ public sealed class ItogurumaConnectionWorker(
                     }
                     if (failures > 0)
                     {
-                        logger.LogInformation("Itoguruma connection recovered: {Name} {Version}", status.Name, status.Version);
+                        logger.LogInformation(Hataori.Application.Localization.DisplayLanguage.Text("Itoguruma接続が復旧しました: {Name} {Version}", "Itoguruma connection recovered: {Name} {Version}"), status.Name, status.Version);
                     }
 
                     failures = 0;

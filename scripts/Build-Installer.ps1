@@ -48,8 +48,11 @@ if (-not (Test-Path -LiteralPath $msiPath)) {
 }
 
 $hash = Get-FileHash -LiteralPath $msiPath -Algorithm SHA256
+$checksumPath = "$msiPath.sha256"
+[System.IO.File]::WriteAllText($checksumPath, "$($hash.Hash.ToLowerInvariant()) *$(Split-Path -Leaf $msiPath)$([Environment]::NewLine)", [System.Text.UTF8Encoding]::new($false))
 [pscustomobject]@{
     Version = $version
     MsiPath = $msiPath
     Sha256 = $hash.Hash
+    ChecksumPath = $checksumPath
 }

@@ -190,7 +190,7 @@ public static class CliApplication
         var json = await input.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
         if (string.IsNullOrWhiteSpace(json))
         {
-            throw new ArgumentException("Hook command requires JSON on standard input.");
+            throw new ArgumentException(DisplayLanguage.Text("hookコマンドには標準入力のJSONが必要です。", "Hook command requires JSON on standard input."));
         }
 
         using var document = JsonDocument.Parse(json);
@@ -256,7 +256,7 @@ public static class CliApplication
         }
         if (!File.Exists(path))
         {
-            throw new FileNotFoundException($"Hataori Monitor was not found at '{path}'.", path);
+            throw new FileNotFoundException(DisplayLanguage.Text($"Hataori Monitorが'{path}'に見つかりません。", $"Hataori Monitor was not found at '{path}'."), path);
         }
 
         var startInfo = new System.Diagnostics.ProcessStartInfo(path) { UseShellExecute = true };
@@ -276,7 +276,7 @@ public static class CliApplication
         var options = ParseOptions(args.Skip(1));
         var configuration = LoadConfiguration(options);
         var fileLogging = configuration.GetRequiredSection(FileLogOptions.SectionName).Get<FileLogOptions>()
-            ?? throw new InvalidOperationException("File logging configuration is missing.");
+            ?? throw new InvalidOperationException(DisplayLanguage.Text("ファイルログ設定がありません。", "File logging configuration is missing."));
         var directoryPath = Optional(options, "log-directory") ?? (Path.IsPathFullyQualified(fileLogging.DirectoryPath)
             ? Path.GetFullPath(fileLogging.DirectoryPath)
             : Path.GetFullPath(Path.Combine(InstallationLayout.Resolve(AppContext.BaseDirectory).RootPath, fileLogging.DirectoryPath)));
@@ -302,7 +302,7 @@ public static class CliApplication
         var options = ParseOptions(args.Skip(2));
         var configuration = LoadConfiguration(options);
         var clientOptions = configuration.GetRequiredSection(ItogurumaClientOptions.SectionName).Get<ItogurumaClientOptions>()
-            ?? throw new InvalidOperationException("Itoguruma configuration is missing.");
+            ?? throw new InvalidOperationException(DisplayLanguage.Text("Itoguruma設定がありません。", "Itoguruma configuration is missing."));
         await using var client = new McpItogurumaClient(clientOptions, NullLoggerFactory.Instance);
         await client.ConnectAsync(cancellationToken).ConfigureAwait(false);
         var status = await client.GetStatusAsync(cancellationToken).ConfigureAwait(false);
@@ -365,7 +365,7 @@ public static class CliApplication
         var options = ParseOptions(args.Skip(2));
         var configuration = LoadConfiguration(options);
         var server = configuration.GetRequiredSection(ServerOptions.SectionName).Get<ServerOptions>()
-            ?? throw new InvalidOperationException("Server configuration is missing.");
+            ?? throw new InvalidOperationException(DisplayLanguage.Text("Server設定がありません。", "Server configuration is missing."));
         return await new McpEndpointProbe(NullLoggerFactory.Instance).ProbeAsync(server, cancellationToken).ConfigureAwait(false);
     }
 
@@ -374,7 +374,7 @@ public static class CliApplication
         var options = ParseOptions(args.Skip(1));
         var configuration = LoadConfiguration(options);
         var serverOptions = configuration.GetRequiredSection(ServerOptions.SectionName).Get<ServerOptions>()
-            ?? throw new InvalidOperationException("Server configuration is missing.");
+            ?? throw new InvalidOperationException(DisplayLanguage.Text("Server設定がありません。", "Server configuration is missing."));
         var checks = new List<DoctorCheck>();
         await AddDoctorCheckAsync(checks, "configuration", () =>
         {
@@ -394,7 +394,7 @@ public static class CliApplication
             var itogurumaState = response.Monitor?.System.Itoguruma;
             if (itogurumaState != "connected")
             {
-                throw new InvalidOperationException($"Itoguruma connection state is '{itogurumaState ?? "unknown"}' (expected 'connected').");
+                throw new InvalidOperationException(DisplayLanguage.Text($"Itogurumaの接続状態は'{itogurumaState ?? "不明"}'です（'connected'が必要です）。", $"Itoguruma connection state is '{itogurumaState ?? "unknown"}' (expected 'connected')."));
             }
         }, skipPredicate: static exception => exception is UnauthorizedAccessException).ConfigureAwait(false);
         await AddDoctorCheckAsync(checks, "mcp", async () =>
@@ -409,13 +409,13 @@ public static class CliApplication
         await AddDoctorCheckAsync(checks, "codex_cli", async () =>
         {
             var driver = configuration.GetRequiredSection(CodexDriverOptions.SectionName).Get<CodexDriverOptions>()
-                ?? throw new InvalidOperationException("Codex configuration is missing.");
+                ?? throw new InvalidOperationException(DisplayLanguage.Text("Codex設定がありません。", "Codex configuration is missing."));
             await CheckExecutableAsync(driver.ExecutablePath, cancellationToken).ConfigureAwait(false);
         }).ConfigureAwait(false);
         await AddDoctorCheckAsync(checks, "claude_cli", async () =>
         {
             var driver = configuration.GetRequiredSection(ClaudeCodeDriverOptions.SectionName).Get<ClaudeCodeDriverOptions>()
-                ?? throw new InvalidOperationException("Claude Code configuration is missing.");
+                ?? throw new InvalidOperationException(DisplayLanguage.Text("Claude Code設定がありません。", "Claude Code configuration is missing."));
             await CheckExecutableAsync(driver.ExecutablePath, cancellationToken).ConfigureAwait(false);
         }).ConfigureAwait(false);
         await AddDoctorCheckAsync(checks, "windows_service", async () =>
@@ -425,10 +425,10 @@ public static class CliApplication
         await AddDoctorCheckAsync(checks, "hooks", async () =>
         {
             var hookOptions = configuration.GetRequiredSection(HookOptions.SectionName).Get<HookOptions>()
-                ?? throw new InvalidOperationException("Hook configuration is missing.");
+                ?? throw new InvalidOperationException(DisplayLanguage.Text("Hook設定がありません。", "Hook configuration is missing."));
             if (!hookOptions.Enabled)
             {
-                throw new InvalidOperationException("Hooks are disabled.");
+                throw new InvalidOperationException(DisplayLanguage.Text("Hookは無効です。", "Hooks are disabled."));
             }
 
             var baseDirectory = InstallationLayout.Resolve(AppContext.BaseDirectory).RootPath;
@@ -442,7 +442,7 @@ public static class CliApplication
         var result = await new SystemProcessRunner().RunAsync(executablePath, ["--version"], cancellationToken).ConfigureAwait(false);
         if (result.ExitCode != 0)
         {
-            throw new InvalidOperationException($"'{executablePath} --version' failed with exit code {result.ExitCode}.");
+            throw new InvalidOperationException(DisplayLanguage.Text($"'{executablePath} --version'が終了コード{result.ExitCode}で失敗しました。", $"'{executablePath} --version' failed with exit code {result.ExitCode}."));
         }
     }
 
@@ -551,7 +551,7 @@ public static class CliApplication
             "conversation" => await ExecuteConversationAsync(args[1], positional, options, connectionString, cancellationToken).ConfigureAwait(false),
             "queue" => await ExecuteQueueAsync(args[1], positional, options, connectionString, cancellationToken).ConfigureAwait(false),
             "db" => await CliDatabaseDiagnostics.ExecuteAsync(args[1], databasePath, cancellationToken).ConfigureAwait(false),
-            _ => throw new ArgumentException($"Unknown command '{args[0]}'."),
+            _ => throw new ArgumentException(DisplayLanguage.Text($"不明なコマンドです: '{args[0]}'。", $"Unknown command '{args[0]}'.")),
         };
     }
 
@@ -560,7 +560,7 @@ public static class CliApplication
         var runId = positional ?? Required(options, "run");
         var response = await new ControlPipeClient().SendAsync(GetPipeName(options), "agent-cancel", runId, GetControlTimeout(options), cancellationToken).ConfigureAwait(false);
         return response.Status == "not_found"
-            ? throw new KeyNotFoundException($"Agent run '{runId}' was not found.")
+            ? throw new KeyNotFoundException(DisplayLanguage.Text($"Agent run '{runId}'が見つかりません。", $"Agent run '{runId}' was not found."))
             : new { run_id = runId, status = response.Status };
     }
 
@@ -575,7 +575,7 @@ public static class CliApplication
 
         if (!command.Equals("list", StringComparison.OrdinalIgnoreCase) && !command.Equals("status", StringComparison.OrdinalIgnoreCase))
         {
-            throw new ArgumentException($"Unknown agent command '{command}'.");
+            throw new ArgumentException(DisplayLanguage.Text($"不明なagentコマンドです: '{command}'。", $"Unknown agent command '{command}'."));
         }
 
         var configuration = LoadConfiguration(options);
@@ -590,7 +590,7 @@ public static class CliApplication
         {
             var agentId = positional ?? Required(options, "agent");
             return summaries.FirstOrDefault(item => item.AgentId.Equals(agentId, StringComparison.OrdinalIgnoreCase))
-                ?? throw new KeyNotFoundException($"Agent '{agentId}' was not found.");
+                ?? throw new KeyNotFoundException(DisplayLanguage.Text($"Agent '{agentId}'が見つかりません。", $"Agent '{agentId}' was not found."));
         }
 
         return summaries;
@@ -614,7 +614,7 @@ public static class CliApplication
         if (command.Equals("get", StringComparison.OrdinalIgnoreCase))
         {
             return await service.GetAsync(conversationId, agentId, cancellationToken).ConfigureAwait(false)
-                ?? throw new KeyNotFoundException($"Conversation '{conversationId}/{agentId}' was not found.");
+                ?? throw new KeyNotFoundException(DisplayLanguage.Text($"Conversation '{conversationId}/{agentId}'が見つかりません。", $"Conversation '{conversationId}/{agentId}' was not found."));
         }
 
         if (command.Equals("reset", StringComparison.OrdinalIgnoreCase))
@@ -622,7 +622,7 @@ public static class CliApplication
             return await service.InvalidateAsync(conversationId, agentId, cancellationToken).ConfigureAwait(false);
         }
 
-        throw new ArgumentException($"Unknown conversation command '{command}'.");
+        throw new ArgumentException(DisplayLanguage.Text($"不明なconversationコマンドです: '{command}'。", $"Unknown conversation command '{command}'."));
     }
 
     private static async Task<object> ExecuteQueueAsync(string command, string? positional, IReadOnlyDictionary<string, string> options, string connectionString, CancellationToken cancellationToken)
@@ -638,7 +638,7 @@ public static class CliApplication
         if (command.Equals("get", StringComparison.OrdinalIgnoreCase))
         {
             return await repository.GetQueuedAsync(messageId, cancellationToken).ConfigureAwait(false)
-                ?? throw new KeyNotFoundException($"Queued message '{messageId}' was not found.");
+                ?? throw new KeyNotFoundException(DisplayLanguage.Text($"Queue message '{messageId}'が見つかりません。", $"Queued message '{messageId}' was not found."));
         }
 
         if (command.Equals("retry", StringComparison.OrdinalIgnoreCase))
@@ -652,7 +652,7 @@ public static class CliApplication
             return new { message_id = messageId, status = "cancelled" };
         }
 
-        throw new ArgumentException($"Unknown queue command '{command}'.");
+        throw new ArgumentException(DisplayLanguage.Text($"不明なqueueコマンドです: '{command}'。", $"Unknown queue command '{command}'."));
     }
 
     private static async Task<object> ExecuteServerAsync(string command, IReadOnlyDictionary<string, string> options, CancellationToken cancellationToken)
@@ -664,7 +664,7 @@ public static class CliApplication
             "stop" => await client.SendAsync(GetPipeName(options), "stop", GetControlTimeout(options), cancellationToken).ConfigureAwait(false),
             "status" => await client.SendAsync(GetPipeName(options), "status", GetControlTimeout(options), cancellationToken).ConfigureAwait(false),
             "restart" => await RestartAsync(client, options, cancellationToken).ConfigureAwait(false),
-            _ => throw new ArgumentException($"Unknown command '{command}'."),
+            _ => throw new ArgumentException(DisplayLanguage.Text($"不明なコマンドです: '{command}'。", $"Unknown command '{command}'.")),
         };
     }
 
@@ -691,7 +691,7 @@ public static class CliApplication
             }
         }
 
-        throw new InvalidOperationException("Hataori Server did not stop before the restart timeout.");
+        throw new InvalidOperationException(DisplayLanguage.Text("再起動の待機時間内にHataori Serverが停止しませんでした。", "Hataori Server did not stop before the restart timeout."));
     }
 
     private static async Task<object?> ExecuteTaskAsync(string command, string? positional, IReadOnlyDictionary<string, string> options, TaskService service, CancellationToken cancellationToken)
@@ -710,14 +710,14 @@ public static class CliApplication
             "history" => await service.GetHistoryAsync(RequiredTaskId(taskId), cancellationToken).ConfigureAwait(false),
             "relation-add" => await AddRelationAsync(service, options, cancellationToken).ConfigureAwait(false),
             "relations" => await service.GetRelationsAsync(Required(options, "id"), cancellationToken).ConfigureAwait(false),
-            _ => throw new ArgumentException($"Unknown task command '{command}'."),
+            _ => throw new ArgumentException(DisplayLanguage.Text($"不明なtaskコマンドです: '{command}'。", $"Unknown task command '{command}'.")),
         };
     }
 
     private static async Task<object> GetTaskDetailsAsync(string taskId, TaskService service, CancellationToken cancellationToken)
     {
         var task = await service.GetAsync(taskId, cancellationToken).ConfigureAwait(false)
-            ?? throw new KeyNotFoundException($"Task '{taskId}' was not found.");
+            ?? throw new KeyNotFoundException(DisplayLanguage.Text($"Task '{taskId}'が見つかりません。", $"Task '{taskId}' was not found."));
         var history = await service.GetHistoryAsync(taskId, cancellationToken).ConfigureAwait(false);
         var relations = await service.GetRelationsAsync(taskId, cancellationToken).ConfigureAwait(false);
         return new { task, history, relations };
@@ -746,7 +746,7 @@ public static class CliApplication
         {
             if (!values[index].StartsWith("--", StringComparison.Ordinal) || values[index].Length == 2)
             {
-                throw new ArgumentException($"Invalid option '{values[index]}'.");
+                throw new ArgumentException(DisplayLanguage.Text($"無効なオプションです: '{values[index]}'。", $"Invalid option '{values[index]}'."));
             }
 
             var name = values[index][2..];
@@ -758,7 +758,7 @@ public static class CliApplication
 
             if (++index >= values.Length || values[index].StartsWith("--", StringComparison.Ordinal))
             {
-                throw new ArgumentException($"Option '--{name}' must have a value.");
+                throw new ArgumentException(DisplayLanguage.Text($"オプション'--{name}'には値が必要です。", $"Option '--{name}' must have a value."));
             }
 
             options[name] = values[index];
@@ -770,19 +770,19 @@ public static class CliApplication
     private static string GetDatabasePath(IReadOnlyDictionary<string, string> options)
     {
         var path = Optional(options, "database") ?? Environment.GetEnvironmentVariable("HATAORI_DATABASE_PATH");
-        return string.IsNullOrWhiteSpace(path) ? throw new ArgumentException("Specify --database or HATAORI_DATABASE_PATH.") : Path.GetFullPath(path);
+        return string.IsNullOrWhiteSpace(path) ? throw new ArgumentException(DisplayLanguage.Text("--databaseまたはHATAORI_DATABASE_PATHを指定してください。", "Specify --database or HATAORI_DATABASE_PATH.")) : Path.GetFullPath(path);
     }
 
     private static string GetPipeName(IReadOnlyDictionary<string, string> options)
     {
         var pipeName = Optional(options, "pipe") ?? Environment.GetEnvironmentVariable("HATAORI_CONTROL_PIPE_NAME");
-        return string.IsNullOrWhiteSpace(pipeName) ? throw new ArgumentException("Specify --pipe or HATAORI_CONTROL_PIPE_NAME.") : pipeName;
+        return string.IsNullOrWhiteSpace(pipeName) ? throw new ArgumentException(DisplayLanguage.Text("--pipeまたはHATAORI_CONTROL_PIPE_NAMEを指定してください。", "Specify --pipe or HATAORI_CONTROL_PIPE_NAME.")) : pipeName;
     }
 
     private static string GetServerPath(IReadOnlyDictionary<string, string> options)
     {
         var path = Optional(options, "server") ?? Environment.GetEnvironmentVariable("HATAORI_SERVER_PATH");
-        return string.IsNullOrWhiteSpace(path) ? throw new ArgumentException("Specify --server or HATAORI_SERVER_PATH.") : path;
+        return string.IsNullOrWhiteSpace(path) ? throw new ArgumentException(DisplayLanguage.Text("--serverまたはHATAORI_SERVER_PATHを指定してください。", "Specify --server or HATAORI_SERVER_PATH.")) : path;
     }
 
     private static TimeSpan GetControlTimeout(IReadOnlyDictionary<string, string> options)
@@ -790,7 +790,7 @@ public static class CliApplication
         var value = Optional(options, "timeout-seconds") ?? Environment.GetEnvironmentVariable("HATAORI_CONTROL_TIMEOUT_SECONDS") ?? "10";
         if (!int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var seconds) || seconds is < 1 or > 300)
         {
-            throw new ArgumentException("Specify --timeout-seconds between 1 and 300 or HATAORI_CONTROL_TIMEOUT_SECONDS.");
+            throw new ArgumentException(DisplayLanguage.Text("1～300の--timeout-secondsまたはHATAORI_CONTROL_TIMEOUT_SECONDSを指定してください。", "Specify --timeout-seconds between 1 and 300 or HATAORI_CONTROL_TIMEOUT_SECONDS."));
         }
 
         return TimeSpan.FromSeconds(seconds);
@@ -799,18 +799,18 @@ public static class CliApplication
     private static string Required(IReadOnlyDictionary<string, string> options, string name)
     {
         var value = Optional(options, name);
-        return string.IsNullOrWhiteSpace(value) ? throw new ArgumentException($"Missing --{name}.") : value;
+        return string.IsNullOrWhiteSpace(value) ? throw new ArgumentException(DisplayLanguage.Text($"--{name}がありません。", $"Missing --{name}.")) : value;
     }
 
-    private static string RequiredTaskId(string? taskId) => string.IsNullOrWhiteSpace(taskId) ? throw new ArgumentException("Specify a task ID as an argument or with --id.") : taskId;
+    private static string RequiredTaskId(string? taskId) => string.IsNullOrWhiteSpace(taskId) ? throw new ArgumentException(DisplayLanguage.Text("Task IDを引数または--idで指定してください。", "Specify a task ID as an argument or with --id.")) : taskId;
     private static bool IsFlag(string name) => name.Equals("json", StringComparison.OrdinalIgnoreCase) || name.Equals("all", StringComparison.OrdinalIgnoreCase) || name.Equals("follow", StringComparison.OrdinalIgnoreCase) || name.Equals("skip-test", StringComparison.OrdinalIgnoreCase);
 
     private static string? Optional(IReadOnlyDictionary<string, string> options, string name) => options.TryGetValue(name, out var value) ? value : null;
-    private static int ParseProgress(string value) => int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var progress) ? progress : throw new ArgumentException("--progress must be an integer.");
-    private static int ParseLineCount(string? value) => value is null ? 200 : int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var count) && count is >= 1 and <= 100000 ? count : throw new ArgumentException("--lines must be between 1 and 100000.");
-    private static HataoriTaskStatus? ParseStatus(string? value) => value is null ? null : Enum.TryParse<HataoriTaskStatus>(value, true, out var status) ? status : throw new ArgumentException($"Invalid task status '{value}'.");
-    private static AgentRunStatus? ParseRunStatus(string? value) => value is null ? null : Enum.TryParse<AgentRunStatus>(value, true, out var status) ? status : throw new ArgumentException($"Invalid agent run status '{value}'.");
-    private static ConversationSessionStatus? ParseSessionStatus(string? value) => value is null ? null : Enum.TryParse<ConversationSessionStatus>(value, true, out var status) ? status : throw new ArgumentException($"Invalid conversation status '{value}'.");
+    private static int ParseProgress(string value) => int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var progress) ? progress : throw new ArgumentException(DisplayLanguage.Text("--progressには整数を指定してください。", "--progress must be an integer."));
+    private static int ParseLineCount(string? value) => value is null ? 200 : int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var count) && count is >= 1 and <= 100000 ? count : throw new ArgumentException(DisplayLanguage.Text("--linesには1～100000を指定してください。", "--lines must be between 1 and 100000."));
+    private static HataoriTaskStatus? ParseStatus(string? value) => value is null ? null : Enum.TryParse<HataoriTaskStatus>(value, true, out var status) ? status : throw new ArgumentException(DisplayLanguage.Text($"無効なTask状態です: '{value}'。", $"Invalid task status '{value}'."));
+    private static AgentRunStatus? ParseRunStatus(string? value) => value is null ? null : Enum.TryParse<AgentRunStatus>(value, true, out var status) ? status : throw new ArgumentException(DisplayLanguage.Text($"無効なAgent run状態です: '{value}'。", $"Invalid agent run status '{value}'."));
+    private static ConversationSessionStatus? ParseSessionStatus(string? value) => value is null ? null : Enum.TryParse<ConversationSessionStatus>(value, true, out var status) ? status : throw new ArgumentException(DisplayLanguage.Text($"無効なConversation状態です: '{value}'。", $"Invalid conversation status '{value}'."));
     private static bool IsHelpCommand(IReadOnlyList<string> args) => args[0].Equals("help", StringComparison.OrdinalIgnoreCase) || args[0].Equals("--help", StringComparison.OrdinalIgnoreCase);
     private static bool IsVersionCommand(IReadOnlyList<string> args) => args[0].Equals("version", StringComparison.OrdinalIgnoreCase) || args[0].Equals("--version", StringComparison.OrdinalIgnoreCase);
     private static bool IsSubcommandHelp(IReadOnlyList<string> args) => args.Count > 1 && (args[1].Equals("help", StringComparison.OrdinalIgnoreCase) || args[1].Equals("--help", StringComparison.OrdinalIgnoreCase));

@@ -11,7 +11,7 @@ public sealed class DatabaseMaintenanceWorker(SqliteDatabaseMaintenance maintena
     {
         if (!await recoveryGate.Ready.WaitAsync(stoppingToken).ConfigureAwait(false))
         {
-            logger.LogWarning("[Recovery] Database maintenance was not started because startup recovery failed");
+            logger.LogWarning(Hataori.Application.Localization.DisplayLanguage.Text("[リカバリ] 起動時リカバリに失敗したためデータベース保守を開始しませんでした", "[Recovery] Database maintenance was not started because startup recovery failed"));
             return;
         }
         if (!options.Value.Enabled)
@@ -27,7 +27,7 @@ public sealed class DatabaseMaintenanceWorker(SqliteDatabaseMaintenance maintena
                 var value = options.Value;
                 var settings = new DatabaseMaintenanceSettings(TimeSpan.FromHours(value.StaleTaskHours), TimeSpan.FromDays(value.TaskRetentionDays), TimeSpan.FromDays(value.AgentRunRetentionDays), TimeSpan.FromDays(value.MessageRetentionDays), value.Vacuum);
                 var result = await maintenance.ExecuteAsync(settings, stoppingToken).ConfigureAwait(false);
-                logger.LogInformation("[Maintenance] Completed: expired={ExpiredTasks} tasks={PurgedTasks} runs={PurgedRuns} messages={PurgedMessages} vacuum={Vacuumed}", result.ExpiredTasks, result.PurgedTasks, result.PurgedAgentRuns, result.PurgedMessages, result.Vacuumed);
+                logger.LogInformation(Hataori.Application.Localization.DisplayLanguage.Text("[保守] 完了: 期限切れ={ExpiredTasks} task={PurgedTasks} run={PurgedRuns} message={PurgedMessages} vacuum={Vacuumed}", "[Maintenance] Completed: expired={ExpiredTasks} tasks={PurgedTasks} runs={PurgedRuns} messages={PurgedMessages} vacuum={Vacuumed}"), result.ExpiredTasks, result.PurgedTasks, result.PurgedAgentRuns, result.PurgedMessages, result.Vacuumed);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {

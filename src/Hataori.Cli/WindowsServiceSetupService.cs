@@ -23,7 +23,7 @@ public sealed class WindowsServiceCredentialStore : IWindowsServiceCredentialSto
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(token);
         var path = ServiceConfigurationPath.GetDefaultPath();
-        var directoryPath = Path.GetDirectoryName(path) ?? throw new InvalidOperationException("Service configuration directory could not be resolved.");
+        var directoryPath = Path.GetDirectoryName(path) ?? throw new InvalidOperationException(Hataori.Application.Localization.DisplayLanguage.Text("Service設定ディレクトリを解決できませんでした。", "Service configuration directory could not be resolved."));
         try
         {
             Directory.CreateDirectory(directoryPath);
@@ -34,7 +34,7 @@ public sealed class WindowsServiceCredentialStore : IWindowsServiceCredentialSto
         }
         catch (UnauthorizedAccessException exception)
         {
-            throw new InvalidOperationException("Service setup requires an administrator terminal. Run the command again as administrator.", exception);
+            throw new InvalidOperationException(Hataori.Application.Localization.DisplayLanguage.Text("Service設定には管理者ターミナルが必要です。管理者として再実行してください。", "Service setup requires an administrator terminal. Run the command again as administrator."), exception);
         }
     }
 
@@ -68,7 +68,7 @@ public sealed class WindowsServiceSetupService(IEnvironmentVariableStore environ
 
         if (string.IsNullOrWhiteSpace(token))
         {
-            throw new InvalidOperationException("No Itoguruma authentication token was found. Install or repair Itoguruma first; its installer creates the token automatically.");
+            throw new InvalidOperationException(Hataori.Application.Localization.DisplayLanguage.Text("Itoguruma認証トークンが見つかりません。先にItogurumaをインストールまたは修復してください。トークンはインストーラが自動生成します。", "No Itoguruma authentication token was found. Install or repair Itoguruma first; its installer creates the token automatically."));
         }
 
         var path = await store.WriteAuthenticationTokenAsync(token, cancellationToken).ConfigureAwait(false);
