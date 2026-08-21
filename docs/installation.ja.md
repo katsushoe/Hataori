@@ -21,10 +21,10 @@ msiexec.exe /i Hataori-3.0.5.0-x64.msi INSTALL_ROOT="F:\Hataori"
 
 ## 初回設定
 
-MSIは設定、秘密情報、利用者データ、ログを同梱しません。初期設定はCLIで生成し、既存ファイルがある場合は変更しません。
+新規インストール時、MSIは日本語または英語を選択し、選択した`application.language`を含む`config\hataori.json`を作成します。アップグレードでは既存設定を保持します。秘密情報、利用者データ、ログは同梱しません。次のCLIも既存ファイルを変更しません。
 
 ```powershell
-hataori config init
+hataori config init --language ja-JP
 hataori service setup
 Start-Service Hataori
 ```

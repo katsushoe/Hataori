@@ -42,8 +42,30 @@ public sealed class InstallationLayoutTests : IDisposable
         var content = await File.ReadAllTextAsync(path);
 
         created.Should().BeTrue();
+        content.Should().Contain("\"language\": \"ja-JP\"");
         content.Should().Contain("\"databasePath\": \"data/hataori.db\"");
         content.Should().NotContain("authenticationToken");
+    }
+
+    [Fact]
+    public async Task EnsureAsync_EnglishLanguage_CreatesEnglishConfiguration()
+    {
+        var path = Path.Combine(_rootPath, "config", "hataori.json");
+
+        var created = await DefaultConfigurationWriter.EnsureAsync(path, "en-US", CancellationToken.None);
+
+        created.Should().BeTrue();
+        (await File.ReadAllTextAsync(path)).Should().Contain("\"language\": \"en-US\"");
+    }
+
+    [Fact]
+    public async Task EnsureAsync_UnsupportedLanguage_ThrowsArgumentException()
+    {
+        var path = Path.Combine(_rootPath, "config", "hataori.json");
+
+        var action = () => DefaultConfigurationWriter.EnsureAsync(path, "fr-FR", CancellationToken.None);
+
+        await action.Should().ThrowAsync<ArgumentException>();
     }
 
     [Fact]

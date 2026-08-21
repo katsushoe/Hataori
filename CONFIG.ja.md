@@ -8,15 +8,15 @@
 
 | File | 標準配置 | 作成主体 | 用途 |
 | :--- | :--- | :--- | :--- |
-| 通常設定 | `%INSTALL_ROOT%\config\hataori.json` | 利用者または`hataori config init` | 秘密情報を含まないServer、Agent、Retry、Log、Maintenance、Hook設定。 |
+| 通常設定 | `%INSTALL_ROOT%\config\hataori.json` | MSI、利用者、または`hataori config init` | 秘密情報を含まないアプリ言語、Server、Agent、Retry、Log、Maintenance、Hook設定。 |
 | Service秘密設定 | `%INSTALL_ROOT%\config\hataori.service.json` | `hataori service setup` | `LocalSystem` Windows Service用Itoguruma token。 |
 
 相対`databasePath`、log、hook pathは`%INSTALL_ROOT%`を基準に解決します。`HATAORI_CONFIG_PATH`へ絶対pathを指定すると別の通常設定fileを使用できます。
 
 ## File Generation
 
-- MSIは`%INSTALL_ROOT%\config`、`logs`、`data`を作成しますが、可変設定や秘密情報を同梱しません。
-- `hataori config init`は出力先が存在しない場合だけ組込み既定`hataori.json`を作成します。
+- 新規インストール時、MSIは選択された言語を含む`hataori.json`を作成します。アップグレード時は既存fileを保持します。
+- `hataori config init [--language <ja-JP|en-US>]`は出力先が存在しない場合だけ組込み既定`hataori.json`を作成します。
 - `hataori service setup`は`hataori.service.json`を作成または置換し、ACLを`SYSTEM`と`Administrators`だけに制限します。
 - tokenの実値をsample、Source Control、log、chatへ記載しないでください。
 
@@ -38,6 +38,12 @@ Server設定を読むCLI commandは通常JSONの後に`HATAORI_`環境変数を�
 Hataoriには名前付きprofile fileがありません。通常file path、環境変数override、Windows Service実行かどうかでruntime設定を分けます。MCPは認証なし・loopback限定で、Itoguruma認証は別のoutbound client設定です。
 
 ## Settings Reference
+
+### `application.language`
+
+- 型/必須: string、必須。
+- 既定値: `ja-JP`。対応値は`ja-JP`と`en-US`です。
+- 動作: インストール時に選択されたアプリ表示言語を保存します。
 
 ### `server`
 

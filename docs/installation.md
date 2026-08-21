@@ -21,10 +21,10 @@ msiexec.exe /i Hataori-3.0.5.0-x64.msi INSTALL_ROOT="F:\Hataori"
 
 ## Initial Configuration
 
-The MSI does not include settings, secrets, user data, or logs. These commands preserve existing files:
+On a new installation, the MSI asks for Japanese or English and creates `config\hataori.json` with the selected `application.language`. Upgrades preserve an existing configuration. Secrets, user data, and logs are not packaged. These commands also preserve existing files:
 
 ```powershell
-hataori config init
+hataori config init --language en-US
 hataori service setup
 Start-Service Hataori
 ```

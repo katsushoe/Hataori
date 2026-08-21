@@ -1,4 +1,7 @@
 {
+  "application": {
+    "language": "ja-JP"
+  },
   "server": {
     "databasePath": "data/hataori.db",
     "controlPipeName": "hataori-control",

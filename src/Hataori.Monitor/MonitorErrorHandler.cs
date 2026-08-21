@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 
+using Hataori.Application.Localization;
+
 namespace Hataori.Monitor;
 
 /// <summary>Monitorの例外を記録し、利用者向けの対処方法を表示します。</summary>
@@ -14,11 +16,11 @@ public sealed class MonitorErrorHandler(MonitorFileLogger logger)
         try
         {
             logger.LogError(exception, "[Error] Monitor operation failed");
-            logNotice = $"詳細ログ: {logger.LogPath}";
+            logNotice = DisplayLanguage.Text($"詳細ログ: {logger.LogPath}", $"Detailed log: {logger.LogPath}");
         }
         catch (Exception logException)
         {
-            logNotice = $"ログの保存にも失敗しました: {logException.Message}";
+            logNotice = DisplayLanguage.Text($"ログの保存にも失敗しました: {logException.Message}", $"The log could not be saved: {logException.Message}");
         }
 
         if (showDialog)

@@ -393,9 +393,9 @@ Command: [`init`](#hataori-config-init)、[`show`](#hataori-config-show)、[`pat
 #### `hataori config init`
 
 - 目的: 秘密情報なしの組込み既定設定を作成します。
-- 構文: `hataori config init [--config <path>]`。
-- 引数: 省略時は標準通常設定pathです。
-- 処理・戻り値: Directoryを作成しcreate-newで保存して`path/created`を返し、既存fileなら`created: false`です。
+- 構文: `hataori config init [--config <path>] [--language <ja-JP|en-US>]`。
+- 引数: 保存先の省略時は標準通常設定path、言語の省略時は組込み既定値`ja-JP`です。
+- 処理・戻り値: Directoryを作成しcreate-newで保存して`path/created/language`を返し、既存fileなら`created: false`です。
 - 例: `hataori config init`。
 - 安全: 既存設定を上書きしません。
 

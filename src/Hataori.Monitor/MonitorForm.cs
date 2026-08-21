@@ -1,5 +1,6 @@
 using Hataori.Application.Control;
 using Microsoft.Extensions.Logging;
+using Hataori.Application.Localization;
 
 namespace Hataori.Monitor;
 
@@ -21,6 +22,7 @@ public partial class MonitorForm : Form
         _client = client;
         _errors = errors;
         InitializeComponent();
+        ApplyLocalizedText();
     }
 
     protected override async void OnShown(EventArgs e)
@@ -53,17 +55,32 @@ public partial class MonitorForm : Form
             itogurumaValueLabel.Text = snapshot.System.Itoguruma;
             mcpValueLabel.Text = snapshot.System.Mcp;
             sqliteValueLabel.Text = snapshot.System.Sqlite;
-            connectionStatusLabel.Text = $"接続中: {_pipeName} / {DateTimeOffset.Now:T}";
+            connectionStatusLabel.Text = DisplayLanguage.Text($"接続中: {_pipeName} / {DateTimeOffset.Now:T}", $"Connected: {_pipeName} / {DateTimeOffset.Now:T}");
         }
         catch (Exception exception)
         {
             var transient = exception is IOException or TimeoutException;
-            connectionStatusLabel.Text = transient ? $"接続エラー: {exception.Message}" : "表示データの取得に失敗しました。詳細はログを確認してください。";
-            _errors.Report(exception, this, transient ? "Serverへ接続できませんでした。Serverが起動しているか確認してください。" : "表示データを読み込めませんでした。Monitorを再起動し、解消しない場合はログを管理者へ共有してください。", showDialog: !transient);
+            connectionStatusLabel.Text = transient
+                ? DisplayLanguage.Text($"接続エラー: {exception.Message}", $"Connection error: {exception.Message}")
+                : DisplayLanguage.Text("表示データの取得に失敗しました。詳細はログを確認してください。", "Failed to retrieve display data. Check the log for details.");
+            _errors.Report(exception, this, transient
+                ? DisplayLanguage.Text("Serverへ接続できませんでした。Serverが起動しているか確認してください。", "Could not connect to Server. Verify that Server is running.")
+                : DisplayLanguage.Text("表示データを読み込めませんでした。Monitorを再起動し、解消しない場合はログを管理者へ共有してください。", "Could not load display data. Restart Monitor and share the log with an administrator if the problem continues."), showDialog: !transient);
         }
         finally
         {
             _refreshing = false;
         }
+    }
+
+    private void ApplyLocalizedText()
+    {
+        refreshButton.Text = DisplayLanguage.Text("更新", "Refresh");
+        connectionStatusLabel.Text = DisplayLanguage.Text("未接続", "Not connected");
+        tasksPage.Text = DisplayLanguage.Text("タスク", "Tasks");
+        agentsPage.Text = DisplayLanguage.Text("エージェント", "Agents");
+        sessionsPage.Text = DisplayLanguage.Text("会話／セッション", "Conversations / Sessions");
+        statusPage.Text = DisplayLanguage.Text("状態", "Status");
+        queueNameLabel.Text = DisplayLanguage.Text("キュー件数", "Queue count");
     }
 }
