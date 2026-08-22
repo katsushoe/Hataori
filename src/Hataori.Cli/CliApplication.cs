@@ -6,6 +6,7 @@ using Hataori.Application.Control;
 using Hataori.Application.Localization;
 using Hataori.Application.Sessions;
 using Hataori.Application.Tasks;
+using Hataori.Application.Codex;
 using Hataori.Core.Runs;
 using Hataori.Core.Sessions;
 using Hataori.Core.Tasks;
@@ -16,6 +17,7 @@ using Hataori.Infrastructure.Runs;
 using Hataori.Infrastructure.Sessions;
 using Hataori.Infrastructure.Tasks;
 using Hataori.Infrastructure.Itoguruma;
+using Hataori.Infrastructure.Codex;
 using Hataori.Server;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
@@ -554,6 +556,7 @@ public static class CliApplication
         command.Equals("agent", StringComparison.OrdinalIgnoreCase) ||
         command.Equals("conversation", StringComparison.OrdinalIgnoreCase) ||
         command.Equals("queue", StringComparison.OrdinalIgnoreCase) ||
+        command.Equals("codex", StringComparison.OrdinalIgnoreCase) ||
         command.Equals("db", StringComparison.OrdinalIgnoreCase);
 
     private static async Task<object> ExecuteDatabaseCommandAsync(string[] args, CancellationToken cancellationToken)
@@ -578,6 +581,7 @@ public static class CliApplication
             "agent" => await ExecuteAgentAsync(args[1], positional, options, connectionString, cancellationToken).ConfigureAwait(false),
             "conversation" => await ExecuteConversationAsync(args[1], positional, options, connectionString, cancellationToken).ConfigureAwait(false),
             "queue" => await ExecuteQueueAsync(args[1], positional, options, connectionString, cancellationToken).ConfigureAwait(false),
+            "codex" => await ExecuteCodexAsync(args[1], positional, options, connectionString, cancellationToken).ConfigureAwait(false),
             "db" => await CliDatabaseDiagnostics.ExecuteAsync(args[1], databasePath, cancellationToken).ConfigureAwait(false),
             _ => throw new ArgumentException(DisplayLanguage.Text($"不明なコマンドです: '{args[0]}'。", $"Unknown command '{args[0]}'.")),
         };
@@ -681,6 +685,33 @@ public static class CliApplication
         }
 
         throw new ArgumentException(DisplayLanguage.Text($"不明なqueueコマンドです: '{command}'。", $"Unknown queue command '{command}'."));
+    }
+
+    private static async Task<object> ExecuteCodexAsync(string command, string? positional, IReadOnlyDictionary<string, string> options, string connectionString, CancellationToken cancellationToken)
+    {
+        var service = new CodexTaskLaunchService(new SqliteCodexTaskLaunchRepository(connectionString), TimeProvider.System);
+        if (command.Equals("claim", StringComparison.OrdinalIgnoreCase))
+        {
+            var leaseSeconds = ParseLeaseSeconds(Optional(options, "lease-seconds"));
+            return (object?)await service.ClaimAsync(leaseSeconds, cancellationToken).ConfigureAwait(false) ?? new { status = "empty" };
+        }
+
+        var messageId = positional ?? Required(options, "message");
+        var claimToken = Required(options, "claim-token");
+        if (command.Equals("started", StringComparison.OrdinalIgnoreCase))
+        {
+            var codexTaskId = Required(options, "codex-task-id");
+            await service.MarkStartedAsync(messageId, claimToken, codexTaskId, cancellationToken).ConfigureAwait(false);
+            return new { message_id = messageId, codex_task_id = codexTaskId, status = "started" };
+        }
+
+        if (command.Equals("release", StringComparison.OrdinalIgnoreCase))
+        {
+            await service.ReleaseAsync(messageId, claimToken, Required(options, "error"), cancellationToken).ConfigureAwait(false);
+            return new { message_id = messageId, status = "pending" };
+        }
+
+        throw new ArgumentException(DisplayLanguage.Text($"不明なcodexコマンドです: '{command}'。", $"Unknown codex command '{command}'."));
     }
 
     private static async Task<object> ExecuteServerAsync(string command, IReadOnlyDictionary<string, string> options, CancellationToken cancellationToken)
@@ -837,6 +868,7 @@ public static class CliApplication
     private static string? Optional(IReadOnlyDictionary<string, string> options, string name) => options.TryGetValue(name, out var value) ? value : null;
     private static int ParseProgress(string value) => int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var progress) ? progress : throw new ArgumentException(DisplayLanguage.Text("--progressには整数を指定してください。", "--progress must be an integer."));
     private static int ParseLineCount(string? value) => value is null ? 200 : int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var count) && count is >= 1 and <= 100000 ? count : throw new ArgumentException(DisplayLanguage.Text("--linesには1～100000を指定してください。", "--lines must be between 1 and 100000."));
+    private static int ParseLeaseSeconds(string? value) => value is null ? 300 : int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var seconds) && seconds is >= 30 and <= 3600 ? seconds : throw new ArgumentException(DisplayLanguage.Text("--lease-secondsには30～3600を指定してください。", "--lease-seconds must be between 30 and 3600."));
     private static HataoriTaskStatus? ParseStatus(string? value) => value is null ? null : Enum.TryParse<HataoriTaskStatus>(value, true, out var status) ? status : throw new ArgumentException(DisplayLanguage.Text($"無効なTask状態です: '{value}'。", $"Invalid task status '{value}'."));
     private static AgentRunStatus? ParseRunStatus(string? value) => value is null ? null : Enum.TryParse<AgentRunStatus>(value, true, out var status) ? status : throw new ArgumentException(DisplayLanguage.Text($"無効なAgent run状態です: '{value}'。", $"Invalid agent run status '{value}'."));
     private static ConversationSessionStatus? ParseSessionStatus(string? value) => value is null ? null : Enum.TryParse<ConversationSessionStatus>(value, true, out var status) ? status : throw new ArgumentException(DisplayLanguage.Text($"無効なConversation状態です: '{value}'。", $"Invalid conversation status '{value}'."));
@@ -845,8 +877,8 @@ public static class CliApplication
     private static bool IsSubcommandHelp(IReadOnlyList<string> args) => args.Count > 1 && (args[1].Equals("help", StringComparison.OrdinalIgnoreCase) || args[1].Equals("--help", StringComparison.OrdinalIgnoreCase));
     private static string GetVersion() => typeof(CliApplication).Assembly.GetName().Version?.ToString() ?? "unknown";
     private static string GetHelpText() => DisplayLanguage.Text(
-        "使い方: hataori <start|stop|restart|status|service|task|agent|conversation|queue|db|config|provider|setup|itoguruma|mcp|doctor|logs|monitor|hook|version|help> [コマンド] [オプション]",
-        "Usage: hataori <start|stop|restart|status|service|task|agent|conversation|queue|db|config|provider|setup|itoguruma|mcp|doctor|logs|monitor|hook|version|help> [command] [options]");
+        "使い方: hataori <start|stop|restart|status|service|task|agent|conversation|queue|codex|db|config|provider|setup|itoguruma|mcp|doctor|logs|monitor|hook|version|help> [コマンド] [オプション]",
+        "Usage: hataori <start|stop|restart|status|service|task|agent|conversation|queue|codex|db|config|provider|setup|itoguruma|mcp|doctor|logs|monitor|hook|version|help> [command] [options]");
     private static string GetSubcommandHelp(string command) => DisplayLanguage.Text($"使い方: hataori {command} <コマンド> [引数] [オプション]", $"Usage: hataori {command} <command> [arguments] [options]");
 
     private sealed record DoctorCheck(string Name, bool Ok, string? Error, bool Skipped = false);

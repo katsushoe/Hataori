@@ -373,6 +373,16 @@ Command: [`list`](#hataori-queue-list)、[`get`](#hataori-queue-get)、[`retry`]
 - 例: `hataori queue cancel msg-1 --database F:\Hataori\data\hataori.db`。
 - 安全: 破壊的状態変更で、Messageは通常処理されません。
 
+### Codex Desktop Task Launch Commands
+
+MCP Tools `codex_task_claim`／`codex_task_started`／`codex_task_release`と、次のCLIは同じApplication ServiceとSQLite状態を使用します。
+
+- `hataori codex claim [--lease-seconds <30..3600>] --database <path>`: 次のCodex起動要求を期限付きで取得します。要求がなければ`{"status":"empty"}`です。
+- `hataori codex started <message-id> --claim-token <token> --codex-task-id <task-id> --database <path>`: `create_thread`成功後のCodex Task IDを保存し、元MessageをQueueから除きます。
+- `hataori codex release <message-id> --claim-token <token> --error <message> --database <path>`: 起動失敗したclaimを解放し、元Messageを直ちに再取得可能にします。
+
+Codex Desktop内の固定受信Taskは、claim結果の`project_name`を保存済みProjectから解決し、`prompt`でTaskを作成します。完了応答の同期はこのコマンド群の対象外です。
+
 ### Database Commands
 
 Command: [`status`](#hataori-db-status)、[`integrity`](#hataori-db-integrity)。どちらもSQLiteをread-onlyで開きます。

@@ -475,6 +475,16 @@ Commands: [`list`](#hataori-queue-list), [`get`](#hataori-queue-get), [`retry`](
 | Example | `hataori queue cancel msg-1 --database F:\Hataori\data\hataori.db` |
 | Safety | Destructive state change; the message will not be processed normally. |
 
+### Codex Desktop Task Launch Commands
+
+The `codex_task_claim`, `codex_task_started`, and `codex_task_release` MCP tools and these CLI commands use the same application service and SQLite state.
+
+- `hataori codex claim [--lease-seconds <30..3600>] --database <path>`: leases the next Codex launch request. Returns `{"status":"empty"}` when none is pending.
+- `hataori codex started <message-id> --claim-token <token> --codex-task-id <task-id> --database <path>`: stores the task ID after `create_thread` succeeds and removes the source message from the queue.
+- `hataori codex release <message-id> --claim-token <token> --error <message> --database <path>`: releases a failed claim so the source message can be claimed again immediately.
+
+The fixed receiver task inside Codex Desktop resolves `project_name` against saved projects and creates a task with `prompt`. Completion and reply synchronization are outside these commands.
+
 ### Database Commands
 
 Commands: [`status`](#hataori-db-status), [`integrity`](#hataori-db-integrity). Both open SQLite read-only.

@@ -219,6 +219,26 @@ public sealed class CliApplicationTests : IDisposable
     }
 
     [Fact]
+    public async Task RunAsync_CodexClaimAndStarted_MatchesMcpLifecycle()
+    {
+        var repository = new SqliteMessageQueueRepository(GetConnectionString());
+        await repository.InitializeAsync(CancellationToken.None);
+        var workingDirectory = Path.Combine(Path.GetTempPath(), "CRs");
+        var message = new IncomingMessage("message-1", "conversation-1", "codex", workingDirectory, "sender", null, "prompt", "body", null, DateTimeOffset.UtcNow);
+        await repository.EnqueueAsync(message, 0, CancellationToken.None);
+
+        var claimResponse = await RunAsync("codex", "claim", "--database", _databasePath);
+        using var claimDocument = JsonDocument.Parse(claimResponse.Output);
+        var claimToken = claimDocument.RootElement.GetProperty("claim_token").GetString();
+        var startedResponse = await RunAsync("codex", "started", "message-1", "--database", _databasePath, "--claim-token", claimToken!, "--codex-task-id", "thread-1");
+
+        claimResponse.ExitCode.Should().Be(0);
+        claimDocument.RootElement.GetProperty("project_name").GetString().Should().Be("CRs");
+        startedResponse.ExitCode.Should().Be(0);
+        (await repository.GetQueuedAsync("message-1", CancellationToken.None)).Should().BeNull();
+    }
+
+    [Fact]
     public async Task RunAsync_ConversationReset_AcceptsPositionalConversationId()
     {
         var repository = new SqliteConversationSessionRepository(GetConnectionString());
