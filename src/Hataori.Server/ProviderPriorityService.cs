@@ -57,8 +57,11 @@ public sealed class ProviderPriorityService(string configurationPath)
 
     private static IReadOnlyList<string> ReadPriority(JsonObject root)
     {
-        var priority = root[ActivationOptions.SectionName]?["providerPriority"] as JsonArray
-            ?? throw new InvalidOperationException("Activation providerPriority is missing.");
+        var priority = root[ActivationOptions.SectionName]?["providerPriority"] as JsonArray;
+        if (priority is null)
+        {
+            return new ActivationOptions().ProviderPriority;
+        }
         return priority.Select(node => node?.GetValue<string>() ?? string.Empty).ToArray();
     }
 }

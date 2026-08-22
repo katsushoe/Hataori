@@ -16,7 +16,7 @@ HataoriのWindows標準成果物はx64 MSIです。MSIはServer、CLI、Monitor�
 既定の`%INSTALL_ROOT%`は64bit Program Files配下の`Hataori`です。別の場所へ導入する場合は、管理者ターミナルから`INSTALL_ROOT`を指定します。
 
 ```powershell
-msiexec.exe /i Hataori-3.1.2.0-x64.msi INSTALL_ROOT="F:\Hataori"
+msiexec.exe /i Hataori-3.1.3.0-x64.msi INSTALL_ROOT="F:\Hataori"
 ```
 
 ## 初回設定
@@ -40,7 +40,7 @@ Start-Service Hataori
 Windowsの「インストールされているアプリ」または次のコマンドで削除します。
 
 ```powershell
-msiexec.exe /x Hataori-3.1.2.0-x64.msi
+msiexec.exe /x Hataori-3.1.3.0-x64.msi
 ```
 
 Uninstallはバイナリ、サービス、PATH、ショートカットを削除します。設定、秘密情報、データ、ログは保持します。不要な場合だけ、利用者が内容を確認して`%INSTALL_ROOT%/config`、`logs`、`data`を別途削除してください。
@@ -49,7 +49,7 @@ Uninstallはバイナリ、サービス、PATH、ショートカットを削除�
 
 ```powershell
 ./scripts/Build-Installer.ps1
-Get-FileHash ./artifacts/installer/Hataori-3.1.2.0-x64.msi -Algorithm SHA256
+Get-FileHash ./artifacts/installer/Hataori-3.1.3.0-x64.msi -Algorithm SHA256
 ```
 
 生成スクリプトはServer、CLI、Monitorをwin-x64 self-contained single-fileとしてpublishし、WiX Toolset 5.0.2でMSIを作成します。

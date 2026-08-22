@@ -32,6 +32,17 @@ public sealed class ProviderPriorityServiceTests : IDisposable
         await action.Should().ThrowAsync<ArgumentException>();
     }
 
+    [Fact]
+    public async Task GetAsync_LegacyConfigurationWithoutPriority_ReturnsDefaultPriority()
+    {
+        await File.WriteAllTextAsync(_path, """{"activation":{"enabled":true}}""");
+        var service = new ProviderPriorityService(_path);
+
+        var result = await service.GetAsync(CancellationToken.None);
+
+        result.Should().Equal("codex", "claude-code");
+    }
+
     public void Dispose()
     {
         if (File.Exists(_path))
