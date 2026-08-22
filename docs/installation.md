@@ -16,7 +16,7 @@ The supported Windows artifact is the x64 MSI. It manages the Server, CLI, Monit
 The default `%INSTALL_ROOT%` is `Hataori` under 64-bit Program Files. To use another location, run this from an elevated terminal:
 
 ```powershell
-msiexec.exe /i Hataori-3.1.1.0-x64.msi INSTALL_ROOT="F:\Hataori"
+msiexec.exe /i Hataori-3.1.2.0-x64.msi INSTALL_ROOT="F:\Hataori"
 ```
 
 ## Initial Configuration
@@ -40,7 +40,7 @@ Run the newer MSI with the same `INSTALL_ROOT`. It replaces binaries and service
 Use Windows Installed apps or:
 
 ```powershell
-msiexec.exe /x Hataori-3.1.1.0-x64.msi
+msiexec.exe /x Hataori-3.1.2.0-x64.msi
 ```
 
 Uninstall removes binaries, the Service, `PATH`, and shortcuts. Review and manually remove preserved mutable directories only when their data is no longer needed.
@@ -49,7 +49,7 @@ Uninstall removes binaries, the Service, `PATH`, and shortcuts. Review and manua
 
 ```powershell
 ./scripts/Build-Installer.ps1
-Get-FileHash ./artifacts/installer/Hataori-3.1.1.0-x64.msi -Algorithm SHA256
+Get-FileHash ./artifacts/installer/Hataori-3.1.2.0-x64.msi -Algorithm SHA256
 ```
 
 The script publishes self-contained, single-file `win-x64` Server, CLI, and Monitor executables and builds the MSI with WiX Toolset 5.0.2.
