@@ -17,7 +17,7 @@ public static class CliDatabaseDiagnostics
 
         if (!File.Exists(databasePath))
         {
-            throw new FileNotFoundException("Hataori database was not found.", databasePath);
+            throw new FileNotFoundException(Hataori.Application.Localization.DisplayLanguage.Text("Hataoriデータベースが見つかりません。", "Hataori database was not found."), databasePath);
         }
 
         var connectionString = new SqliteConnectionStringBuilder
@@ -33,7 +33,7 @@ public static class CliDatabaseDiagnostics
         {
             "status" => await GetStatusAsync(connection, databasePath, cancellationToken).ConfigureAwait(false),
             "integrity" => await GetIntegrityAsync(connection, cancellationToken).ConfigureAwait(false),
-            _ => throw new ArgumentException($"Unknown db command '{command}'."),
+            _ => throw new ArgumentException(Hataori.Application.Localization.DisplayLanguage.Text($"不明なdbコマンドです: '{command}'。", $"Unknown db command '{command}'.")),
         };
     }
 

@@ -26,7 +26,7 @@ public sealed class WindowsServiceSetupServiceTests
 
         var action = () => service.ConfigureAsync(CancellationToken.None);
 
-        await action.Should().ThrowAsync<InvalidOperationException>().WithMessage("*Install or repair Itoguruma*");
+        await action.Should().ThrowAsync<InvalidOperationException>().WithMessage("*Itogurumaをインストールまたは修復*");
     }
 
     [Fact]

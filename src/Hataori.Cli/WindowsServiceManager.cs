@@ -31,7 +31,7 @@ public sealed class WindowsServiceManager(IProcessRunner processRunner)
             "start" => ["start", serviceName],
             "stop" => ["stop", serviceName],
             "status" => ["query", serviceName],
-            _ => throw new ArgumentException($"Unknown service command '{command}'."),
+            _ => throw new ArgumentException(Hataori.Application.Localization.DisplayLanguage.Text($"不明なserviceコマンドです: '{command}'。", $"Unknown service command '{command}'.")),
         };
         return await RunAsync(serviceName, arguments, cancellationToken).ConfigureAwait(false);
     }
@@ -40,13 +40,13 @@ public sealed class WindowsServiceManager(IProcessRunner processRunner)
     {
         if (string.IsNullOrWhiteSpace(serverPath))
         {
-            throw new ArgumentException("Specify --server for service installation.");
+            throw new ArgumentException(Hataori.Application.Localization.DisplayLanguage.Text("Serviceインストールには--serverを指定してください。", "Specify --server for service installation."));
         }
 
         var fullPath = Path.GetFullPath(serverPath);
         if (!File.Exists(fullPath))
         {
-            throw new FileNotFoundException("Hataori Server executable was not found.", fullPath);
+            throw new FileNotFoundException(Hataori.Application.Localization.DisplayLanguage.Text("Hataori Server実行ファイルが見つかりません。", "Hataori Server executable was not found."), fullPath);
         }
 
         return ["create", serviceName, "binPath=", fullPath, "start=", "auto", "DisplayName=", "Hataori Server"];
@@ -58,7 +58,7 @@ public sealed class WindowsServiceManager(IProcessRunner processRunner)
         if (result.ExitCode != 0)
         {
             var detail = string.IsNullOrWhiteSpace(result.StandardError) ? result.StandardOutput : result.StandardError;
-            throw new InvalidOperationException($"Service command failed with exit code {result.ExitCode}: {detail.Trim()}");
+            throw new InvalidOperationException(Hataori.Application.Localization.DisplayLanguage.Text($"Serviceコマンドが終了コード{result.ExitCode}で失敗しました: {detail.Trim()}", $"Service command failed with exit code {result.ExitCode}: {detail.Trim()}"));
         }
 
         return new { service_name = serviceName, command = arguments[0], success = true, output = result.StandardOutput.Trim() };

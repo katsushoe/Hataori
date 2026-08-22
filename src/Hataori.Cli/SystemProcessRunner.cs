@@ -27,7 +27,7 @@ public sealed class SystemProcessRunner : IProcessRunner
             startInfo.ArgumentList.Add(argument);
         }
 
-        using var process = Process.Start(startInfo) ?? throw new InvalidOperationException($"Failed to start '{fileName}'.");
+        using var process = Process.Start(startInfo) ?? throw new InvalidOperationException(Hataori.Application.Localization.DisplayLanguage.Text($"'{fileName}'を起動できませんでした。", $"Failed to start '{fileName}'."));
         var outputTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
         var errorTask = process.StandardError.ReadToEndAsync(cancellationToken);
         await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);

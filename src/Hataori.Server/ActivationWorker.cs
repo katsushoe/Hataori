@@ -16,12 +16,12 @@ public sealed class ActivationWorker(
     {
         if (!await recoveryGate.Ready.WaitAsync(stoppingToken).ConfigureAwait(false))
         {
-            logger.LogWarning("[Recovery] Activation was not started because startup recovery failed");
+            logger.LogWarning(Hataori.Application.Localization.DisplayLanguage.Text("[リカバリ] 起動時リカバリに失敗したためActivationを開始しませんでした", "[Recovery] Activation was not started because startup recovery failed"));
             return;
         }
         if (!activationOptions.Value.Enabled)
         {
-            logger.LogInformation("Activation Manager is disabled");
+            logger.LogInformation(Hataori.Application.Localization.DisplayLanguage.Text("Activation Managerは無効です", "Activation Manager is disabled"));
             return;
         }
 
@@ -30,7 +30,7 @@ public sealed class ActivationWorker(
         var mcpUrl = $"http://{server.McpHost}:{server.McpPort}{server.McpPath}";
         var request = new ActivationRequest(activationOptions.Value.WorkingDirectory, AppContext.BaseDirectory, mcpUrl);
         var lanes = ActivationLanePlan.Create(activationOptions.Value.MaxConcurrentRuns);
-        logger.LogInformation("Activation Manager started with {LaneCount} lanes", lanes.Count);
+        logger.LogInformation(Hataori.Application.Localization.DisplayLanguage.Text("Activation Managerを{LaneCount} laneで開始しました", "Activation Manager started with {LaneCount} lanes"), lanes.Count);
         await Task.WhenAll(lanes.Select((agentId, index) => RunLaneAsync(agentId, index + 1, request, stoppingToken))).ConfigureAwait(false);
     }
 
@@ -47,11 +47,11 @@ public sealed class ActivationWorker(
                 }
                 else if (!result.Succeeded)
                 {
-                    logger.LogWarning("Activation failed for agent {AgentId} lane {LaneNumber}, run {RunId}, message {MessageId}: {Error}", agentId, laneNumber, result.RunId, result.MessageId, result.Error);
+                    logger.LogWarning(Hataori.Application.Localization.DisplayLanguage.Text("Agent {AgentId} lane {LaneNumber}のActivationに失敗しました。run {RunId}, message {MessageId}: {Error}", "Activation failed for agent {AgentId} lane {LaneNumber}, run {RunId}, message {MessageId}: {Error}"), agentId, laneNumber, result.RunId, result.MessageId, result.Error);
                 }
                 else
                 {
-                    logger.LogInformation("Activation completed for agent {AgentId}, run {RunId}, message {MessageId}, reply {ReplyMessageId}", agentId, result.RunId, result.MessageId, result.ReplyMessageId);
+                    logger.LogInformation(Hataori.Application.Localization.DisplayLanguage.Text("Agent {AgentId}のActivationが完了しました。run {RunId}, message {MessageId}, reply {ReplyMessageId}", "Activation completed for agent {AgentId}, run {RunId}, message {MessageId}, reply {ReplyMessageId}"), agentId, result.RunId, result.MessageId, result.ReplyMessageId);
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)

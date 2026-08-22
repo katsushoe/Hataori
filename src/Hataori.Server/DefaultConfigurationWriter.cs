@@ -21,7 +21,7 @@ public static class DefaultConfigurationWriter
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         if (language is not null && !SupportedLanguages.Contains(language, StringComparer.Ordinal))
         {
-            throw new ArgumentException("Language must be ja-JP or en-US.", nameof(language));
+            throw new ArgumentException(Hataori.Application.Localization.DisplayLanguage.Text("言語はja-JPまたはen-USで指定してください。", "Language must be ja-JP or en-US."), nameof(language));
         }
 
         var fullPath = Path.GetFullPath(path);
@@ -31,17 +31,17 @@ public static class DefaultConfigurationWriter
         }
 
         Directory.CreateDirectory(Path.GetDirectoryName(fullPath)
-            ?? throw new InvalidOperationException("Configuration directory could not be resolved."));
+            ?? throw new InvalidOperationException(Hataori.Application.Localization.DisplayLanguage.Text("設定ディレクトリを解決できませんでした。", "Configuration directory could not be resolved.")));
         await using var resource = Assembly.GetExecutingAssembly().GetManifestResourceStream(ResourceName)
-            ?? throw new InvalidOperationException("Default Hataori configuration resource was not found.");
+            ?? throw new InvalidOperationException(Hataori.Application.Localization.DisplayLanguage.Text("Hataoriの既定設定リソースが見つかりません。", "Default Hataori configuration resource was not found."));
         using var reader = new StreamReader(resource, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
         var content = await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
         if (language is not null)
         {
             var root = JsonNode.Parse(content)?.AsObject()
-                ?? throw new InvalidOperationException("Default Hataori configuration is invalid.");
+                ?? throw new InvalidOperationException(Hataori.Application.Localization.DisplayLanguage.Text("Hataoriの既定設定が不正です。", "Default Hataori configuration is invalid."));
             var application = root["application"]?.AsObject()
-                ?? throw new InvalidOperationException("Default Hataori application configuration is missing.");
+                ?? throw new InvalidOperationException(Hataori.Application.Localization.DisplayLanguage.Text("Hataoriの既定application設定がありません。", "Default Hataori application configuration is missing."));
             application["language"] = language;
             content = root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }) + Environment.NewLine;
         }

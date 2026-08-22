@@ -11,7 +11,7 @@ public static class HookProcessor
 {
     public static HookResult Process(JsonElement input, MonitorSnapshot? snapshot, string? conversationId, string? agentId, string? messageId, string? mcpUrl)
     {
-        var eventName = GetString(input, "hook_event_name") ?? GetString(input, "hook_event") ?? throw new ArgumentException("Hook input requires hook_event_name.");
+        var eventName = GetString(input, "hook_event_name") ?? GetString(input, "hook_event") ?? throw new ArgumentException(Hataori.Application.Localization.DisplayLanguage.Text("Hook入力にはhook_event_nameが必要です。", "Hook input requires hook_event_name."));
         var tasks = snapshot?.Tasks.Where(task => string.Equals(task.Status, "active", StringComparison.OrdinalIgnoreCase) && Matches(task, conversationId, agentId)).ToArray() ?? [];
         var context = BuildContext(conversationId, agentId, messageId, mcpUrl, tasks);
         return eventName.ToLowerInvariant() switch
@@ -20,7 +20,7 @@ public static class HookProcessor
             "pretooluse" => PreToolUse(input, tasks),
             "stop" => new HookResult(Stop(input, tasks), false, null),
             "sessionend" => new HookResult(new { @continue = true }, false, null),
-            _ => throw new ArgumentException($"Unsupported hook event '{eventName}'."),
+            _ => throw new ArgumentException(Hataori.Application.Localization.DisplayLanguage.Text($"未対応のHook eventです: '{eventName}'。", $"Unsupported hook event '{eventName}'.")),
         };
     }
 
