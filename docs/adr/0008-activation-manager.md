@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded in part by [ADR 0017](0017-project-addressed-provider-selection.md). Queue activation and session rules remain accepted; recipient and provider-selection rules are replaced.
 
 ## Context
 

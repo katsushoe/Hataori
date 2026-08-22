@@ -98,6 +98,10 @@ public static class CliApplication
             {
                 result = await ExecuteConfigAsync(args, cancellationToken).ConfigureAwait(false);
             }
+            else if (string.Equals(args[0], "provider", StringComparison.OrdinalIgnoreCase))
+            {
+                result = await ExecuteProviderAsync(args, cancellationToken).ConfigureAwait(false);
+            }
             else if (string.Equals(args[0], "setup", StringComparison.OrdinalIgnoreCase))
             {
                 result = await ExecuteSetupAsync(args, cancellationToken).ConfigureAwait(false);
@@ -199,6 +203,7 @@ public static class CliApplication
         var conversationId = Environment.GetEnvironmentVariable("HATAORI_CONVERSATION_ID");
         var messageId = Environment.GetEnvironmentVariable("HATAORI_MESSAGE_ID");
         var senderAgentId = Environment.GetEnvironmentVariable("HATAORI_SENDER_AGENT_ID");
+        var provider = Environment.GetEnvironmentVariable("HATAORI_AGENT_ID");
 
         var hookResult = HookProcessor.Process(
             document.RootElement,
@@ -208,9 +213,9 @@ public static class CliApplication
             messageId,
             Environment.GetEnvironmentVariable("HATAORI_MCP_URL"));
 
-        if (hookResult.PermissionDenied && !string.IsNullOrWhiteSpace(senderAgentId) && !string.IsNullOrWhiteSpace(conversationId) && !string.IsNullOrWhiteSpace(messageId))
+        if (hookResult.PermissionDenied && !string.IsNullOrWhiteSpace(senderAgentId) && !string.IsNullOrWhiteSpace(provider) && !string.IsNullOrWhiteSpace(conversationId) && !string.IsNullOrWhiteSpace(messageId))
         {
-            await TryNotifyPermissionDeniedAsync(options, senderAgentId, conversationId, messageId, hookResult.DenialReason, cancellationToken).ConfigureAwait(false);
+            await TryNotifyPermissionDeniedAsync(options, senderAgentId, provider, conversationId, messageId, hookResult.DenialReason, cancellationToken).ConfigureAwait(false);
         }
 
         return hookResult.Payload;
@@ -220,7 +225,7 @@ public static class CliApplication
     /// PreToolUseがtool呼び出しをdenyした際、Itogurumaへ事後通知します（Dynamic Permission Approvalの通知専用v1、docs/adr/0014参照）。
     /// 通知に失敗してもHookの応答自体には影響させません。
     /// </summary>
-    private static async Task TryNotifyPermissionDeniedAsync(IReadOnlyDictionary<string, string> options, string senderAgentId, string conversationId, string messageId, string? denialReason, CancellationToken cancellationToken)
+    private static async Task TryNotifyPermissionDeniedAsync(IReadOnlyDictionary<string, string> options, string senderAgentId, string provider, string conversationId, string messageId, string? denialReason, CancellationToken cancellationToken)
     {
         try
         {
@@ -234,7 +239,7 @@ public static class CliApplication
             await using var client = new McpItogurumaClient(clientOptions, NullLoggerFactory.Instance);
             await client.ConnectAsync(cancellationToken).ConfigureAwait(false);
             var body = $"Hataoriがtool呼び出しをblockしました: {denialReason}";
-            await client.ReplyAsync(senderAgentId, body, conversationId, messageId, $"hataori-hook-deny:{messageId}", cancellationToken).ConfigureAwait(false);
+            await client.ReplyAsync(senderAgentId, provider, body, conversationId, messageId, $"hataori-hook-deny:{messageId}", cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
@@ -498,6 +503,29 @@ public static class CliApplication
         return await new CliConfigurationManager().ExecuteAsync(args[1], path, cancellationToken).ConfigureAwait(false);
     }
 
+    private static async Task<object> ExecuteProviderAsync(string[] args, CancellationToken cancellationToken)
+    {
+        if (args.Length < 3 || !args[1].Equals("priority", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException(DisplayLanguage.Text("使い方: hataori provider priority <get|set> [--providers <ID,ID>] [--config <path>]", "Usage: hataori provider priority <get|set> [--providers <ID,ID>] [--config <path>]"));
+        }
+
+        var options = ParseOptions(args.Skip(3));
+        var service = new ProviderPriorityService(GetConfigurationPath(options));
+        if (args[2].Equals("get", StringComparison.OrdinalIgnoreCase))
+        {
+            return new { providers = await service.GetAsync(cancellationToken).ConfigureAwait(false) };
+        }
+        if (args[2].Equals("set", StringComparison.OrdinalIgnoreCase))
+        {
+            var value = Required(options, "providers");
+            var providers = value.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+            return new { providers = await service.SetAsync(providers, cancellationToken).ConfigureAwait(false) };
+        }
+
+        throw new ArgumentException(DisplayLanguage.Text("provider priorityにはgetまたはsetを指定してください。", "Specify get or set for provider priority."));
+    }
+
     private static async Task<object> ExecuteServiceAsync(string[] args, CancellationToken cancellationToken)
     {
         if (args.Length < 2)
@@ -702,6 +730,7 @@ public static class CliApplication
             "start" => await service.StartAsync(Required(options, "id"), Required(options, "name"), Required(options, "agent"), Optional(options, "conversation"), Optional(options, "message"), Optional(options, "summary") ?? string.Empty, Optional(options, "current-work") ?? string.Empty, cancellationToken).ConfigureAwait(false),
             "get" => await GetTaskDetailsAsync(RequiredTaskId(taskId), service, cancellationToken).ConfigureAwait(false),
             "list" => await ListTasksAsync(options, service, cancellationToken).ConfigureAwait(false),
+            "find-conflicts" => await service.FindConflictsAsync(Required(options, "name"), Optional(options, "summary"), Optional(options, "agent"), cancellationToken).ConfigureAwait(false),
             "heartbeat" => await service.HeartbeatAsync(RequiredTaskId(taskId), Required(options, "current-work"), ParseProgress(Required(options, "progress")), Optional(options, "message"), cancellationToken).ConfigureAwait(false),
             "complete" => await service.CompleteAsync(RequiredTaskId(taskId), Optional(options, "message") ?? Required(options, "result"), cancellationToken).ConfigureAwait(false),
             "cancel" => await service.CancelAsync(RequiredTaskId(taskId), Optional(options, "message") ?? Optional(options, "result"), cancellationToken).ConfigureAwait(false),
@@ -816,8 +845,8 @@ public static class CliApplication
     private static bool IsSubcommandHelp(IReadOnlyList<string> args) => args.Count > 1 && (args[1].Equals("help", StringComparison.OrdinalIgnoreCase) || args[1].Equals("--help", StringComparison.OrdinalIgnoreCase));
     private static string GetVersion() => typeof(CliApplication).Assembly.GetName().Version?.ToString() ?? "unknown";
     private static string GetHelpText() => DisplayLanguage.Text(
-        "使い方: hataori <start|stop|restart|status|service|task|agent|conversation|queue|db|config|setup|itoguruma|mcp|doctor|logs|monitor|hook|version|help> [コマンド] [オプション]",
-        "Usage: hataori <start|stop|restart|status|service|task|agent|conversation|queue|db|config|setup|itoguruma|mcp|doctor|logs|monitor|hook|version|help> [command] [options]");
+        "使い方: hataori <start|stop|restart|status|service|task|agent|conversation|queue|db|config|provider|setup|itoguruma|mcp|doctor|logs|monitor|hook|version|help> [コマンド] [オプション]",
+        "Usage: hataori <start|stop|restart|status|service|task|agent|conversation|queue|db|config|provider|setup|itoguruma|mcp|doctor|logs|monitor|hook|version|help> [command] [options]");
     private static string GetSubcommandHelp(string command) => DisplayLanguage.Text($"使い方: hataori {command} <コマンド> [引数] [オプション]", $"Usage: hataori {command} <command> [arguments] [options]");
 
     private sealed record DoctorCheck(string Name, bool Ok, string? Error, bool Skipped = false);

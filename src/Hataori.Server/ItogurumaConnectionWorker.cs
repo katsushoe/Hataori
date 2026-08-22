@@ -1,4 +1,5 @@
 ﻿using Hataori.Application.Itoguruma;
+using Hataori.Application.Activation;
 using Hataori.Application.Messages;
 using Hataori.Core.Messages;
 using Hataori.Infrastructure.Itoguruma;
@@ -12,8 +13,10 @@ namespace Hataori.Server;
 public sealed class ItogurumaConnectionWorker(
     IItogurumaClient client,
     IMessageQueueRepository messageQueue,
+    AgentProviderSelector providerSelector,
     ItogurumaConnectionState connectionState,
     IOptions<ItogurumaClientOptions> options,
+    IOptionsMonitor<ActivationOptions> activationOptions,
     ILogger<ItogurumaConnectionWorker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -30,19 +33,13 @@ public sealed class ItogurumaConnectionWorker(
                     await client.ConnectAsync(stoppingToken).ConfigureAwait(false);
                     var status = await client.GetStatusAsync(stoppingToken).ConfigureAwait(false);
                     connectionState.Set("connected");
-                    foreach (var agentId in options.Value.MonitoredAgentIds)
+                    if (!activationOptions.CurrentValue.Enabled)
                     {
-                        var messages = await client.GetMessagesAsync(
-                            agentId,
-                            options.Value.ReceiveBatchSize,
-                            options.Value.LeaseSeconds,
-                            null,
-                            stoppingToken).ConfigureAwait(false);
-                        foreach (var message in messages)
-                        {
-                            await PersistAndAcknowledgeAsync(agentId, message, stoppingToken).ConfigureAwait(false);
-                        }
+                        failures = 0;
+                        await Task.Delay(TimeSpan.FromSeconds(options.Value.PollIntervalSeconds), stoppingToken).ConfigureAwait(false);
+                        continue;
                     }
+                    await PollProjectsAsync(stoppingToken).ConfigureAwait(false);
                     if (failures > 0)
                     {
                         logger.LogInformation(Hataori.Application.Localization.DisplayLanguage.Text("Itoguruma接続が復旧しました: {Name} {Version}", "Itoguruma connection recovered: {Name} {Version}"), status.Name, status.Version);
@@ -82,6 +79,26 @@ public sealed class ItogurumaConnectionWorker(
         }
     }
 
+    /// <summary>Projects root直下の全プロジェクトを登録し、宛先別メッセージを1回取得します。</summary>
+    public async Task PollProjectsAsync(CancellationToken cancellationToken)
+    {
+        var activation = activationOptions.CurrentValue;
+        foreach (var project in providerSelector.DiscoverProjects(activation.WorkingDirectory))
+        {
+            await client.RegisterProjectAsync(project.ProjectId, cancellationToken).ConfigureAwait(false);
+            var messages = await client.GetMessagesAsync(
+                project.ProjectId,
+                options.Value.ReceiveBatchSize,
+                options.Value.LeaseSeconds,
+                null,
+                cancellationToken).ConfigureAwait(false);
+            foreach (var message in messages)
+            {
+                await PersistAndAcknowledgeAsync(project.ProjectId, message, cancellationToken).ConfigureAwait(false);
+            }
+        }
+    }
+
     private async Task SafeDisconnectAsync()
     {
         try
@@ -96,10 +113,13 @@ public sealed class ItogurumaConnectionWorker(
 
     private async Task PersistAndAcknowledgeAsync(string agentId, ItogurumaMessage message, CancellationToken cancellationToken)
     {
+        var activation = activationOptions.CurrentValue;
+        var selection = providerSelector.Select(activation.WorkingDirectory, agentId, message.Provider, activation.ProviderPriority);
         var incoming = new IncomingMessage(
             message.MessageId,
             message.ThreadId,
-            agentId,
+            selection.Provider,
+            selection.ProjectPath,
             message.SenderAgentId,
             message.ReplyToMessageId,
             message.MessageType,

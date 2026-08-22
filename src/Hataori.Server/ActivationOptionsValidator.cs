@@ -31,6 +31,20 @@ public sealed class ActivationOptionsValidator : IValidateOptions<ActivationOpti
             errors.Add("Activation maxConcurrentRuns keys must be non-empty and values must be between 1 and 32.");
         }
 
+        if (options.ProviderPriority.Count == 0 || options.ProviderPriority.Any(string.IsNullOrWhiteSpace))
+        {
+            errors.Add("Activation providerPriority must contain at least one non-empty provider.");
+        }
+        else if (options.ProviderPriority.Distinct(StringComparer.OrdinalIgnoreCase).Count() != options.ProviderPriority.Count)
+        {
+            errors.Add("Activation providerPriority must not contain duplicates.");
+        }
+
+        if (options.Enabled && options.ProviderPriority.Any(provider => !options.MaxConcurrentRuns.ContainsKey(provider)))
+        {
+            errors.Add("Activation providerPriority entries must exist in maxConcurrentRuns.");
+        }
+
         return errors.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(errors);
     }
 }

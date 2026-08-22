@@ -12,7 +12,17 @@ public sealed class CodexCommandBuilderTests
 
         var arguments = CodexCommandBuilder.BuildStart(options, "C:\\workspace");
 
-        arguments.Should().Equal("exec", "--json", "--color", "never", "--approve-for-me", "--model", "test-model", "--cd", "C:\\workspace", "-");
+        arguments.Should().Equal("exec", "--json", "--color", "never", "--skip-git-repo-check", "--approve-for-me", "--model", "test-model", "--cd", "C:\\workspace", "-");
+    }
+
+    [Fact]
+    public void BuildStart_WithRepositoryCheckEnabled_OmitsSkipFlag()
+    {
+        var options = new CodexDriverOptions { SkipGitRepoCheck = false };
+
+        var arguments = CodexCommandBuilder.BuildStart(options, "C:\\workspace");
+
+        arguments.Should().NotContain("--skip-git-repo-check");
     }
 
     [Fact]

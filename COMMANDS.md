@@ -10,7 +10,7 @@ This document is the source of truth for the Hataori CLI, service controls, inte
 | :--- | :--- | :--- |
 | [Server](#server-commands) | `start`, `stop`, `restart`, `status` | Manage a foreground Server process through its executable and Control Pipe. |
 | [Service](#service-commands) | `service setup/install/uninstall/start/stop/restart/status` | Configure and control the Windows Service. |
-| [Task](#task-commands) | `task start/get/list/heartbeat/complete/cancel/fail/expire/history/relation-add/relations` | Manage persisted tasks and relations. |
+| [Task](#task-commands) | `task start/get/list/find-conflicts/heartbeat/complete/cancel/fail/expire/history/relation-add/relations` | Manage persisted tasks and relations. |
 | [Agent](#agent-commands) | `agent list/status/runs` | Inspect configured agents and persisted runs. |
 | [Conversation](#conversation-commands) | `conversation list/get/reset` | Inspect or invalidate conversation sessions. |
 | [Queue](#queue-commands) | `queue list/get/retry/cancel` | Inspect and operate on queued messages. |
@@ -185,7 +185,7 @@ Commands: [`setup`](#hataori-service-setup), [`install`](#hataori-service-instal
 
 ### Task Commands
 
-Commands: [`start`](#hataori-task-start), [`get`](#hataori-task-get), [`list`](#hataori-task-list), [`heartbeat`](#hataori-task-heartbeat), [`complete`](#hataori-task-complete), [`cancel`](#hataori-task-cancel), [`fail`](#hataori-task-fail), [`expire`](#hataori-task-expire), [`history`](#hataori-task-history), [`relation-add`](#hataori-task-relation-add), [`relations`](#hataori-task-relations). Every command requires `--database <path>` or `HATAORI_DATABASE_PATH`.
+Commands: [`start`](#hataori-task-start), [`get`](#hataori-task-get), [`list`](#hataori-task-list), [`find-conflicts`](#hataori-task-find-conflicts), [`heartbeat`](#hataori-task-heartbeat), [`complete`](#hataori-task-complete), [`cancel`](#hataori-task-cancel), [`fail`](#hataori-task-fail), [`expire`](#hataori-task-expire), [`history`](#hataori-task-history), [`relation-add`](#hataori-task-relation-add), [`relations`](#hataori-task-relations). Every command requires `--database <path>` or `HATAORI_DATABASE_PATH`.
 
 #### `hataori task start`
 
@@ -221,6 +221,18 @@ Commands: [`start`](#hataori-task-start), [`get`](#hataori-task-get), [`list`](#
 | Processing | Queries SQLite and optionally filters by conversation. |
 | Result | JSON array whose membership varies with persisted state and filters. |
 | Example | `hataori task list --all --database F:\Hataori\data\hataori.db` |
+| Safety | Read-only. |
+
+#### `hataori task find-conflicts`
+
+| Item | Specification |
+| :--- | :--- |
+| Purpose | Find possible overlap with other agents' active tasks by name and summary keywords. |
+| Syntax | `hataori task find-conflicts --name <name> [--summary <text>] [--agent <exclude-agent>] --database <path>` |
+| Arguments | `--name` is required; `--summary` is optional; `--agent` identifies the current agent to exclude. |
+| Processing | Uses the same Application Service as MCP `task_find_conflicts`. |
+| Result | JSON array of advisory candidate tasks. |
+| Example | `hataori task find-conflicts --name "Fix authentication" --summary "Login screen" --agent codex --database F:\Hataori\data\hataori.db` |
 | Safety | Read-only. |
 
 #### `hataori task heartbeat`
@@ -529,6 +541,23 @@ Commands: [`init`](#hataori-config-init), [`show`](#hataori-config-show), [`path
 | Processing | Resolves the absolute path and checks file existence. |
 | Result | JSON `path` and `exists`. |
 | Example | `hataori config path` |
+
+#### `hataori provider priority get`
+
+| Item | Description |
+|---|---|
+| Purpose | Get the provider order used by automatic agent selection. |
+| Syntax | `hataori provider priority get [--config <path>]` |
+| Result | A `providers` array in priority order. |
+
+#### `hataori provider priority set`
+
+| Item | Description |
+|---|---|
+| Purpose | Persist provider priority to the configuration file. |
+| Syntax | `hataori provider priority set --providers <ID,ID> [--config <path>]` |
+| Constraint | At least one value, unique ignoring case; the Server reloads the setting automatically. |
+| Example | `hataori provider priority set --providers codex,claude-code` |
 | Safety | Read-only. |
 
 #### `hataori config check`

@@ -7,8 +7,9 @@ public interface IItogurumaClient : IAsyncDisposable
 {
     Task ConnectAsync(CancellationToken cancellationToken);
     Task DisconnectAsync(CancellationToken cancellationToken);
+    Task RegisterProjectAsync(string projectId, CancellationToken cancellationToken);
     Task<IReadOnlyList<ItogurumaMessage>> GetMessagesAsync(string agentId, int limit, int leaseSeconds, string? threadId, CancellationToken cancellationToken);
-    Task<string> ReplyAsync(string recipientAgentId, string body, string threadId, string? replyToMessageId, string idempotencyKey, CancellationToken cancellationToken);
+    Task<string> ReplyAsync(string recipientAgentId, string provider, string body, string threadId, string? replyToMessageId, string idempotencyKey, CancellationToken cancellationToken);
     Task<bool> AcknowledgeAsync(string agentId, string messageId, CancellationToken cancellationToken);
     Task<ItogurumaStatus> GetStatusAsync(CancellationToken cancellationToken);
 }
@@ -24,6 +25,7 @@ public sealed record ItogurumaMessage(
     string MessageType,
     string Body,
     string? PayloadJson,
+    string? Provider,
     DateTimeOffset CreatedAt,
     string DeliveryStatus,
     DateTimeOffset? LeaseUntil);

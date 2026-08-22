@@ -21,7 +21,7 @@ public sealed class ReplyRetryManagerTests : IDisposable
         var now = DateTimeOffset.Parse("2026-08-15T00:00:00Z");
         await PrepareCompletedRunAsync(fixture.Queue, fixture.Runs, now);
         await fixture.Manager.ScheduleInitialFailureAsync("message-1", "offline", now, CancellationToken.None);
-        fixture.Itoguruma.ReplyAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+        fixture.Itoguruma.ReplyAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns("reply-1");
 
         var result = await fixture.Manager.ProcessDueAsync(now.AddSeconds(1), CancellationToken.None);
@@ -29,7 +29,7 @@ public sealed class ReplyRetryManagerTests : IDisposable
         result.Succeeded.Should().Be(1);
         (await fixture.Queue.GetProcessingStatusAsync("message-1", CancellationToken.None)).Should().Be(MessageProcessingStatus.Responded);
         await fixture.Itoguruma.Received(1).ReplyAsync(
-            "sender", "final", "conversation-1", "message-1", "hataori-reply:message-1", Arg.Any<CancellationToken>());
+            "sender", "codex", "final", "conversation-1", "message-1", "hataori-reply:message-1", Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -39,7 +39,7 @@ public sealed class ReplyRetryManagerTests : IDisposable
         var now = DateTimeOffset.Parse("2026-08-15T00:00:00Z");
         await PrepareCompletedRunAsync(fixture.Queue, fixture.Runs, now);
         await fixture.Manager.ScheduleInitialFailureAsync("message-1", "offline", now, CancellationToken.None);
-        fixture.Itoguruma.ReplyAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+        fixture.Itoguruma.ReplyAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns<Task<string>>(_ => throw new InvalidOperationException("still offline"));
 
         var first = await fixture.Manager.ProcessDueAsync(now.AddSeconds(1), CancellationToken.None);
@@ -49,7 +49,7 @@ public sealed class ReplyRetryManagerTests : IDisposable
         later.Should().Be(new ReplyRetryBatchResult(0, 0, 0));
         (await fixture.Queue.GetProcessingStatusAsync("message-1", CancellationToken.None)).Should().Be(MessageProcessingStatus.Failed);
         await fixture.Itoguruma.Received(1).ReplyAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     public void Dispose()
@@ -75,7 +75,7 @@ public sealed class ReplyRetryManagerTests : IDisposable
 
     private static async Task PrepareCompletedRunAsync(SqliteMessageQueueRepository queue, SqliteAgentRunRepository runs, DateTimeOffset now)
     {
-        var message = new IncomingMessage("message-1", "conversation-1", "codex", "sender", null, "message", "work", null, now);
+        var message = new IncomingMessage("message-1", "conversation-1", "codex", Directory.GetCurrentDirectory(), "sender", null, "message", "work", null, now);
         await queue.EnqueueAsync(message, 0, CancellationToken.None);
         await queue.TryClaimNextAsync("codex", CancellationToken.None);
         await queue.MarkRunningAsync("message-1", CancellationToken.None);

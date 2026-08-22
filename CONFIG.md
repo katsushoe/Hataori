@@ -86,7 +86,7 @@ Children: [`databasePath`](#serverdatabasepath), [`controlPipeName`](#servercont
 
 ### `itoguruma`
 
-Children: [`endpoint`](#itogurumaendpoint), [`authenticationToken`](#itogurumaauthenticationtoken), [`agentId`](#itogurumaagentid), [`agentType`](#itogurumaagenttype), [`monitoredAgentIds`](#itogurumamonitoredagentids), [`connectionTimeoutSeconds`](#itogurumaconnectiontimeoutseconds), [`pollIntervalSeconds`](#itogurumapollintervalseconds), [`maxReconnectAttempts`](#itogurumamaxreconnectattempts), [`receiveBatchSize`](#itogurumareceivebatchsize), and [`leaseSeconds`](#itogurumaleaseseconds).
+Children: [`endpoint`](#itogurumaendpoint), [`authenticationToken`](#itogurumaauthenticationtoken), [`agentId`](#itogurumaagentid), [`agentType`](#itogurumaagenttype), [`connectionTimeoutSeconds`](#itogurumaconnectiontimeoutseconds), [`pollIntervalSeconds`](#itogurumapollintervalseconds), [`maxReconnectAttempts`](#itogurumamaxreconnectattempts), [`receiveBatchSize`](#itogurumareceivebatchsize), and [`leaseSeconds`](#itogurumaleaseseconds).
 
 #### `itoguruma.endpoint`
 
@@ -106,6 +106,7 @@ Children: [`endpoint`](#itogurumaendpoint), [`authenticationToken`](#itogurumaau
 
 - Type/required: non-empty string, required.
 - Default: `hataori`; omission fails validation.
+- Behavior: sender ID used by the Hataori Service for replies. It does not limit monitored projects; those are discovered under `activation.workingDirectory`.
 - Example: `"agentId": "hataori"`.
 
 #### `itoguruma.agentType`
@@ -113,13 +114,6 @@ Children: [`endpoint`](#itogurumaendpoint), [`authenticationToken`](#itogurumaau
 - Type/required: non-empty string, required.
 - Default: `hataori`; omission fails validation.
 - Example: `"agentType": "hataori"`.
-
-#### `itoguruma.monitoredAgentIds`
-
-- Type/required: array of strings, required.
-- Default: `["codex", "claude-code"]`.
-- Constraint: at least one non-empty value; values must be unique ignoring case.
-- Example: `"monitoredAgentIds": ["codex", "claude-code"]`.
 
 #### `itoguruma.connectionTimeoutSeconds`
 
@@ -227,7 +221,7 @@ Children: [`executablePath`](#agentsclaudecodeexecutablepath), [`permissionMode`
 
 ### `activation`
 
-Children: [`enabled`](#activationenabled), [`workingDirectory`](#activationworkingdirectory), [`pollIntervalMilliseconds`](#activationpollintervalmilliseconds), and [`maxConcurrentRuns`](#activationmaxconcurrentruns).
+Children: [`enabled`](#activationenabled), [`workingDirectory`](#activationworkingdirectory), [`pollIntervalMilliseconds`](#activationpollintervalmilliseconds), [`providerPriority`](#activationproviderpriority), and [`maxConcurrentRuns`](#activationmaxconcurrentruns).
 
 #### `activation.enabled`
 
@@ -241,7 +235,8 @@ Children: [`enabled`](#activationenabled), [`workingDirectory`](#activationworki
 - Type/required: string, conditionally required.
 - Default: empty string.
 - Constraint: when activation is enabled, it must be an existing absolute directory.
-- Example: `"workingDirectory": "F:\\Workspace\\Project"`.
+- Behavior: projects root whose direct children are automatically registered and monitored in Itoguruma; each directory name is a destination project ID.
+- Example: `"workingDirectory": "F:\\Workspace\\Projects"`.
 
 #### `activation.pollIntervalMilliseconds`
 
@@ -249,6 +244,13 @@ Children: [`enabled`](#activationenabled), [`workingDirectory`](#activationworki
 - Default: `1000`.
 - Range: `100` through `60000` milliseconds.
 - Example: `"pollIntervalMilliseconds": 1000`.
+
+#### `activation.providerPriority`
+
+- Type/required: array of provider ID strings, required.
+- Default: `["codex", "claude-code"]`.
+- Behavior: fallback search order when the source provider cannot open the project. It can also be changed through `hataori provider priority` and MCP Tools.
+- Constraint: at least one value, unique ignoring case. When Activation is enabled, every provider must exist in `maxConcurrentRuns`.
 
 #### `activation.maxConcurrentRuns`
 

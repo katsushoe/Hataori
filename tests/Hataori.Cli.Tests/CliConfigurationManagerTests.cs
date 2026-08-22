@@ -69,7 +69,6 @@ public sealed class CliConfigurationManagerTests : IDisposable
             "authenticationToken": "sensitive-token",
             "agentId": "hataori",
             "agentType": "hataori",
-            "monitoredAgentIds": [ "codex" ],
             "connectionTimeoutSeconds": 10,
             "pollIntervalSeconds": 5,
             "maxReconnectAttempts": 5,

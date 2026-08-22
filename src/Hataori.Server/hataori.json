@@ -13,7 +13,6 @@
     "endpoint": "http://127.0.0.1:47631/mcp",
     "agentId": "hataori",
     "agentType": "hataori",
-    "monitoredAgentIds": [ "codex", "claude-code" ],
     "connectionTimeoutSeconds": 10,
     "pollIntervalSeconds": 5,
     "maxReconnectAttempts": 5,
@@ -25,6 +24,7 @@
       "executablePath": "codex",
       "sandboxMode": "workspace-write",
       "approveForMe": true,
+      "skipGitRepoCheck": true,
       "maxCapturedCharacters": 4194304
     },
     "claudeCode": {
@@ -37,6 +37,7 @@
     "enabled": false,
     "workingDirectory": "",
     "pollIntervalMilliseconds": 1000,
+    "providerPriority": [ "codex", "claude-code" ],
     "maxConcurrentRuns": {
       "codex": 2,
       "claude-code": 2

@@ -43,7 +43,6 @@ public sealed class ItogurumaClientOptionsValidatorTests
             AuthenticationToken = authenticationToken,
             AgentId = "hataori",
             AgentType = "hataori",
-            MonitoredAgentIds = ["codex", "claude-code"],
             ConnectionTimeoutSeconds = 10,
             PollIntervalSeconds = 5,
             MaxReconnectAttempts = 5,

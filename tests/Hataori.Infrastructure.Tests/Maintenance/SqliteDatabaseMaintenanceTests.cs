@@ -35,7 +35,7 @@ public sealed class SqliteDatabaseMaintenanceTests : IDisposable
         run.MarkRunning(1234, now.AddDays(-40));
         run.Complete("session", 0, null, now.AddDays(-40));
         await runs.AddAsync(run, CancellationToken.None);
-        var message = new IncomingMessage("message-old", "conversation", "codex", "sender", null, "prompt", "body", null, now.AddDays(-40));
+        var message = new IncomingMessage("message-old", "conversation", "codex", Directory.GetCurrentDirectory(), "sender", null, "prompt", "body", null, now.AddDays(-40));
         await messages.EnqueueAsync(message, 0, CancellationToken.None);
         await messages.MarkRunningAsync(message.MessageId, CancellationToken.None);
         await messages.MarkRespondedAsync(message.MessageId, "reply", now.AddDays(-40), CancellationToken.None);

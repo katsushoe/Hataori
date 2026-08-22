@@ -125,7 +125,7 @@ public sealed class ServerFoundationTests
         var run = AgentRun.Queue("run-1", "message-1", "conversation-1", "codex", now);
         run.MarkStarting();
         run.MarkRunning(1234, now);
-        var message = new IncomingMessage("message-2", "conversation-2", "codex", "sender", null, "prompt", "body", null, now);
+        var message = new IncomingMessage("message-2", "conversation-2", "codex", Directory.GetCurrentDirectory(), "sender", null, "prompt", "body", null, now);
         var queued = new QueuedMessage(1, 1, 0, message, now);
         tasks.ListAsync(null, null, Arg.Any<CancellationToken>()).Returns(new[] { task });
         sessions.ListAsync(null, null, Arg.Any<CancellationToken>()).Returns(Array.Empty<ConversationSession>());

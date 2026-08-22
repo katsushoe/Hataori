@@ -87,7 +87,7 @@ public sealed class ActivationManager
             var environment = CreateEnvironment(request, message.MessageId, message.ConversationId, message.AgentId, message.SenderAgentId);
             var driverRequest = new AgentDriverRequest(
                 message.Body,
-                request.WorkingDirectory,
+                message.WorkingDirectory,
                 environment,
                 (processId, token) => _runs.MarkRunningAsync(runId, processId, token));
             var result = canResume
@@ -118,6 +118,7 @@ public sealed class ActivationManager
             {
                 var replyMessageId = await _itoguruma.ReplyAsync(
                     message.SenderAgentId,
+                    message.AgentId,
                     result.FinalMessage,
                     message.ConversationId,
                     message.MessageId,

@@ -142,6 +142,8 @@ try
     builder.Services.AddSingleton<ConversationSessionService>();
     builder.Services.AddSingleton<AgentRunService>();
     builder.Services.AddSingleton<ActivationManager>();
+    builder.Services.AddSingleton<AgentProviderSelector>();
+    builder.Services.AddSingleton(new ProviderPriorityService(configurationPath));
     builder.Services.AddSingleton(services =>
     {
         var options = services.GetRequiredService<IOptions<ReplyRetryOptions>>().Value;
@@ -174,6 +176,7 @@ try
         .WithHttpTransport(options => options.Stateless = true)
         .WithTools<TaskMcpTools>()
         .WithTools<AgentRunMcpTools>()
+        .WithTools<ProviderMcpTools>()
         .WithTools<SystemMcpTools>();
 
     var app = builder.Build();

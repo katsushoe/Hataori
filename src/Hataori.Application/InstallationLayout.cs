@@ -31,9 +31,10 @@ public sealed record InstallationLayout(string RootPath)
             }
 
             var root = directory.Parent.FullName;
-            if (Directory.Exists(Path.Combine(root, "config")) &&
-                Directory.Exists(Path.Combine(root, "logs")) &&
-                Directory.Exists(Path.Combine(root, "data")))
+            // logs/data are runtime directories and may not exist before the first
+            // process starts. The installer-owned config directory is the stable
+            // marker shared by the CLI and Server binaries.
+            if (Directory.Exists(Path.Combine(root, "config")))
             {
                 return new InstallationLayout(root);
             }
