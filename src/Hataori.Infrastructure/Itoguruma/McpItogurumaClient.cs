@@ -62,15 +62,6 @@ public sealed class McpItogurumaClient : IItogurumaClient
                 ["agent_type"] = _options.AgentType,
                 ["name"] = "Hataori",
             }, cancellationToken).ConfigureAwait(false);
-            foreach (var agentId in _options.MonitoredAgentIds)
-            {
-                await CallAsync("register_agent", new Dictionary<string, object?>
-                {
-                    ["agent_id"] = agentId,
-                    ["agent_type"] = agentId,
-                    ["name"] = $"Hataori managed {agentId}",
-                }, cancellationToken).ConfigureAwait(false);
-            }
         }
         catch
         {

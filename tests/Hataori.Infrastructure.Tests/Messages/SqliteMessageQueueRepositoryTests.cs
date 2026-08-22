@@ -153,7 +153,7 @@ public sealed class SqliteMessageQueueRepositoryTests : IDisposable
     }
 
     private static IncomingMessage CreateMessage(string id, string body, string conversationId = "conversation-1") => new(
-        id, conversationId, "codex", "sender", null, "message", body, null, DateTimeOffset.UtcNow);
+        id, conversationId, "codex", Directory.GetCurrentDirectory(), "sender", null, "message", body, null, DateTimeOffset.UtcNow);
 
     private async Task<string?> GetStatusAsync(string messageId)
     {

@@ -98,6 +98,10 @@ public static class CliApplication
             {
                 result = await ExecuteConfigAsync(args, cancellationToken).ConfigureAwait(false);
             }
+            else if (string.Equals(args[0], "provider", StringComparison.OrdinalIgnoreCase))
+            {
+                result = await ExecuteProviderAsync(args, cancellationToken).ConfigureAwait(false);
+            }
             else if (string.Equals(args[0], "setup", StringComparison.OrdinalIgnoreCase))
             {
                 result = await ExecuteSetupAsync(args, cancellationToken).ConfigureAwait(false);
@@ -498,6 +502,29 @@ public static class CliApplication
         return await new CliConfigurationManager().ExecuteAsync(args[1], path, cancellationToken).ConfigureAwait(false);
     }
 
+    private static async Task<object> ExecuteProviderAsync(string[] args, CancellationToken cancellationToken)
+    {
+        if (args.Length < 3 || !args[1].Equals("priority", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException(DisplayLanguage.Text("使い方: hataori provider priority <get|set> [--providers <ID,ID>] [--config <path>]", "Usage: hataori provider priority <get|set> [--providers <ID,ID>] [--config <path>]"));
+        }
+
+        var options = ParseOptions(args.Skip(3));
+        var service = new ProviderPriorityService(GetConfigurationPath(options));
+        if (args[2].Equals("get", StringComparison.OrdinalIgnoreCase))
+        {
+            return new { providers = await service.GetAsync(cancellationToken).ConfigureAwait(false) };
+        }
+        if (args[2].Equals("set", StringComparison.OrdinalIgnoreCase))
+        {
+            var value = Required(options, "providers");
+            var providers = value.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+            return new { providers = await service.SetAsync(providers, cancellationToken).ConfigureAwait(false) };
+        }
+
+        throw new ArgumentException(DisplayLanguage.Text("provider priorityにはgetまたはsetを指定してください。", "Specify get or set for provider priority."));
+    }
+
     private static async Task<object> ExecuteServiceAsync(string[] args, CancellationToken cancellationToken)
     {
         if (args.Length < 2)
@@ -817,8 +844,8 @@ public static class CliApplication
     private static bool IsSubcommandHelp(IReadOnlyList<string> args) => args.Count > 1 && (args[1].Equals("help", StringComparison.OrdinalIgnoreCase) || args[1].Equals("--help", StringComparison.OrdinalIgnoreCase));
     private static string GetVersion() => typeof(CliApplication).Assembly.GetName().Version?.ToString() ?? "unknown";
     private static string GetHelpText() => DisplayLanguage.Text(
-        "使い方: hataori <start|stop|restart|status|service|task|agent|conversation|queue|db|config|setup|itoguruma|mcp|doctor|logs|monitor|hook|version|help> [コマンド] [オプション]",
-        "Usage: hataori <start|stop|restart|status|service|task|agent|conversation|queue|db|config|setup|itoguruma|mcp|doctor|logs|monitor|hook|version|help> [command] [options]");
+        "使い方: hataori <start|stop|restart|status|service|task|agent|conversation|queue|db|config|provider|setup|itoguruma|mcp|doctor|logs|monitor|hook|version|help> [コマンド] [オプション]",
+        "Usage: hataori <start|stop|restart|status|service|task|agent|conversation|queue|db|config|provider|setup|itoguruma|mcp|doctor|logs|monitor|hook|version|help> [command] [options]");
     private static string GetSubcommandHelp(string command) => DisplayLanguage.Text($"使い方: hataori {command} <コマンド> [引数] [オプション]", $"Usage: hataori {command} <command> [arguments] [options]");
 
     private sealed record DoctorCheck(string Name, bool Ok, string? Error, bool Skipped = false);

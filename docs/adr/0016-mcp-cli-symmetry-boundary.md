@@ -29,6 +29,8 @@ Task基本操作、Agent Run cancel、VersionはMCP／CLIの両方から利用�
 
 破壊的MCP Toolは`Destructive` annotationを維持する。CLI固有の管理者操作、秘密設定、ローカルファイル操作を汎用MCP経由で公開しない。
 
+[ADR 0017](0017-project-addressed-provider-selection.md)で承認された`providerPriority`は例外とする。これは秘密値やOS管理設定を含まない起動選択ポリシーであり、CLIとMCP Toolsの双方から同一Serviceを介して変更できる。
+
 ## Operational Conditions
 
 MCP／CLI対応表を利用者文書で維持し、同一ユースケース追加時は両経路の実装とテストを同じ変更で行う。

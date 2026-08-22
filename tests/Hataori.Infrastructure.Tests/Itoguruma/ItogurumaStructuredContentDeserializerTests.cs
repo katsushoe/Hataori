@@ -36,13 +36,13 @@ public sealed class ItogurumaStructuredContentDeserializerTests
     public void Deserialize_DataWrapper_MapsItogurumaCamelCaseMessage()
     {
         using var document = JsonDocument.Parse("""
-            {"data":[{"messageId":"message-1","threadId":"thread-1","senderAgentId":"hataori","replyToMessageId":null,"messageType":"message","body":"work","payloadJson":null,"createdAt":"2026-08-16T12:19:05+00:00","deliveryStatus":"leased","leaseUntil":"2026-08-16T12:20:05+00:00"}]}
+            {"data":[{"messageId":"message-1","threadId":"thread-1","senderAgentId":"hataori","replyToMessageId":null,"messageType":"message","body":"work","payloadJson":null,"provider":"codex","createdAt":"2026-08-16T12:19:05+00:00","deliveryStatus":"leased","leaseUntil":"2026-08-16T12:20:05+00:00"}]}
             """);
 
         var result = ItogurumaStructuredContentDeserializer.Deserialize<List<ItogurumaMessage>>(document.RootElement, Options);
 
         result.Should().ContainSingle().Which.Should().Be(new ItogurumaMessage(
-            "message-1", "thread-1", "hataori", null, "message", "work", null,
+            "message-1", "thread-1", "hataori", null, "message", "work", null, "codex",
             DateTimeOffset.Parse("2026-08-16T12:19:05+00:00"), "leased",
             DateTimeOffset.Parse("2026-08-16T12:20:05+00:00")));
     }

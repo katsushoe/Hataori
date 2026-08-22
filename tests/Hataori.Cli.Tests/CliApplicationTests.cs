@@ -74,6 +74,29 @@ public sealed class CliApplicationTests : IDisposable
     }
 
     [Fact]
+    public async Task RunAsync_ProviderPrioritySetAndGet_UsesConfigurationService()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"hataori-cli-provider-{Guid.NewGuid():N}.json");
+        try
+        {
+            await File.WriteAllTextAsync(path, """{"activation":{"providerPriority":["codex"]}}""");
+
+            var set = await RunAsync("provider", "priority", "set", "--providers", "claude-code,codex", "--config", path);
+            var get = await RunAsync("provider", "priority", "get", "--config", path);
+
+            set.ExitCode.Should().Be(0);
+            get.ExitCode.Should().Be(0);
+            using var document = JsonDocument.Parse(get.Output);
+            document.RootElement.GetProperty("providers").EnumerateArray().Select(item => item.GetString())
+                .Should().Equal("claude-code", "codex");
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
     public async Task RunAsync_ServerStatus_UsesNamedPipeAndReturnsJson()
     {
         var pipeName = $"hataori-cli-test-{Guid.NewGuid():N}";
@@ -168,7 +191,7 @@ public sealed class CliApplicationTests : IDisposable
     {
         var repository = new SqliteMessageQueueRepository(GetConnectionString());
         await repository.InitializeAsync(CancellationToken.None);
-        var message = new IncomingMessage("message-1", "conversation-1", "codex", "sender", null, "prompt", "body", null, DateTimeOffset.UtcNow);
+        var message = new IncomingMessage("message-1", "conversation-1", "codex", Directory.GetCurrentDirectory(), "sender", null, "prompt", "body", null, DateTimeOffset.UtcNow);
         await repository.EnqueueAsync(message, 0, CancellationToken.None);
 
         var response = await RunAsync("queue", "list", "--database", _databasePath, "--agent", "codex");
@@ -184,7 +207,7 @@ public sealed class CliApplicationTests : IDisposable
     {
         var repository = new SqliteMessageQueueRepository(GetConnectionString());
         await repository.InitializeAsync(CancellationToken.None);
-        var message = new IncomingMessage("message-1", "conversation-1", "codex", "sender", null, "prompt", "body", null, DateTimeOffset.UtcNow);
+        var message = new IncomingMessage("message-1", "conversation-1", "codex", Directory.GetCurrentDirectory(), "sender", null, "prompt", "body", null, DateTimeOffset.UtcNow);
         await repository.EnqueueAsync(message, 0, CancellationToken.None);
 
         var getResponse = await RunAsync("queue", "get", "message-1", "--database", _databasePath);

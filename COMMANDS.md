@@ -541,6 +541,23 @@ Commands: [`init`](#hataori-config-init), [`show`](#hataori-config-show), [`path
 | Processing | Resolves the absolute path and checks file existence. |
 | Result | JSON `path` and `exists`. |
 | Example | `hataori config path` |
+
+#### `hataori provider priority get`
+
+| Item | Description |
+|---|---|
+| Purpose | Get the provider order used by automatic agent selection. |
+| Syntax | `hataori provider priority get [--config <path>]` |
+| Result | A `providers` array in priority order. |
+
+#### `hataori provider priority set`
+
+| Item | Description |
+|---|---|
+| Purpose | Persist provider priority to the configuration file. |
+| Syntax | `hataori provider priority set --providers <ID,ID> [--config <path>]` |
+| Constraint | At least one value, unique ignoring case; the Server reloads the setting automatically. |
+| Example | `hataori provider priority set --providers codex,claude-code` |
 | Safety | Read-only. |
 
 #### `hataori config check`

@@ -4,6 +4,7 @@ public sealed record IncomingMessage(
     string MessageId,
     string ConversationId,
     string AgentId,
+    string WorkingDirectory,
     string SenderAgentId,
     string? ReplyToMessageId,
     string MessageType,

@@ -424,6 +424,19 @@ Command: [`init`](#hataori-config-init)、[`show`](#hataori-config-show)、[`pat
 - 引数: Fileは未作成でも構いません。
 - 処理・戻り値: 絶対`path`と`exists`を返します。
 - 例: `hataori config path`。
+
+#### `hataori provider priority get`
+
+- 目的: 起動Agent自動選択で使用するProvider優先順位を取得します。
+- 構文: `hataori provider priority get [--config <path>]`。
+- 戻り値: 優先順位どおりの`providers`配列です。
+
+#### `hataori provider priority set`
+
+- 目的: Provider優先順位を設定ファイルへ保存します。
+- 構文: `hataori provider priority set --providers <ID,ID> [--config <path>]`。
+- 制約: 1件以上、大文字小文字を無視して重複不可です。Serverは設定変更を自動読込します。
+- 例: `hataori provider priority set --providers codex,claude-code`。
 - 安全: 読み取り専用です。
 
 #### `hataori config check`

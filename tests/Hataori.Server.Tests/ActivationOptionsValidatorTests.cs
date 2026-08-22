@@ -25,4 +25,12 @@ public sealed class ActivationOptionsValidatorTests
 
         new ActivationOptionsValidator().Validate(null, options).Failed.Should().BeTrue();
     }
+
+    [Fact]
+    public void Validate_DuplicateProviderPriority_ReturnsFailure()
+    {
+        var options = new ActivationOptions { ProviderPriority = ["codex", "CODEX"] };
+
+        new ActivationOptionsValidator().Validate(null, options).Failed.Should().BeTrue();
+    }
 }

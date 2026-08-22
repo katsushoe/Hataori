@@ -86,7 +86,7 @@ Hataoriには名前付きprofile fileがありません。通常file path、環�
 
 ### `itoguruma`
 
-子項目: [`endpoint`](#itogurumaendpoint)、[`authenticationToken`](#itogurumaauthenticationtoken)、[`agentId`](#itogurumaagentid)、[`agentType`](#itogurumaagenttype)、[`monitoredAgentIds`](#itogurumamonitoredagentids)、[`connectionTimeoutSeconds`](#itogurumaconnectiontimeoutseconds)、[`pollIntervalSeconds`](#itogurumapollintervalseconds)、[`maxReconnectAttempts`](#itogurumamaxreconnectattempts)、[`receiveBatchSize`](#itogurumareceivebatchsize)、[`leaseSeconds`](#itogurumaleaseseconds)。
+子項目: [`endpoint`](#itogurumaendpoint)、[`authenticationToken`](#itogurumaauthenticationtoken)、[`agentId`](#itogurumaagentid)、[`agentType`](#itogurumaagenttype)、[`connectionTimeoutSeconds`](#itogurumaconnectiontimeoutseconds)、[`pollIntervalSeconds`](#itogurumapollintervalseconds)、[`maxReconnectAttempts`](#itogurumamaxreconnectattempts)、[`receiveBatchSize`](#itogurumareceivebatchsize)、[`leaseSeconds`](#itogurumaleaseseconds)。
 
 #### `itoguruma.endpoint`
 
@@ -106,6 +106,7 @@ Hataoriには名前付きprofile fileがありません。通常file path、環�
 
 - 型/必須: 空でないstring、必須。
 - 既定値: `hataori`。省略時は検証に失敗します。
+- 動作: Itoguruma上の宛先プロジェクトIDとして使用します。
 - 例: `"agentId": "hataori"`。
 
 #### `itoguruma.agentType`
@@ -113,13 +114,6 @@ Hataoriには名前付きprofile fileがありません。通常file path、環�
 - 型/必須: 空でないstring、必須。
 - 既定値: `hataori`。省略時は検証に失敗します。
 - 例: `"agentType": "hataori"`。
-
-#### `itoguruma.monitoredAgentIds`
-
-- 型/必須: string array、必須。
-- 既定値: `["codex", "claude-code"]`。
-- 制約: 1件以上の空でない値が必要で、大文字小文字を無視して重複不可です。
-- 例: `"monitoredAgentIds": ["codex", "claude-code"]`。
 
 #### `itoguruma.connectionTimeoutSeconds`
 
@@ -227,7 +221,7 @@ Hataoriには名前付きprofile fileがありません。通常file path、環�
 
 ### `activation`
 
-子項目: [`enabled`](#activationenabled)、[`workingDirectory`](#activationworkingdirectory)、[`pollIntervalMilliseconds`](#activationpollintervalmilliseconds)、[`maxConcurrentRuns`](#activationmaxconcurrentruns)。
+子項目: [`enabled`](#activationenabled)、[`workingDirectory`](#activationworkingdirectory)、[`pollIntervalMilliseconds`](#activationpollintervalmilliseconds)、[`providerPriority`](#activationproviderpriority)、[`maxConcurrentRuns`](#activationmaxconcurrentruns)。
 
 #### `activation.enabled`
 
@@ -241,7 +235,8 @@ Hataoriには名前付きprofile fileがありません。通常file path、環�
 - 型/必須: string、条件付き必須。
 - 既定値: 空string。
 - 制約: Activation有効時は存在する絶対directoryが必要です。
-- 例: `"workingDirectory": "F:\\Workspace\\Project"`。
+- 動作: 宛先プロジェクトIDを直下のdirectory名として検索するProjects rootです。
+- 例: `"workingDirectory": "F:\\Workspace\\Projects"`。
 
 #### `activation.pollIntervalMilliseconds`
 
@@ -249,6 +244,13 @@ Hataoriには名前付きprofile fileがありません。通常file path、環�
 - 既定値: `1000`。
 - 範囲: `100`から`60000`ms。
 - 例: `"pollIntervalMilliseconds": 1000`。
+
+#### `activation.providerPriority`
+
+- 型/必須: Provider IDのstring array、必須。
+- 既定値: `["codex", "claude-code"]`。
+- 動作: 送信元Providerに対象プロジェクトを割り当てられない場合の検索順です。設定ファイルのほか、CLI `hataori provider priority`とMCP Toolsから変更できます。
+- 制約: 1件以上で、大文字小文字を無視して重複不可です。Activation有効時は各Providerが`maxConcurrentRuns`に必要です。
 
 #### `activation.maxConcurrentRuns`
 

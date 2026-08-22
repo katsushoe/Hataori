@@ -33,6 +33,7 @@ public sealed class SqliteMessageQueueRepository(string connectionString) : IMes
                 message_id TEXT PRIMARY KEY,
                 conversation_id TEXT NOT NULL,
                 agent_id TEXT NOT NULL,
+                working_directory TEXT NOT NULL DEFAULT '',
                 sender_agent_id TEXT NOT NULL,
                 reply_to_message_id TEXT NULL,
                 message_type TEXT NOT NULL,
@@ -70,6 +71,7 @@ public sealed class SqliteMessageQueueRepository(string connectionString) : IMes
             await EnsureColumnAsync(connection, "next_reply_attempt_at_utc", "TEXT NULL", cancellationToken).ConfigureAwait(false);
             await EnsureColumnAsync(connection, "reply_error", "TEXT NULL", cancellationToken).ConfigureAwait(false);
             await EnsureColumnAsync(connection, "reply_message_id", "TEXT NULL", cancellationToken).ConfigureAwait(false);
+            await EnsureColumnAsync(connection, "working_directory", "TEXT NOT NULL DEFAULT ''", cancellationToken).ConfigureAwait(false);
             Volatile.Write(ref _initialized, 1);
         }
         finally
@@ -89,9 +91,9 @@ public sealed class SqliteMessageQueueRepository(string connectionString) : IMes
         processing.Transaction = (SqliteTransaction)transaction;
         processing.CommandText = """
             INSERT INTO message_processing
-                (message_id, conversation_id, agent_id, sender_agent_id, reply_to_message_id, message_type, body, payload_json, status, received_at_utc)
+                (message_id, conversation_id, agent_id, working_directory, sender_agent_id, reply_to_message_id, message_type, body, payload_json, status, received_at_utc)
             VALUES
-                ($message_id, $conversation_id, $agent_id, $sender_agent_id, $reply_to_message_id, $message_type, $body, $payload_json, 'received', $received_at_utc)
+                ($message_id, $conversation_id, $agent_id, $working_directory, $sender_agent_id, $reply_to_message_id, $message_type, $body, $payload_json, 'received', $received_at_utc)
             ON CONFLICT(message_id) DO NOTHING;
             """;
         AddMessageParameters(processing, message);
@@ -121,7 +123,7 @@ public sealed class SqliteMessageQueueRepository(string connectionString) : IMes
     public async Task<IReadOnlyList<QueuedMessage>> ListAsync(string? agentId, CancellationToken cancellationToken)
     {
         const string sql = """
-            SELECT q.queue_id, q.sequence, q.priority, p.message_id, p.conversation_id, p.agent_id,
+            SELECT q.queue_id, q.sequence, q.priority, p.message_id, p.conversation_id, p.agent_id, p.working_directory,
                    p.sender_agent_id, p.reply_to_message_id, p.message_type, p.body, p.payload_json,
                    p.received_at_utc, q.enqueued_at_utc
             FROM message_queue q
@@ -235,7 +237,7 @@ public sealed class SqliteMessageQueueRepository(string connectionString) : IMes
         await using var select = connection.CreateCommand();
         select.Transaction = (SqliteTransaction)transaction;
         select.CommandText = """
-            SELECT q.queue_id, q.sequence, q.priority, p.message_id, p.conversation_id, p.agent_id,
+            SELECT q.queue_id, q.sequence, q.priority, p.message_id, p.conversation_id, p.agent_id, p.working_directory,
                    p.sender_agent_id, p.reply_to_message_id, p.message_type, p.body, p.payload_json,
                    p.received_at_utc, q.enqueued_at_utc
             FROM message_queue q
@@ -430,6 +432,7 @@ public sealed class SqliteMessageQueueRepository(string connectionString) : IMes
         command.Parameters.AddWithValue("$message_id", message.MessageId);
         command.Parameters.AddWithValue("$conversation_id", message.ConversationId);
         command.Parameters.AddWithValue("$agent_id", message.AgentId);
+        command.Parameters.AddWithValue("$working_directory", message.WorkingDirectory);
         command.Parameters.AddWithValue("$sender_agent_id", message.SenderAgentId);
         command.Parameters.AddWithValue("$reply_to_message_id", (object?)message.ReplyToMessageId ?? DBNull.Value);
         command.Parameters.AddWithValue("$message_type", message.MessageType);
@@ -441,14 +444,14 @@ public sealed class SqliteMessageQueueRepository(string connectionString) : IMes
     private static QueuedMessage ReadQueuedMessage(SqliteDataReader reader)
     {
         var message = new IncomingMessage(
-            reader.GetString(3), reader.GetString(4), reader.GetString(5), reader.GetString(6),
-            GetNullableString(reader, 7), reader.GetString(8), reader.GetString(9), GetNullableString(reader, 10),
-            ParseDate(reader.GetString(11)));
-        return new QueuedMessage(reader.GetInt64(0), reader.GetInt64(1), reader.GetInt32(2), message, ParseDate(reader.GetString(12)));
+            reader.GetString(3), reader.GetString(4), reader.GetString(5), reader.GetString(6), reader.GetString(7),
+            GetNullableString(reader, 8), reader.GetString(9), reader.GetString(10), GetNullableString(reader, 11),
+            ParseDate(reader.GetString(12)));
+        return new QueuedMessage(reader.GetInt64(0), reader.GetInt64(1), reader.GetInt32(2), message, ParseDate(reader.GetString(13)));
     }
 
     private const string SelectQueuedMessage = """
-        SELECT q.queue_id, q.sequence, q.priority, p.message_id, p.conversation_id, p.agent_id,
+        SELECT q.queue_id, q.sequence, q.priority, p.message_id, p.conversation_id, p.agent_id, p.working_directory,
                p.sender_agent_id, p.reply_to_message_id, p.message_type, p.body, p.payload_json,
                p.received_at_utc, q.enqueued_at_utc
         FROM message_queue q

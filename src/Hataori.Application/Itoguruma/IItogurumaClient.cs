@@ -24,6 +24,7 @@ public sealed record ItogurumaMessage(
     string MessageType,
     string Body,
     string? PayloadJson,
+    string? Provider,
     DateTimeOffset CreatedAt,
     string DeliveryStatus,
     DateTimeOffset? LeaseUntil);

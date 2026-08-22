@@ -212,7 +212,7 @@ public sealed class ActivationManagerTests : IDisposable
     }
 
     private static IncomingMessage CreateMessage(string messageId, string agentId = "codex") => new(
-        messageId, "conversation-1", agentId, "sender", null, "message", "work", null, DateTimeOffset.UtcNow);
+        messageId, "conversation-1", agentId, Directory.GetCurrentDirectory(), "sender", null, "message", "work", null, DateTimeOffset.UtcNow);
 
     private static ActivationRequest CreateRequest() => new(Directory.GetCurrentDirectory(), Directory.GetCurrentDirectory(), "http://127.0.0.1:45440/mcp");
 

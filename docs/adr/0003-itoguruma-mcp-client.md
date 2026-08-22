@@ -1,5 +1,7 @@
 # ADR 0003: ItogurumaとのMCPクライアント連携
 
+> Provider別Agent IDの監視規則は[ADR 0017](0017-project-addressed-provider-selection.md)で置き換えられました。
+
 ## Status
 
 Accepted

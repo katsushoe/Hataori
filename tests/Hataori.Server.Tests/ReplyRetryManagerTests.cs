@@ -75,7 +75,7 @@ public sealed class ReplyRetryManagerTests : IDisposable
 
     private static async Task PrepareCompletedRunAsync(SqliteMessageQueueRepository queue, SqliteAgentRunRepository runs, DateTimeOffset now)
     {
-        var message = new IncomingMessage("message-1", "conversation-1", "codex", "sender", null, "message", "work", null, now);
+        var message = new IncomingMessage("message-1", "conversation-1", "codex", Directory.GetCurrentDirectory(), "sender", null, "message", "work", null, now);
         await queue.EnqueueAsync(message, 0, CancellationToken.None);
         await queue.TryClaimNextAsync("codex", CancellationToken.None);
         await queue.MarkRunningAsync("message-1", CancellationToken.None);
