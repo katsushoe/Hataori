@@ -203,6 +203,7 @@ public static class CliApplication
         var conversationId = Environment.GetEnvironmentVariable("HATAORI_CONVERSATION_ID");
         var messageId = Environment.GetEnvironmentVariable("HATAORI_MESSAGE_ID");
         var senderAgentId = Environment.GetEnvironmentVariable("HATAORI_SENDER_AGENT_ID");
+        var provider = Environment.GetEnvironmentVariable("HATAORI_AGENT_ID");
 
         var hookResult = HookProcessor.Process(
             document.RootElement,
@@ -212,9 +213,9 @@ public static class CliApplication
             messageId,
             Environment.GetEnvironmentVariable("HATAORI_MCP_URL"));
 
-        if (hookResult.PermissionDenied && !string.IsNullOrWhiteSpace(senderAgentId) && !string.IsNullOrWhiteSpace(conversationId) && !string.IsNullOrWhiteSpace(messageId))
+        if (hookResult.PermissionDenied && !string.IsNullOrWhiteSpace(senderAgentId) && !string.IsNullOrWhiteSpace(provider) && !string.IsNullOrWhiteSpace(conversationId) && !string.IsNullOrWhiteSpace(messageId))
         {
-            await TryNotifyPermissionDeniedAsync(options, senderAgentId, conversationId, messageId, hookResult.DenialReason, cancellationToken).ConfigureAwait(false);
+            await TryNotifyPermissionDeniedAsync(options, senderAgentId, provider, conversationId, messageId, hookResult.DenialReason, cancellationToken).ConfigureAwait(false);
         }
 
         return hookResult.Payload;
@@ -224,7 +225,7 @@ public static class CliApplication
     /// PreToolUseがtool呼び出しをdenyした際、Itogurumaへ事後通知します（Dynamic Permission Approvalの通知専用v1、docs/adr/0014参照）。
     /// 通知に失敗してもHookの応答自体には影響させません。
     /// </summary>
-    private static async Task TryNotifyPermissionDeniedAsync(IReadOnlyDictionary<string, string> options, string senderAgentId, string conversationId, string messageId, string? denialReason, CancellationToken cancellationToken)
+    private static async Task TryNotifyPermissionDeniedAsync(IReadOnlyDictionary<string, string> options, string senderAgentId, string provider, string conversationId, string messageId, string? denialReason, CancellationToken cancellationToken)
     {
         try
         {
@@ -238,7 +239,7 @@ public static class CliApplication
             await using var client = new McpItogurumaClient(clientOptions, NullLoggerFactory.Instance);
             await client.ConnectAsync(cancellationToken).ConfigureAwait(false);
             var body = $"Hataoriがtool呼び出しをblockしました: {denialReason}";
-            await client.ReplyAsync(senderAgentId, body, conversationId, messageId, $"hataori-hook-deny:{messageId}", cancellationToken).ConfigureAwait(false);
+            await client.ReplyAsync(senderAgentId, provider, body, conversationId, messageId, $"hataori-hook-deny:{messageId}", cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {

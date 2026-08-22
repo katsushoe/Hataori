@@ -87,6 +87,17 @@ public sealed class McpItogurumaClient : IItogurumaClient
         return Deserialize<List<ItogurumaMessage>>(result);
     }
 
+    public async Task RegisterProjectAsync(string projectId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(projectId);
+        await CallAsync("register_agent", new Dictionary<string, object?>
+        {
+            ["agent_id"] = projectId,
+            ["agent_type"] = "project",
+            ["name"] = projectId,
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task DisconnectAsync(CancellationToken cancellationToken)
     {
         await _connectLock.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -100,12 +111,13 @@ public sealed class McpItogurumaClient : IItogurumaClient
         }
     }
 
-    public async Task<string> ReplyAsync(string recipientAgentId, string body, string threadId, string? replyToMessageId, string idempotencyKey, CancellationToken cancellationToken)
+    public async Task<string> ReplyAsync(string recipientAgentId, string provider, string body, string threadId, string? replyToMessageId, string idempotencyKey, CancellationToken cancellationToken)
     {
         var result = await CallAsync("send_message", new Dictionary<string, object?>
         {
             ["sender_agent_id"] = _options.AgentId,
             ["recipient"] = recipientAgentId,
+            ["provider"] = provider,
             ["body"] = body,
             ["thread_id"] = threadId,
             ["reply_to_message_id"] = replyToMessageId,

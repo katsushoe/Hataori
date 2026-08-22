@@ -34,7 +34,7 @@ public sealed class ActivationManagerTests : IDisposable
             .Which.FinalMessage.Should().Be("done");
         (await fixture.Queue.GetProcessingStatusAsync("message-1", CancellationToken.None)).Should().Be(MessageProcessingStatus.Responded);
         await fixture.Itoguruma.Received(1).ReplyAsync(
-            "sender", "done", "conversation-1", "message-1", "hataori-reply:message-1", Arg.Any<CancellationToken>());
+            "sender", "codex", "done", "conversation-1", "message-1", "hataori-reply:message-1", Arg.Any<CancellationToken>());
         await fixture.Driver.Received(1).StartAsync(
             Arg.Is<AgentDriverRequest>(request =>
                 request.Environment["HATAORI_MESSAGE_ID"] == "message-1" &&
@@ -95,7 +95,7 @@ public sealed class ActivationManagerTests : IDisposable
         var fixture = await CreateFixtureAsync();
         await fixture.Queue.EnqueueAsync(CreateMessage("message-4"), 0, CancellationToken.None);
         ConfigureSuccessfulStart(fixture.Driver, "native-1", "done");
-        fixture.Itoguruma.ReplyAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+        fixture.Itoguruma.ReplyAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns<Task<string>>(_ => throw new InvalidOperationException("reply failed"));
 
         var result = await fixture.Manager.ProcessNextAsync(CreateRequest(), CancellationToken.None);
@@ -184,7 +184,7 @@ public sealed class ActivationManagerTests : IDisposable
         var driver = Substitute.For<IAgentDriver>();
         driver.AgentType.Returns("codex");
         var itoguruma = Substitute.For<IItogurumaClient>();
-        itoguruma.ReplyAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+        itoguruma.ReplyAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns("reply-1");
         var retryManager = new ReplyRetryManager(
             queue,

@@ -26,6 +26,7 @@ public sealed class ReplyRetryManager(IMessageQueueRepository messageQueue, IIto
             {
                 var replyMessageId = await itoguruma.ReplyAsync(
                     reply.RecipientAgentId,
+                    reply.Provider,
                     reply.FinalMessage,
                     reply.ConversationId,
                     reply.MessageId,

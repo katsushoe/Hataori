@@ -349,7 +349,7 @@ public sealed class SqliteMessageQueueRepository(string connectionString) : IMes
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(limit);
         const string sql = """
             WITH pending AS (
-                SELECT p.message_id, p.conversation_id, p.sender_agent_id,
+                SELECT p.message_id, p.conversation_id, p.sender_agent_id, p.agent_id,
                        (SELECT r.final_message FROM agent_runs r
                         WHERE r.message_id = p.message_id AND r.status = 'completed'
                         ORDER BY r.queued_at_utc DESC LIMIT 1) AS final_message,
@@ -359,7 +359,7 @@ public sealed class SqliteMessageQueueRepository(string connectionString) : IMes
                   AND p.next_reply_attempt_at_utc IS NOT NULL
                   AND p.next_reply_attempt_at_utc <= $due_at_utc
             )
-            SELECT message_id, conversation_id, sender_agent_id, final_message, reply_attempt_count, next_reply_attempt_at_utc
+            SELECT message_id, conversation_id, sender_agent_id, agent_id, final_message, reply_attempt_count, next_reply_attempt_at_utc
             FROM pending
             WHERE final_message IS NOT NULL
             ORDER BY next_reply_attempt_at_utc, message_id
@@ -376,7 +376,7 @@ public sealed class SqliteMessageQueueRepository(string connectionString) : IMes
         while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
             replies.Add(new PendingReply(
-                reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetString(3), reader.GetInt32(4), ParseDate(reader.GetString(5))));
+                reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetString(3), reader.GetString(4), reader.GetInt32(5), ParseDate(reader.GetString(6))));
         }
 
         return replies;

@@ -39,17 +39,7 @@ public sealed class ItogurumaConnectionWorker(
                         await Task.Delay(TimeSpan.FromSeconds(options.Value.PollIntervalSeconds), stoppingToken).ConfigureAwait(false);
                         continue;
                     }
-                    var projectId = options.Value.AgentId;
-                    var messages = await client.GetMessagesAsync(
-                        projectId,
-                        options.Value.ReceiveBatchSize,
-                        options.Value.LeaseSeconds,
-                        null,
-                        stoppingToken).ConfigureAwait(false);
-                    foreach (var message in messages)
-                    {
-                        await PersistAndAcknowledgeAsync(projectId, message, stoppingToken).ConfigureAwait(false);
-                    }
+                    await PollProjectsAsync(stoppingToken).ConfigureAwait(false);
                     if (failures > 0)
                     {
                         logger.LogInformation(Hataori.Application.Localization.DisplayLanguage.Text("Itoguruma接続が復旧しました: {Name} {Version}", "Itoguruma connection recovered: {Name} {Version}"), status.Name, status.Version);
@@ -86,6 +76,26 @@ public sealed class ItogurumaConnectionWorker(
         finally
         {
             connectionState.Set("stopped");
+        }
+    }
+
+    /// <summary>Projects root直下の全プロジェクトを登録し、宛先別メッセージを1回取得します。</summary>
+    public async Task PollProjectsAsync(CancellationToken cancellationToken)
+    {
+        var activation = activationOptions.CurrentValue;
+        foreach (var project in providerSelector.DiscoverProjects(activation.WorkingDirectory))
+        {
+            await client.RegisterProjectAsync(project.ProjectId, cancellationToken).ConfigureAwait(false);
+            var messages = await client.GetMessagesAsync(
+                project.ProjectId,
+                options.Value.ReceiveBatchSize,
+                options.Value.LeaseSeconds,
+                null,
+                cancellationToken).ConfigureAwait(false);
+            foreach (var message in messages)
+            {
+                await PersistAndAcknowledgeAsync(project.ProjectId, message, cancellationToken).ConfigureAwait(false);
+            }
         }
     }
 

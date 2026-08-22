@@ -106,7 +106,7 @@ Hataoriには名前付きprofile fileがありません。通常file path、環�
 
 - 型/必須: 空でないstring、必須。
 - 既定値: `hataori`。省略時は検証に失敗します。
-- 動作: Itoguruma上の宛先プロジェクトIDとして使用します。
+- 動作: Hataori Service自身が返信を送信するときの送信元IDです。監視対象プロジェクトを限定しません。監視対象は`activation.workingDirectory`直下から自動検出されます。
 - 例: `"agentId": "hataori"`。
 
 #### `itoguruma.agentType`
@@ -235,7 +235,7 @@ Hataoriには名前付きprofile fileがありません。通常file path、環�
 - 型/必須: string、条件付き必須。
 - 既定値: 空string。
 - 制約: Activation有効時は存在する絶対directoryが必要です。
-- 動作: 宛先プロジェクトIDを直下のdirectory名として検索するProjects rootです。
+- 動作: 直下の全directoryをプロジェクトとしてItogurumaへ自動登録・監視するProjects rootです。directory名を宛先プロジェクトIDとして使用します。
 - 例: `"workingDirectory": "F:\\Workspace\\Projects"`。
 
 #### `activation.pollIntervalMilliseconds`

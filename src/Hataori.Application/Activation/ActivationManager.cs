@@ -118,6 +118,7 @@ public sealed class ActivationManager
             {
                 var replyMessageId = await _itoguruma.ReplyAsync(
                     message.SenderAgentId,
+                    message.AgentId,
                     result.FinalMessage,
                     message.ConversationId,
                     message.MessageId,

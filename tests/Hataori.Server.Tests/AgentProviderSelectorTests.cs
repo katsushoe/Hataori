@@ -42,6 +42,19 @@ public sealed class AgentProviderSelectorTests : IDisposable
         action.Should().Throw<DirectoryNotFoundException>();
     }
 
+    [Fact]
+    public void DiscoverProjects_MultipleDirectories_ReturnsEveryDirectChildInStableOrder()
+    {
+        Directory.CreateDirectory(Path.Combine(_root, "Zulu"));
+        Directory.CreateDirectory(Path.Combine(_root, "alpha"));
+        Directory.CreateDirectory(Path.Combine(_root, "alpha", "nested"));
+        var selector = new AgentProviderSelector([CreateDriver("codex")]);
+
+        var result = selector.DiscoverProjects(_root);
+
+        result.Select(project => project.ProjectId).Should().Equal("alpha", "Zulu");
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_root))

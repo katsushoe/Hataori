@@ -106,7 +106,7 @@ Children: [`endpoint`](#itogurumaendpoint), [`authenticationToken`](#itogurumaau
 
 - Type/required: non-empty string, required.
 - Default: `hataori`; omission fails validation.
-- Behavior: used as the destination project ID in Itoguruma.
+- Behavior: sender ID used by the Hataori Service for replies. It does not limit monitored projects; those are discovered under `activation.workingDirectory`.
 - Example: `"agentId": "hataori"`.
 
 #### `itoguruma.agentType`
@@ -235,7 +235,7 @@ Children: [`enabled`](#activationenabled), [`workingDirectory`](#activationworki
 - Type/required: string, conditionally required.
 - Default: empty string.
 - Constraint: when activation is enabled, it must be an existing absolute directory.
-- Behavior: projects root whose direct child directory names are destination project IDs.
+- Behavior: projects root whose direct children are automatically registered and monitored in Itoguruma; each directory name is a destination project ID.
 - Example: `"workingDirectory": "F:\\Workspace\\Projects"`.
 
 #### `activation.pollIntervalMilliseconds`

@@ -23,6 +23,18 @@ public sealed class InstallationLayoutTests : IDisposable
     }
 
     [Fact]
+    public void Resolve_BeforeRuntimeDirectoriesExist_ReturnsInstallRoot()
+    {
+        Directory.CreateDirectory(Path.Combine(_rootPath, "bin", "cli"));
+        Directory.CreateDirectory(Path.Combine(_rootPath, "config"));
+
+        var result = InstallationLayout.Resolve(Path.Combine(_rootPath, "bin", "cli"));
+
+        result.RootPath.Should().Be(Path.GetFullPath(_rootPath));
+        result.ConfigurationPath.Should().Be(Path.Combine(_rootPath, "config", "hataori.json"));
+    }
+
+    [Fact]
     public void Resolve_DevelopmentOutputWithoutStandardTree_UsesApplicationDirectory()
     {
         var applicationPath = Path.Combine(_rootPath, "bin", "Debug", "net9.0");

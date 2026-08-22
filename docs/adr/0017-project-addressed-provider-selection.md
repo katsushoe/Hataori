@@ -10,11 +10,13 @@ Itoguruma messages are addressed to projects, not agent implementations. Hataori
 
 ## Decision
 
-- Hataori leases messages only for its configured project ID (`itoguruma.agentId`). It no longer registers or monitors `codex` and `claude-code` as message recipients.
+- `itoguruma.agentId` identifies the Hataori service when it sends replies; it does not limit destination projects.
+- While Activation is enabled, Hataori discovers every direct child directory of `activation.workingDirectory`, idempotently registers each directory name as an Itoguruma project, and leases messages for every discovered project.
 - The Itoguruma message adapter accepts an optional `provider` response field. Absence remains compatible with Itoguruma versions predating automatic provider attribution.
 - Hataori resolves the destination project as a direct child directory of `activation.workingDirectory`, using a case-insensitive project ID comparison and rejecting path-shaped IDs.
 - If the source provider has a configured driver, it is selected first. Otherwise Hataori selects the first available driver in `activation.providerPriority`.
 - The selected provider and resolved project directory are persisted with the local queue item before the Itoguruma message is acknowledged. Activation always starts or resumes in that persisted directory.
+- Replies use the selected execution provider as Itoguruma's required sender `provider`, including persistent retry and permission-denial notifications.
 - Provider priority is readable and writable through the configuration file, CLI, and MCP Tools. All interfaces use `ProviderPriorityService` as the shared operation.
 - Activation-disabled instances do not lease project messages because they cannot safely persist a runnable provider and directory decision.
 
@@ -30,7 +32,7 @@ The local message database gains `working_directory`. Existing rows receive an e
 
 ## Security conditions
 
-Project IDs cannot be absolute paths or contain directory separators. Resolution is limited to immediate children of the configured projects root. Provider metadata is treated as a preference, never as authority to execute an unconfigured driver.
+Project IDs cannot be absolute paths or contain directory separators. Registration and resolution are limited to immediate children of the configured projects root. Provider metadata is treated as a preference, never as authority to execute an unconfigured driver.
 
 ## Operations
 

@@ -24,6 +24,7 @@
       "executablePath": "codex",
       "sandboxMode": "workspace-write",
       "approveForMe": true,
+      "skipGitRepoCheck": true,
       "maxCapturedCharacters": 4194304
     },
     "claudeCode": {

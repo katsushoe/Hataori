@@ -40,6 +40,17 @@ public sealed class AgentProviderSelector(IEnumerable<IAgentDriver> drivers)
         return new ProviderSelection(selected, projectPath);
     }
 
+    /// <summary>Projects root直下にある起動対象プロジェクトを列挙します。</summary>
+    public IReadOnlyList<ActivationProject> DiscoverProjects(string projectsRoot)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(projectsRoot);
+        var root = Path.GetFullPath(projectsRoot);
+        return Directory.EnumerateDirectories(root)
+            .Select(path => new ActivationProject(Path.GetFileName(path), path))
+            .OrderBy(project => project.ProjectId, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
     private static void AddCandidate(List<string> candidates, string? provider)
     {
         if (!string.IsNullOrWhiteSpace(provider) && !candidates.Contains(provider, StringComparer.OrdinalIgnoreCase))
@@ -51,3 +62,6 @@ public sealed class AgentProviderSelector(IEnumerable<IAgentDriver> drivers)
 
 /// <summary>Provider選択結果です。</summary>
 public sealed record ProviderSelection(string Provider, string ProjectPath);
+
+/// <summary>自動検出された起動対象プロジェクトです。</summary>
+public sealed record ActivationProject(string ProjectId, string ProjectPath);
