@@ -60,6 +60,20 @@ public sealed class CliApplicationTests : IDisposable
     }
 
     [Fact]
+    public async Task RunAsync_TaskFindConflicts_MatchesMcpBehavior()
+    {
+        (await RunAsync("task", "start", "--database", _databasePath, "--id", "other", "--name", "認証処理を修正", "--agent", "codex", "--summary", "ログイン周りの改修")).ExitCode.Should().Be(0);
+        (await RunAsync("task", "start", "--database", _databasePath, "--id", "own", "--name", "認証仕様を更新", "--agent", "claude-code", "--summary", "認証文書")).ExitCode.Should().Be(0);
+
+        var response = await RunAsync("task", "find-conflicts", "--database", _databasePath, "--name", "認証処理のバグ修正", "--summary", "ログイン画面", "--agent", "claude-code");
+
+        response.ExitCode.Should().Be(0);
+        using var document = JsonDocument.Parse(response.Output);
+        document.RootElement.GetArrayLength().Should().Be(1);
+        document.RootElement[0].GetProperty("task_id").GetString().Should().Be("other");
+    }
+
+    [Fact]
     public async Task RunAsync_ServerStatus_UsesNamedPipeAndReturnsJson()
     {
         var pipeName = $"hataori-cli-test-{Guid.NewGuid():N}";

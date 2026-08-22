@@ -702,6 +702,7 @@ public static class CliApplication
             "start" => await service.StartAsync(Required(options, "id"), Required(options, "name"), Required(options, "agent"), Optional(options, "conversation"), Optional(options, "message"), Optional(options, "summary") ?? string.Empty, Optional(options, "current-work") ?? string.Empty, cancellationToken).ConfigureAwait(false),
             "get" => await GetTaskDetailsAsync(RequiredTaskId(taskId), service, cancellationToken).ConfigureAwait(false),
             "list" => await ListTasksAsync(options, service, cancellationToken).ConfigureAwait(false),
+            "find-conflicts" => await service.FindConflictsAsync(Required(options, "name"), Optional(options, "summary"), Optional(options, "agent"), cancellationToken).ConfigureAwait(false),
             "heartbeat" => await service.HeartbeatAsync(RequiredTaskId(taskId), Required(options, "current-work"), ParseProgress(Required(options, "progress")), Optional(options, "message"), cancellationToken).ConfigureAwait(false),
             "complete" => await service.CompleteAsync(RequiredTaskId(taskId), Optional(options, "message") ?? Required(options, "result"), cancellationToken).ConfigureAwait(false),
             "cancel" => await service.CancelAsync(RequiredTaskId(taskId), Optional(options, "message") ?? Optional(options, "result"), cancellationToken).ConfigureAwait(false),

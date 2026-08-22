@@ -10,7 +10,7 @@
 | :--- | :--- | :--- |
 | [Server](#server-commands) | `start`、`stop`、`restart`、`status` | 実行fileとControl Pipeによるforeground Server管理。 |
 | [Service](#service-commands) | `service setup/install/uninstall/start/stop/restart/status` | Windows Service設定と制御。 |
-| [Task](#task-commands) | `task start/get/list/heartbeat/complete/cancel/fail/expire/history/relation-add/relations` | 永続TaskとRelation管理。 |
+| [Task](#task-commands) | `task start/get/list/find-conflicts/heartbeat/complete/cancel/fail/expire/history/relation-add/relations` | 永続TaskとRelation管理。 |
 | [Agent](#agent-commands) | `agent list/status/runs` | 設定済みAgentとRun参照。 |
 | [Conversation](#conversation-commands) | `conversation list/get/reset` | Conversation Session参照と無効化。 |
 | [Queue](#queue-commands) | `queue list/get/retry/cancel` | Queue Message参照と操作。 |
@@ -152,7 +152,7 @@ Command: [`setup`](#hataori-service-setup)、[`install`](#hataori-service-instal
 
 ### Task Commands
 
-Command: [`start`](#hataori-task-start)、[`get`](#hataori-task-get)、[`list`](#hataori-task-list)、[`heartbeat`](#hataori-task-heartbeat)、[`complete`](#hataori-task-complete)、[`cancel`](#hataori-task-cancel)、[`fail`](#hataori-task-fail)、[`expire`](#hataori-task-expire)、[`history`](#hataori-task-history)、[`relation-add`](#hataori-task-relation-add)、[`relations`](#hataori-task-relations)。全commandで`--database`または`HATAORI_DATABASE_PATH`が必要です。
+Command: [`start`](#hataori-task-start)、[`get`](#hataori-task-get)、[`list`](#hataori-task-list)、[`find-conflicts`](#hataori-task-find-conflicts)、[`heartbeat`](#hataori-task-heartbeat)、[`complete`](#hataori-task-complete)、[`cancel`](#hataori-task-cancel)、[`fail`](#hataori-task-fail)、[`expire`](#hataori-task-expire)、[`history`](#hataori-task-history)、[`relation-add`](#hataori-task-relation-add)、[`relations`](#hataori-task-relations)。全commandで`--database`または`HATAORI_DATABASE_PATH`が必要です。
 
 #### `hataori task start`
 
@@ -179,6 +179,15 @@ Command: [`start`](#hataori-task-start)、[`get`](#hataori-task-get)、[`list`](
 - 引数: Statusは`active/completed/cancelled/failed/expired`、既定`active`、`--all`でStatus filterなしです。
 - 処理・戻り値: SQLiteと指定filterに応じたTask JSON arrayを返します。
 - 例: `hataori task list --all --database F:\Hataori\data\hataori.db`。
+- 安全: 読み取り専用です。
+
+#### `hataori task find-conflicts`
+
+- 目的: 作業名・概要のキーワードから、他AgentのActive Taskとの重複候補を検索します。
+- 構文: `hataori task find-conflicts --name <name> [--summary <text>] [--agent <exclude-agent>] --database <path>`。
+- 引数: `--name`必須、`--summary`は任意、`--agent`は検索結果から除外する自Agent IDです。
+- 処理・戻り値: MCP `task_find_conflicts`と同じApplication Serviceを使用し、候補TaskのJSON arrayを返します。結果は参考情報です。
+- 例: `hataori task find-conflicts --name "認証処理を修正" --summary "ログイン画面" --agent codex --database F:\Hataori\data\hataori.db`。
 - 安全: 読み取り専用です。
 
 #### `hataori task heartbeat`
