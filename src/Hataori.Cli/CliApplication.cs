@@ -364,16 +364,19 @@ public static class CliApplication
 
     private static async Task<object> ExecuteMcpAsync(string[] args, CancellationToken cancellationToken)
     {
-        if (args.Length < 2 || !args[1].Equals("status", StringComparison.OrdinalIgnoreCase))
+        if (args.Length < 2 || (!args[1].Equals("status", StringComparison.OrdinalIgnoreCase) && !args[1].Equals("compatibility", StringComparison.OrdinalIgnoreCase)))
         {
-            throw new ArgumentException(DisplayLanguage.Text("使い方: hataori mcp status [オプション]", "Usage: hataori mcp status [options]"));
+            throw new ArgumentException(DisplayLanguage.Text("使い方: hataori mcp <status|compatibility> [オプション]", "Usage: hataori mcp <status|compatibility> [options]"));
         }
 
         var options = ParseOptions(args.Skip(2));
         var configuration = LoadConfiguration(options);
         var server = configuration.GetRequiredSection(ServerOptions.SectionName).Get<ServerOptions>()
             ?? throw new InvalidOperationException(DisplayLanguage.Text("Server設定がありません。", "Server configuration is missing."));
-        return await new McpEndpointProbe(NullLoggerFactory.Instance).ProbeAsync(server, cancellationToken).ConfigureAwait(false);
+        var probe = new McpEndpointProbe(NullLoggerFactory.Instance);
+        return args[1].Equals("compatibility", StringComparison.OrdinalIgnoreCase)
+            ? await probe.ProbeCompatibilityAsync(server, cancellationToken).ConfigureAwait(false)
+            : await probe.ProbeAsync(server, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<object> ExecuteDoctorAsync(string[] args, CancellationToken cancellationToken)

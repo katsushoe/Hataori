@@ -16,7 +16,7 @@
 | [Queue](#queue-commands) | `queue list/get/retry/cancel` | Queue Message参照と操作。 |
 | [Database](#database-commands) | `db status/integrity` | 読み取り専用SQLite診断。 |
 | [Configuration](#configuration-commands) | `config init/show/path/check/reload` | 設定生成、参照、検証、reload。 |
-| [Integration](#integration-commands) | `setup itoguruma`、`itoguruma status/test`、`mcp status` | 外部接続設定と確認。 |
+| [Integration](#integration-commands) | `setup itoguruma`、`itoguruma status/test`、`mcp status/compatibility` | 外部接続設定と確認。 |
 | [Diagnostics and UI](#diagnostics-and-ui-commands) | `doctor`、`logs`、`monitor`、`hook` | 診断、log参照、Monitor起動、Hook処理。 |
 | [Metadata](#metadata-commands) | `version`、`help` | VersionとUsage表示。 |
 
@@ -505,6 +505,15 @@ Command: [`setup itoguruma`](#hataori-setup-itoguruma)、[`itoguruma status`](#h
 - 引数: Server MCP設定を有効設定から読みます。
 - 処理・戻り値: Streamable HTTP接続と`tools/list`を実行し、`connected/endpoint/tool_count`を返します。
 - 例: `hataori mcp status`。
+
+#### `hataori mcp compatibility`
+
+- 目的: CodexとClaude CodeのClient情報で同じMCP契約になることを確認します。
+- 構文: `hataori mcp compatibility [--config <path>]`。
+- 処理: 両Profileで初期化、Tool検出、`get_version`呼び出しを行い、結果を比較します。
+- 戻り値: `compatible`、Endpoint、Client別のTool名・Tool数・schemaとannotationを含む契約Hash・構造化Version結果を含むJSONです。
+- 副作用: 読み取り専用です。
+- 例: `hataori mcp compatibility`。
 - 安全: 読み取り専用です。
 
 ### Diagnostics and UI Commands

@@ -38,7 +38,7 @@ $HataoriRoot = 'F:\Hataori'
 & "$HataoriRoot\bin\cli\Hataori.Cli.exe" mcp status
 ```
 
-Pass conditions are a Running Service and MCP JSON containing `connected: true`, the expected URL, and `tool_count: 12` for version 3.0.5.0.
+Pass conditions are a Running Service and MCP JSON containing `connected: true`, the expected URL, and a positive `tool_count`.
 
 ## Register Clients
 
@@ -104,7 +104,7 @@ Client user/project scope changes registration visibility only; it does not sele
 Stop at the first failed check.
 
 1. **Server endpoint:** run `hataori mcp status`. Pass: `connected: true` and the expected endpoint.
-2. **Tool discovery:** inspect `tool_count`. Pass for 3.0.5.0: `12`; the tools are `task_start`, `task_get`, `task_list`, `task_heartbeat`, `task_complete`, `task_cancel`, `task_fail`, `task_expire`, `task_history`, `task_relations`, `task_relation_add`, and `get_version`.
+2. **Client compatibility:** run `hataori mcp compatibility`. Pass: `compatible: true`, with identical tool names, tool count, and `get_version` structured result for `codex` and `claude-code`.
 3. **Client registration:** Codex `/mcp` or `claude mcp get hataori` reports connected.
 4. **Read-only tool call:** call `task_list` with no status or agent filter. Pass: a structured task array, including an empty array when no tasks match.
 5. **Complete diagnosis:** run `hataori doctor`. Pass: `healthy: true` and every non-skipped check has `ok: true`.
