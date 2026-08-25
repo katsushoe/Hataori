@@ -7,7 +7,9 @@ public sealed class ActivationOptionsValidatorTests
     [Fact]
     public void Validate_DisabledWithoutWorkingDirectory_ReturnsSuccess()
     {
-        new ActivationOptionsValidator().Validate(null, new ActivationOptions()).Succeeded.Should().BeTrue();
+        var options = new ActivationOptions { ProviderPriority = ["codex", "claude-code"] };
+
+        new ActivationOptionsValidator().Validate(null, options).Succeeded.Should().BeTrue();
     }
 
     [Fact]

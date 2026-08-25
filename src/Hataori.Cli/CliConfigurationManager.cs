@@ -75,7 +75,12 @@ public sealed class CliConfigurationManager
         Add(errors, new ItogurumaClientOptionsValidator().Validate(null, Bind<ItogurumaClientOptions>(configuration, ItogurumaClientOptions.SectionName)));
         Add(errors, new CodexDriverOptionsValidator().Validate(null, Bind<CodexDriverOptions>(configuration, CodexDriverOptions.SectionName)));
         Add(errors, new ClaudeCodeDriverOptionsValidator().Validate(null, Bind<ClaudeCodeDriverOptions>(configuration, ClaudeCodeDriverOptions.SectionName)));
-        Add(errors, new ActivationOptionsValidator().Validate(null, Bind<ActivationOptions>(configuration, ActivationOptions.SectionName)));
+        var activationOptions = Bind<ActivationOptions>(configuration, ActivationOptions.SectionName);
+        if (activationOptions.ProviderPriority.Count == 0)
+        {
+            activationOptions.ProviderPriority = ActivationOptions.DefaultProviderPriority;
+        }
+        Add(errors, new ActivationOptionsValidator().Validate(null, activationOptions));
         Add(errors, new ReplyRetryOptionsValidator().Validate(null, Bind<ReplyRetryOptions>(configuration, ReplyRetryOptions.SectionName)));
         Add(errors, new FileLogOptionsValidator().Validate(null, Bind<FileLogOptions>(configuration, FileLogOptions.SectionName)));
         var hookSection = configuration.GetSection(HookOptions.SectionName);

@@ -79,6 +79,13 @@ try
     builder.Services.AddSingleton<IValidateOptions<ClaudeCodeDriverOptions>, ClaudeCodeDriverOptionsValidator>();
     builder.Services.AddOptions<ActivationOptions>()
         .Bind(builder.Configuration.GetRequiredSection(ActivationOptions.SectionName))
+        .PostConfigure(options =>
+        {
+            if (options.ProviderPriority.Count == 0)
+            {
+                options.ProviderPriority = ActivationOptions.DefaultProviderPriority;
+            }
+        })
         .ValidateOnStart();
     builder.Services.AddSingleton<IValidateOptions<ActivationOptions>, ActivationOptionsValidator>();
     builder.Services.AddOptions<ReplyRetryOptions>()
