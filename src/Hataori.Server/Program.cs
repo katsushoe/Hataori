@@ -189,8 +189,9 @@ try
     builder.Services.AddHostedService<ActivationWorker>();
     builder.Services.AddHostedService<ReplyRetryWorker>();
     builder.Services.AddHostedService<DatabaseMaintenanceWorker>();
-    builder.Services.AddMcpServer()
+    builder.Services.AddMcpServer(options => options.ServerInstructions = HataoriMcpInstructions.Text)
         .WithHttpTransport(options => options.Stateless = true)
+        .WithPrompts<HataoriMcpPrompts>()
         .WithTools<TaskMcpTools>()
         .WithTools<AgentRunMcpTools>()
         .WithTools<ProviderMcpTools>()
