@@ -16,7 +16,7 @@ This document is the source of truth for the Hataori CLI, service controls, inte
 | [Queue](#queue-commands) | `queue list/get/retry/cancel` | Inspect and operate on queued messages. |
 | [Database](#database-commands) | `db status/integrity` | Run read-only SQLite diagnostics. |
 | [Configuration](#configuration-commands) | `config init/show/path/check/reload` | Generate, inspect, validate, and reload settings. |
-| [Integration](#integration-commands) | `setup itoguruma`, `itoguruma status/test`, `mcp status` | Configure and verify external connections. |
+| [Integration](#integration-commands) | `setup itoguruma`, `itoguruma status/test`, `mcp status/compatibility` | Configure and verify external connections. |
 | [Diagnostics and UI](#diagnostics-and-ui-commands) | `doctor`, `logs`, `monitor`, `hook` | Diagnose the installation, read logs, launch Monitor, and process hooks. |
 | [Metadata](#metadata-commands) | `version`, `help` | Show version and usage information. |
 
@@ -475,6 +475,16 @@ Commands: [`list`](#hataori-queue-list), [`get`](#hataori-queue-get), [`retry`](
 | Example | `hataori queue cancel msg-1 --database F:\Hataori\data\hataori.db` |
 | Safety | Destructive state change; the message will not be processed normally. |
 
+### Codex Desktop Task Launch Commands
+
+The `codex_task_claim`, `codex_task_started`, and `codex_task_release` MCP tools and these CLI commands use the same application service and SQLite state.
+
+- `hataori codex claim [--lease-seconds <30..3600>] --database <path>`: leases the next Codex launch request. Returns `{"status":"empty"}` when none is pending.
+- `hataori codex started <message-id> --claim-token <token> --codex-task-id <task-id> --database <path>`: stores the task ID after `create_thread` succeeds and removes the source message from the queue.
+- `hataori codex release <message-id> --claim-token <token> --error <message> --database <path>`: releases a failed claim so the source message can be claimed again immediately.
+
+The fixed receiver task inside Codex Desktop resolves `project_name` against saved projects and creates a task with `prompt`. Completion and reply synchronization are outside these commands.
+
 ### Database Commands
 
 Commands: [`status`](#hataori-db-status), [`integrity`](#hataori-db-integrity). Both open SQLite read-only.
@@ -634,6 +644,17 @@ Commands: [`setup itoguruma`](#hataori-setup-itoguruma), [`itoguruma status`](#h
 | Processing | Connects by Streamable HTTP and calls `tools/list`. |
 | Result | JSON `connected`, `endpoint`, and `tool_count`; count reflects the running Server. |
 | Example | `hataori mcp status` |
+
+#### `hataori mcp compatibility`
+
+| Item | Contract |
+| :--- | :--- |
+| Purpose | Verify the same MCP contract for Codex and Claude Code client identities. |
+| Syntax | `hataori mcp compatibility [--config <path>]` |
+| Processing | Initializes both profiles, discovers tools, calls `get_version`, and compares the results. |
+| Result | JSON containing `compatible`, endpoint, and per-client tool names, count, contract hash (including schemas and annotations), and structured version result. |
+| Side effects | Read-only. |
+| Example | `hataori mcp compatibility` |
 | Safety | Read-only. |
 
 ### Diagnostics and UI Commands

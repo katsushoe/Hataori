@@ -1,8 +1,9 @@
 # TODO.md Version
-2026.08.18
+2026.08.25
 
 # 変更履歴
 
+- 2026.08.25: 3.1.8.0をRelease。Claude Code接続不可の原因（MCP outputSchema契約不正、Activation既定値のBind時重複による新規Install起動クラッシュ）を修正。
 - 2026.08.18: Agent Run cancel、Task conflict detection、Dynamic Permission Approval（通知専用v1）を実装。
 - 2026.08.18: 全仕様書143節の11項目に基づきPhase 2の内訳を実装状況で更新。
 - 2026.08.18

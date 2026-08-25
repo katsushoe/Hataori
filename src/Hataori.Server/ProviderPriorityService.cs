@@ -60,7 +60,7 @@ public sealed class ProviderPriorityService(string configurationPath)
         var priority = root[ActivationOptions.SectionName]?["providerPriority"] as JsonArray;
         if (priority is null)
         {
-            return new ActivationOptions().ProviderPriority;
+            return ActivationOptions.DefaultProviderPriority;
         }
         return priority.Select(node => node?.GetValue<string>() ?? string.Empty).ToArray();
     }

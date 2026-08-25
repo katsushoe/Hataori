@@ -11,7 +11,7 @@ public sealed class ActivationLanePlanTests
 
         var lanes = ActivationLanePlan.Create(limits);
 
-        lanes.Count(agent => agent == "codex").Should().Be(2);
+        lanes.Should().NotContain("codex");
         lanes.Count(agent => agent == "claude-code").Should().Be(3);
     }
 }

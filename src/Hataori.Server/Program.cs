@@ -8,6 +8,7 @@ using Hataori.Application.Runs;
 using Hataori.Application.Agents;
 using Hataori.Application.Activation;
 using Hataori.Application.Tasks;
+using Hataori.Application.Codex;
 using Hataori.Infrastructure.Itoguruma;
 using Hataori.Infrastructure.Messages;
 using Hataori.Infrastructure.Sessions;
@@ -16,6 +17,7 @@ using Hataori.Infrastructure.Agents.Codex;
 using Hataori.Infrastructure.Agents.ClaudeCode;
 using Hataori.Infrastructure.Tasks;
 using Hataori.Infrastructure.Maintenance;
+using Hataori.Infrastructure.Codex;
 using Hataori.Server;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Options;
@@ -77,6 +79,13 @@ try
     builder.Services.AddSingleton<IValidateOptions<ClaudeCodeDriverOptions>, ClaudeCodeDriverOptionsValidator>();
     builder.Services.AddOptions<ActivationOptions>()
         .Bind(builder.Configuration.GetRequiredSection(ActivationOptions.SectionName))
+        .PostConfigure(options =>
+        {
+            if (options.ProviderPriority.Count == 0)
+            {
+                options.ProviderPriority = ActivationOptions.DefaultProviderPriority;
+            }
+        })
         .ValidateOnStart();
     builder.Services.AddSingleton<IValidateOptions<ActivationOptions>, ActivationOptionsValidator>();
     builder.Services.AddOptions<ReplyRetryOptions>()
@@ -114,6 +123,13 @@ try
         var connectionString = new SqliteConnectionStringBuilder { DataSource = path, ForeignKeys = true }.ToString();
         return new SqliteMessageQueueRepository(connectionString);
     });
+    builder.Services.AddSingleton<ICodexTaskLaunchRepository>(services =>
+    {
+        var options = services.GetRequiredService<IOptions<ServerOptions>>().Value;
+        var path = ServerPaths.ResolveDatabasePath(options.DatabasePath, layout.RootPath);
+        var connectionString = new SqliteConnectionStringBuilder { DataSource = path, ForeignKeys = true }.ToString();
+        return new SqliteCodexTaskLaunchRepository(connectionString);
+    });
     builder.Services.AddSingleton<IConversationSessionRepository>(services =>
     {
         var options = services.GetRequiredService<IOptions<ServerOptions>>().Value;
@@ -139,6 +155,7 @@ try
         services.GetRequiredService<IOptions<ClaudeCodeDriverOptions>>().Value));
     builder.Services.AddSingleton(TimeProvider.System);
     builder.Services.AddSingleton<TaskService>();
+    builder.Services.AddSingleton<CodexTaskLaunchService>();
     builder.Services.AddSingleton<ConversationSessionService>();
     builder.Services.AddSingleton<AgentRunService>();
     builder.Services.AddSingleton<ActivationManager>();
@@ -177,6 +194,7 @@ try
         .WithTools<TaskMcpTools>()
         .WithTools<AgentRunMcpTools>()
         .WithTools<ProviderMcpTools>()
+        .WithTools<CodexTaskMcpTools>()
         .WithTools<SystemMcpTools>();
 
     var app = builder.Build();
