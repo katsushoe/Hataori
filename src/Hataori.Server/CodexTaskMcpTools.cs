@@ -16,17 +16,21 @@ public sealed class CodexTaskMcpTools(CodexTaskLaunchService service)
 
     [McpServerTool(Name = "codex_task_started", Destructive = false, OpenWorld = false, UseStructuredContent = true)]
     [Description("Records the Codex Desktop task ID after create_thread succeeds.")]
-    public async Task<object> MarkStartedAsync(string messageId, string claimToken, string codexTaskId, CancellationToken cancellationToken)
+    public async Task<CodexTaskStartedResult> MarkStartedAsync(string messageId, string claimToken, string codexTaskId, CancellationToken cancellationToken)
     {
         await service.MarkStartedAsync(messageId, claimToken, codexTaskId, cancellationToken).ConfigureAwait(false);
-        return new { messageId, codexTaskId, status = "started" };
+        return new CodexTaskStartedResult(messageId, codexTaskId, "started");
     }
 
     [McpServerTool(Name = "codex_task_release", Destructive = false, OpenWorld = false, UseStructuredContent = true)]
     [Description("Releases a claimed launch request after task creation fails so it can be retried.")]
-    public async Task<object> ReleaseAsync(string messageId, string claimToken, string error, CancellationToken cancellationToken)
+    public async Task<CodexTaskReleaseResult> ReleaseAsync(string messageId, string claimToken, string error, CancellationToken cancellationToken)
     {
         await service.ReleaseAsync(messageId, claimToken, error, cancellationToken).ConfigureAwait(false);
-        return new { messageId, status = "pending" };
+        return new CodexTaskReleaseResult(messageId, "pending");
     }
 }
+
+public sealed record CodexTaskStartedResult(string MessageId, string CodexTaskId, string Status);
+
+public sealed record CodexTaskReleaseResult(string MessageId, string Status);

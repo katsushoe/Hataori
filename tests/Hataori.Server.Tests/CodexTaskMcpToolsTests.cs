@@ -23,7 +23,7 @@ public sealed class CodexTaskMcpToolsTests : IDisposable
         var claimed = await tools.ClaimAsync(300, CancellationToken.None);
         var result = await tools.MarkStartedAsync(claimed!.MessageId, claimed.ClaimToken, "codex-thread", CancellationToken.None);
 
-        result.Should().BeEquivalentTo(new { messageId = "msg-1", codexTaskId = "codex-thread", status = "started" });
+        result.Should().Be(new CodexTaskStartedResult("msg-1", "codex-thread", "started"));
     }
 
     public void Dispose()
