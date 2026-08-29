@@ -3,6 +3,7 @@
     <OutputType>Package</OutputType>
     <Platform>x64</Platform>
     <InstallerPlatform>x64</InstallerPlatform>
+    <SuppressIces>ICE61</SuppressIces>
     <PublishRoot Condition="'$(PublishRoot)' == ''">$(MSBuildThisFileDirectory)..\artifacts\publish</PublishRoot>
     <ProductVersion Condition="'$(ProductVersion)' == ''">3.0.3.0</ProductVersion>
     <DefineConstants>PublishRoot=$(PublishRoot);ProductVersion=$(ProductVersion)</DefineConstants>

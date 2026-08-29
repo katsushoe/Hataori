@@ -35,6 +35,8 @@ Start-Service Hataori
 
 Run the newer MSI with the same `INSTALL_ROOT`. It replaces binaries and service registration while preserving `config`, `logs`, and `data`. Start the Service after the upgrade.
 
+The installer treats a change to any part of Hataori's four-part version as an upgrade. Windows Installer compares only the first three parts, so the MSI explicitly enables same-version major upgrades to replace an installation when only the fourth part changes. This also means Windows Installer cannot block a downgrade that differs only in the fourth part; always run the newer MSI.
+
 ## Uninstall
 
 Use Windows Installed apps or:
