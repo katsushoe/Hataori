@@ -1,7 +1,7 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
      xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
   <Package Name="Hataori"
-           Manufacturer="sazysoft"
+           Manufacturer="Akatsukisoft"
            Version="$(var.ProductVersion)"
            UpgradeCode="1EC49A4B-879B-4F59-8B54-53A4761068C7"
            Scope="perMachine"

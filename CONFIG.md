@@ -235,7 +235,7 @@ Children: [`enabled`](#activationenabled), [`workingDirectory`](#activationworki
 - Type/required: string, conditionally required.
 - Default: empty string.
 - Constraint: when activation is enabled, it must be an existing absolute directory.
-- Behavior: projects root whose direct children are automatically registered and monitored in Itoguruma; each directory name is a destination project ID.
+- Behavior: projects root whose direct children are automatically registered and monitored in Itoguruma; each directory name is converted to invariant lowercase for the destination project ID, and project lookup is case-insensitive.
 - Example: `"workingDirectory": "F:\\Workspace\\Projects"`.
 
 #### `activation.pollIntervalMilliseconds`
