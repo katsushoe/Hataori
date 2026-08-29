@@ -10,7 +10,7 @@ Serverが異常終了すると、DB上のAgent Run、Conversation Session、Mess
 
 ## Decision
 
-Server起動時にactive Agent RunのPIDとProcess開始日時を照合する。Processが不在または別Processへ再利用されている場合、Runを`failed`、関連する未完了Messageを`failed`、対応するrunning Sessionを`invalid`へ更新する。生存Processに対応する状態は維持する。Activation Workerは復旧完了ゲートを待ってからQueue処理を開始する。
+Server起動時にactive Agent RunのPIDとProcess開始日時を照合する。Processが不在または別Processへ再利用されている場合、Runを`failed`、関連する未完了Messageを`failed`、対応するrunning Sessionを`invalid`へ更新する。Agent Run作成前の異常終了で`starting`または`running`のまま孤立したMessageも`failed`へ更新する。Agent Run完了後かつReply完了前のMessageはAgentを再実行せず、即時Reply Retryへ復旧する。ただし既存のReply Retry待機中Messageと生存Processに対応する状態は維持する。Activation Workerは復旧完了ゲートを待ってからQueue処理を開始する。
 
 ## Alternatives
 

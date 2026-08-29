@@ -36,8 +36,8 @@ public sealed class StartupRecoveryServiceTests
         var first = await service.RecoverAsync(CancellationToken.None);
         var second = await service.RecoverAsync(CancellationToken.None);
 
-        first.Should().Be(new StartupRecoveryResult(1, 1, 1, 0));
-        second.Should().Be(new StartupRecoveryResult(0, 0, 0, 0));
+        first.Should().Be(new StartupRecoveryResult(1, 1, 0, 1, 0));
+        second.Should().Be(new StartupRecoveryResult(0, 0, 0, 0, 0));
         run.Status.Should().Be(AgentRunStatus.Failed);
         session.Status.Should().Be(ConversationSessionStatus.Invalid);
         await messages.Received(1).MarkFailedAsync(run.MessageId, Arg.Any<string>(), now, Arg.Any<CancellationToken>());
@@ -63,9 +63,52 @@ public sealed class StartupRecoveryServiceTests
 
         var result = await service.RecoverAsync(CancellationToken.None);
 
-        result.Should().Be(new StartupRecoveryResult(0, 0, 0, 1));
+        result.Should().Be(new StartupRecoveryResult(0, 0, 0, 0, 1));
         run.Status.Should().Be(AgentRunStatus.Running);
         session.Status.Should().Be(ConversationSessionStatus.Running);
+        await messages.DidNotReceiveWithAnyArgs().MarkFailedAsync(default!, default!, default, default);
+    }
+
+    [Fact]
+    public async Task RecoverAsync_ActiveMessageWithoutRun_FailsOrphanedMessage()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var runRepository = Substitute.For<IAgentRunRepository>();
+        var sessionRepository = Substitute.For<IConversationSessionRepository>();
+        var messages = Substitute.For<IMessageQueueRepository>();
+        var probe = Substitute.For<IAgentProcessProbe>();
+        runRepository.ListAsync(null, null, Arg.Any<CancellationToken>()).Returns([]);
+        sessionRepository.ListAsync(ConversationSessionStatus.Running, null, Arg.Any<CancellationToken>()).Returns([]);
+        messages.GetActiveExecutionMessageIdsAsync(Arg.Any<CancellationToken>()).Returns(["message-orphan"]);
+        var service = CreateService(runRepository, sessionRepository, messages, probe, now);
+
+        var result = await service.RecoverAsync(CancellationToken.None);
+
+        result.Should().Be(new StartupRecoveryResult(0, 1, 0, 0, 0));
+        await messages.Received(1).MarkFailedAsync("message-orphan", Arg.Any<string>(), now, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task RecoverAsync_CompletedRunAwaitingReply_SchedulesImmediateReplyRetry()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var run = AgentRun.Queue("run-1", "message-1", "conversation-1", "codex", now.AddMinutes(-5));
+        run.MarkStarting();
+        run.MarkRunning(1234, now.AddMinutes(-5));
+        run.Complete("session-1", 0, "completed reply", now.AddMinutes(-1));
+        var runRepository = Substitute.For<IAgentRunRepository>();
+        var sessionRepository = Substitute.For<IConversationSessionRepository>();
+        var messages = Substitute.For<IMessageQueueRepository>();
+        var probe = Substitute.For<IAgentProcessProbe>();
+        runRepository.ListAsync(null, null, Arg.Any<CancellationToken>()).Returns([run]);
+        sessionRepository.ListAsync(ConversationSessionStatus.Running, null, Arg.Any<CancellationToken>()).Returns([]);
+        messages.GetActiveExecutionMessageIdsAsync(Arg.Any<CancellationToken>()).Returns([run.MessageId]);
+        var service = CreateService(runRepository, sessionRepository, messages, probe, now);
+
+        var result = await service.RecoverAsync(CancellationToken.None);
+
+        result.Should().Be(new StartupRecoveryResult(0, 0, 1, 0, 0));
+        await messages.Received(1).ScheduleReplyRetryAsync(run.MessageId, Arg.Any<string>(), 0, now, now, Arg.Any<CancellationToken>());
         await messages.DidNotReceiveWithAnyArgs().MarkFailedAsync(default!, default!, default, default);
     }
 
