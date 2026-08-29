@@ -39,10 +39,10 @@ public sealed class ItogurumaConnectionWorkerTests : IDisposable
 
         await worker.PollProjectsAsync(CancellationToken.None);
 
-        await client.Received(1).RegisterProjectAsync("CRs", Arg.Any<CancellationToken>());
-        await client.Received(1).RegisterProjectAsync("Hataori", Arg.Any<CancellationToken>());
-        await client.Received(1).GetMessagesAsync("CRs", 50, 300, Arg.Is<string?>(value => value == null), Arg.Any<CancellationToken>());
-        await client.Received(1).GetMessagesAsync("Hataori", 50, 300, Arg.Is<string?>(value => value == null), Arg.Any<CancellationToken>());
+        await client.Received(1).RegisterProjectAsync("crs", Arg.Any<CancellationToken>());
+        await client.Received(1).RegisterProjectAsync("hataori", Arg.Any<CancellationToken>());
+        await client.Received(1).GetMessagesAsync("crs", 50, 300, Arg.Is<string?>(value => value == null), Arg.Any<CancellationToken>());
+        await client.Received(1).GetMessagesAsync("hataori", 50, 300, Arg.Is<string?>(value => value == null), Arg.Any<CancellationToken>());
     }
 
     public void Dispose()

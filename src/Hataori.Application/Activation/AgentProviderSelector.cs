@@ -46,10 +46,12 @@ public sealed class AgentProviderSelector(IEnumerable<IAgentDriver> drivers)
         ArgumentException.ThrowIfNullOrWhiteSpace(projectsRoot);
         var root = Path.GetFullPath(projectsRoot);
         return Directory.EnumerateDirectories(root)
-            .Select(path => new ActivationProject(Path.GetFileName(path), path))
+            .Select(path => new ActivationProject(NormalizeProjectId(Path.GetFileName(path)), path))
             .OrderBy(project => project.ProjectId, StringComparer.OrdinalIgnoreCase)
             .ToArray();
     }
+
+    private static string NormalizeProjectId(string directoryName) => directoryName.ToLowerInvariant();
 
     private static void AddCandidate(List<string> candidates, string? provider)
     {

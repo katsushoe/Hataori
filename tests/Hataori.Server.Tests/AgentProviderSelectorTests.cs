@@ -43,7 +43,7 @@ public sealed class AgentProviderSelectorTests : IDisposable
     }
 
     [Fact]
-    public void DiscoverProjects_MultipleDirectories_ReturnsEveryDirectChildInStableOrder()
+    public void DiscoverProjects_MultipleDirectories_ReturnsInvariantLowercaseIdsInStableOrder()
     {
         Directory.CreateDirectory(Path.Combine(_root, "Zulu"));
         Directory.CreateDirectory(Path.Combine(_root, "alpha"));
@@ -52,7 +52,18 @@ public sealed class AgentProviderSelectorTests : IDisposable
 
         var result = selector.DiscoverProjects(_root);
 
-        result.Select(project => project.ProjectId).Should().Equal("alpha", "Zulu");
+        result.Select(project => project.ProjectId).Should().Equal("alpha", "zulu");
+    }
+
+    [Fact]
+    public void Select_RegisteredProjectIdUsesDifferentCase_ResolvesProjectDirectory()
+    {
+        var project = Directory.CreateDirectory(Path.Combine(_root, "Hataori"));
+        var selector = new AgentProviderSelector([CreateDriver("codex")]);
+
+        var result = selector.Select(_root, "HATAORI", "codex", ["codex"]);
+
+        result.ProjectPath.Should().Be(project.FullName);
     }
 
     public void Dispose()
