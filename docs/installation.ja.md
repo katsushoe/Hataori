@@ -35,6 +35,8 @@ Start-Service Hataori
 
 新しいVersionのMSIを同じ`INSTALL_ROOT`で実行します。MSIは旧バイナリとサービス登録を置換し、`config`、`logs`、`data`を保持します。Upgrade後はサービスを起動してください。
 
+Hataoriの4パートVersionは、どのパートが変わった場合もUpgradeとして扱います。Windows Installerは先頭3パートだけを比較するため、第4パートだけの更新でも既存版を置き換えられるよう、MSIで同一VersionのMajorUpgradeを明示的に有効化しています。この仕様では第4パートだけが異なるDowngradeもWindows Installerで阻止できないため、必ず新しいMSIを実行してください。
+
 ## Uninstall
 
 Windowsの「インストールされているアプリ」または次のコマンドで削除します。
