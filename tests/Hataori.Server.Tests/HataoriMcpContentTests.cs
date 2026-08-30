@@ -9,6 +9,7 @@ public sealed class HataoriMcpContentTests
     public void Instructions_常時_Hataoriの目的と標準Task手順を含む()
     {
         HataoriMcpInstructions.Text.Should().Contain("coordinates work");
+        HataoriMcpInstructions.Text.Should().Contain("list_projects");
         HataoriMcpInstructions.Text.Should().Contain("task_find_conflicts");
         HataoriMcpInstructions.Text.Should().Contain("task_heartbeat");
         HataoriMcpInstructions.Text.Should().Contain("Itoguruma");
@@ -20,6 +21,7 @@ public sealed class HataoriMcpContentTests
         var result = HataoriMcpPrompts.Workflow("Server Instructionsを実装する");
 
         result.Should().Contain("Server Instructionsを実装する");
+        result.Should().Contain("list_projects");
         result.Should().Contain("start one task");
         result.Should().Contain("explicit progress percentage");
         result.Should().Contain("Complete the task");

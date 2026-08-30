@@ -15,6 +15,7 @@ public interface IMessageQueueRepository
     Task MarkRespondedAsync(string messageId, string replyMessageId, DateTimeOffset respondedAtUtc, CancellationToken cancellationToken);
     Task MarkFailedAsync(string messageId, string error, DateTimeOffset failedAtUtc, CancellationToken cancellationToken);
     Task<MessageProcessingStatus?> GetProcessingStatusAsync(string messageId, CancellationToken cancellationToken);
+    Task<IReadOnlyList<string>> GetActiveExecutionMessageIdsAsync(CancellationToken cancellationToken);
     Task ScheduleReplyRetryAsync(string messageId, string error, int attemptCount, DateTimeOffset failedAtUtc, DateTimeOffset? nextAttemptAtUtc, CancellationToken cancellationToken);
     Task<IReadOnlyList<PendingReply>> GetDueReplyRetriesAsync(DateTimeOffset dueAtUtc, int limit, CancellationToken cancellationToken);
 }

@@ -320,11 +320,34 @@ public sealed class SqliteMessageQueueRepository(string connectionString) : IMes
         return value is null ? null : Enum.Parse<MessageProcessingStatus>(value, true);
     }
 
+    public async Task<IReadOnlyList<string>> GetActiveExecutionMessageIdsAsync(CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT message_id
+            FROM message_processing
+            WHERE status IN ('starting', 'running')
+              AND next_reply_attempt_at_utc IS NULL
+            ORDER BY received_at_utc, message_id;
+            """;
+        await using var connection = new SqliteConnection(connectionString);
+        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        var messageIds = new List<string>();
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            messageIds.Add(reader.GetString(0));
+        }
+
+        return messageIds;
+    }
+
     public async Task ScheduleReplyRetryAsync(string messageId, string error, int attemptCount, DateTimeOffset failedAtUtc, DateTimeOffset? nextAttemptAtUtc, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(messageId);
         ArgumentException.ThrowIfNullOrWhiteSpace(error);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(attemptCount);
+        ArgumentOutOfRangeException.ThrowIfNegative(attemptCount);
         await using var connection = new SqliteConnection(connectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
         await using var command = connection.CreateCommand();

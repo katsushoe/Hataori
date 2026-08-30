@@ -192,6 +192,7 @@ try
     builder.Services.AddMcpServer(options => options.ServerInstructions = HataoriMcpInstructions.Text)
         .WithHttpTransport(options => options.Stateless = true)
         .WithPrompts<HataoriMcpPrompts>()
+        .WithTools<ProjectMcpTools>()
         .WithTools<TaskMcpTools>()
         .WithTools<AgentRunMcpTools>()
         .WithTools<ProviderMcpTools>()

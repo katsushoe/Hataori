@@ -20,6 +20,7 @@ public sealed class StartupRecoveryService(
     TimeProvider timeProvider)
 {
     private const string RecoveryError = "Agent process was not running when Hataori restarted.";
+    private const string RecoveryReplyError = "Reply delivery was interrupted when Hataori restarted.";
 
     public async Task<StartupRecoveryResult> RecoverAsync(CancellationToken cancellationToken)
     {
@@ -27,12 +28,19 @@ public sealed class StartupRecoveryService(
         await runRepository.InitializeAsync(cancellationToken).ConfigureAwait(false);
         await sessionRepository.InitializeAsync(cancellationToken).ConfigureAwait(false);
         await messages.InitializeAsync(cancellationToken).ConfigureAwait(false);
-        var activeRuns = (await runs.ListAsync(null, null, cancellationToken).ConfigureAwait(false))
+        var allRuns = await runs.ListAsync(null, null, cancellationToken).ConfigureAwait(false);
+        var activeRuns = allRuns
             .Where(run => run.Status is AgentRunStatus.Starting or AgentRunStatus.Running)
             .ToArray();
+        var completedMessageIds = allRuns
+            .Where(run => run.Status == AgentRunStatus.Completed && !string.IsNullOrWhiteSpace(run.FinalMessage))
+            .Select(run => run.MessageId)
+            .ToHashSet(StringComparer.Ordinal);
         var survivors = new HashSet<(string ConversationId, string AgentId)>();
+        var survivingMessageIds = new HashSet<string>(StringComparer.Ordinal);
         var failedRuns = 0;
         var failedMessages = 0;
+        var recoveredReplies = 0;
         var invalidatedSessions = 0;
 
         foreach (var run in activeRuns)
@@ -40,6 +48,7 @@ public sealed class StartupRecoveryService(
             if (run.Status == AgentRunStatus.Running && run.ProcessId is int processId && processProbe.IsRunning(processId, run.StartedAtUtc))
             {
                 survivors.Add((run.ConversationId, run.AgentId));
+                survivingMessageIds.Add(run.MessageId);
                 continue;
             }
 
@@ -51,6 +60,21 @@ public sealed class StartupRecoveryService(
                 await messages.MarkFailedAsync(run.MessageId, RecoveryError, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
                 failedMessages++;
             }
+        }
+
+        var activeMessageIds = await messages.GetActiveExecutionMessageIdsAsync(cancellationToken).ConfigureAwait(false);
+        foreach (var messageId in activeMessageIds.Where(messageId => !survivingMessageIds.Contains(messageId)))
+        {
+            if (completedMessageIds.Contains(messageId))
+            {
+                var now = timeProvider.GetUtcNow();
+                await messages.ScheduleReplyRetryAsync(messageId, RecoveryReplyError, 0, now, now, cancellationToken).ConfigureAwait(false);
+                recoveredReplies++;
+                continue;
+            }
+
+            await messages.MarkFailedAsync(messageId, RecoveryError, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+            failedMessages++;
         }
 
         var runningSessions = await sessions.ListAsync(ConversationSessionStatus.Running, null, cancellationToken).ConfigureAwait(false);
@@ -65,9 +89,9 @@ public sealed class StartupRecoveryService(
             invalidatedSessions++;
         }
 
-        return new StartupRecoveryResult(failedRuns, failedMessages, invalidatedSessions, survivors.Count);
+        return new StartupRecoveryResult(failedRuns, failedMessages, recoveredReplies, invalidatedSessions, survivors.Count);
     }
 }
 
 /// <summary>起動復旧で変更・維持した件数です。</summary>
-public sealed record StartupRecoveryResult(int FailedRuns, int FailedMessages, int InvalidatedSessions, int SurvivingRuns);
+public sealed record StartupRecoveryResult(int FailedRuns, int FailedMessages, int RecoveredReplies, int InvalidatedSessions, int SurvivingRuns);

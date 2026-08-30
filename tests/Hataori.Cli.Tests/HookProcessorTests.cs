@@ -19,6 +19,16 @@ public sealed class HookProcessorTests
     }
 
     [Fact]
+    public void Process_UserPromptSubmit_PromptsProjectLookupBeforeTaskRegistration()
+    {
+        using var input = JsonDocument.Parse("""{"hook_event_name":"UserPromptSubmit"}""");
+
+        var result = HookProcessor.Process(input.RootElement, Snapshot([]), "conversation", "codex", null, "http://localhost/mcp");
+
+        JsonSerializer.Serialize(result.Payload).Should().Contain("list_projects");
+    }
+
+    [Fact]
     public void Process_PreToolUseWithActiveTask_AllowsMutationAndDoesNotFlagPermissionDenied()
     {
         using var input = JsonDocument.Parse("""{"hook_event_name":"PreToolUse","tool_name":"apply_patch","tool_input":{"command":"patch"}}""");

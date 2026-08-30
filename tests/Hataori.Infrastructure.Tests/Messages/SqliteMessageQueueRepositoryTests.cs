@@ -86,6 +86,22 @@ public sealed class SqliteMessageQueueRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task GetActiveExecutionMessageIdsAsync_PendingReplyRetry_ExcludesReplyRetry()
+    {
+        var repository = CreateRepository();
+        await repository.InitializeAsync(CancellationToken.None);
+        await repository.EnqueueAsync(CreateMessage("active", "active"), 0, CancellationToken.None);
+        await repository.EnqueueAsync(CreateMessage("reply", "reply", "conversation-2"), 0, CancellationToken.None);
+        await repository.TryClaimNextAsync("codex", CancellationToken.None);
+        await repository.TryClaimNextAsync("codex", CancellationToken.None);
+        await repository.ScheduleReplyRetryAsync("reply", "retry", 1, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddMinutes(1), CancellationToken.None);
+
+        var result = await repository.GetActiveExecutionMessageIdsAsync(CancellationToken.None);
+
+        result.Should().Equal("active");
+    }
+
+    [Fact]
     public async Task InitializeAsync_PreRetrySchema_AddsReplyColumns()
     {
         var connectionString = new SqliteConnectionStringBuilder { DataSource = _databasePath, ForeignKeys = true, Pooling = false }.ToString();

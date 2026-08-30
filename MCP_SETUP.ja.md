@@ -6,7 +6,7 @@
 
 Hataori MCPは、Codex Desktop、Codex CLI、Claude Codeが担当する作業をTaskとして記録し、重複作業を防ぎながら進捗、関連Task、履歴、Agent Runを調整するためのInterfaceです。接続初期化時のServer Instructionsが基本手順をClientへ示し、`hataori_workflow` Promptが依頼内容に応じた再利用可能な作業手順を返します。
 
-実装作業では、`task_list`と`task_find_conflicts`で重複を確認し、`task_start`で開始します。作業中は進捗率を明示して`task_heartbeat`を送り、検証後に`task_complete`で完了します。失敗または中止時は実態に合わせて`task_fail`または`task_cancel`を使用します。HataoriはTask管理とAgent実行調整を担い、Project固有規約、Git操作、Test、ItogurumaによるProject間Communicationを代替しません。
+各会話ではTask登録前に`list_projects`を呼び、登録済みProject ID候補から対象を選びます。実装作業では、続けて`task_list`と`task_find_conflicts`で重複を確認し、`task_start`で開始します。作業中は進捗率を明示して`task_heartbeat`を送り、検証後に`task_complete`で完了します。失敗または中止時は実態に合わせて`task_fail`または`task_cancel`を使用します。未登録Projectを起動対象に指定した場合、エラーは登録済みProject候補を返します。HataoriはTask管理とAgent実行調整を担い、Project固有規約、Git操作、Test、ItogurumaによるProject間Communicationを代替しません。
 
 このGuideでは、ローカルで稼働するHataori Windows ServiceをStreamable HTTPでCodexまたはClaude Codeへ接続します。
 

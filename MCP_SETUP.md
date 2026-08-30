@@ -6,7 +6,7 @@
 
 Hataori MCP records work performed by Codex Desktop, Codex CLI, and Claude Code as tasks. It coordinates progress, related tasks, history, and agent runs while helping agents avoid duplicate work. Server Instructions provide the basic workflow during client initialization, and the `hataori_workflow` prompt returns a reusable workflow tailored to a supplied work description.
 
-For implementation work, check `task_list` and `task_find_conflicts`, then begin with `task_start`. During work, send `task_heartbeat` with an explicit progress percentage. After verification, finish with `task_complete`; use `task_fail` or `task_cancel` when that reflects the actual outcome. Hataori coordinates tasks and agent execution. It does not replace project instructions, Git procedures, tests, or direct project-to-project communication through Itoguruma.
+For every conversation, call `list_projects` before task registration and select the intended registered project ID from its candidates. For implementation work, continue with `task_list` and `task_find_conflicts`, then begin with `task_start`. During work, send `task_heartbeat` with an explicit progress percentage. After verification, finish with `task_complete`; use `task_fail` or `task_cancel` when that reflects the actual outcome. If an unregistered project is selected for activation, the error includes the registered project candidates. Hataori coordinates tasks and agent execution. It does not replace project instructions, Git procedures, tests, or direct project-to-project communication through Itoguruma.
 
 This guide connects a locally running Hataori Windows Service to Codex or Claude Code through Streamable HTTP.
 

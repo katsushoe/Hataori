@@ -20,7 +20,7 @@ public sealed class StartupRecoveryWorker(
         try
         {
             var result = await recovery.RecoverAsync(stoppingToken).ConfigureAwait(false);
-            logger.LogInformation(Hataori.Application.Localization.DisplayLanguage.Text("[リカバリ] 完了: 失敗run={FailedRuns} 失敗message={FailedMessages} 無効session={InvalidatedSessions} 継続run={SurvivingRuns}", "[Recovery] Completed: failed_runs={FailedRuns} failed_messages={FailedMessages} invalidated_sessions={InvalidatedSessions} surviving_runs={SurvivingRuns}"), result.FailedRuns, result.FailedMessages, result.InvalidatedSessions, result.SurvivingRuns);
+            logger.LogInformation(Hataori.Application.Localization.DisplayLanguage.Text("[リカバリ] 完了: 失敗run={FailedRuns} 失敗message={FailedMessages} 復旧reply={RecoveredReplies} 無効session={InvalidatedSessions} 継続run={SurvivingRuns}", "[Recovery] Completed: failed_runs={FailedRuns} failed_messages={FailedMessages} recovered_replies={RecoveredReplies} invalidated_sessions={InvalidatedSessions} surviving_runs={SurvivingRuns}"), result.FailedRuns, result.FailedMessages, result.RecoveredReplies, result.InvalidatedSessions, result.SurvivingRuns);
             gate.Complete();
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
