@@ -25,7 +25,8 @@ public sealed class AgentProviderSelector(IEnumerable<IAgentDriver> drivers)
             .FirstOrDefault(path => string.Equals(Path.GetFileName(path), projectId, StringComparison.OrdinalIgnoreCase));
         if (projectPath is null)
         {
-            throw new DirectoryNotFoundException($"Project '{projectId}' was not found under the configured projects root.");
+            var projectCandidates = DiscoverProjects(root).Select(project => project.ProjectId);
+            throw new DirectoryNotFoundException($"Project '{projectId}' is not registered. Registered project candidates: {string.Join(", ", projectCandidates)}.");
         }
 
         var candidates = new List<string>();
