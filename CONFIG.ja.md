@@ -221,7 +221,7 @@ Hataoriには名前付きprofile fileがありません。通常file path、環�
 
 ### `activation`
 
-子項目: [`enabled`](#activationenabled)、[`workingDirectory`](#activationworkingdirectory)、[`pollIntervalMilliseconds`](#activationpollintervalmilliseconds)、[`providerPriority`](#activationproviderpriority)、[`maxConcurrentRuns`](#activationmaxconcurrentruns)。
+子項目: [`enabled`](#activationenabled)、[`workspaceId`](#activationworkspaceid)、[`workingDirectory`](#activationworkingdirectory)、[`pollIntervalMilliseconds`](#activationpollintervalmilliseconds)、[`providerPriority`](#activationproviderpriority)、[`maxConcurrentRuns`](#activationmaxconcurrentruns)。
 
 #### `activation.enabled`
 
@@ -237,6 +237,14 @@ Hataoriには名前付きprofile fileがありません。通常file path、環�
 - 制約: Activation有効時は存在する絶対directoryが必要です。
 - 動作: 直下の全directoryをプロジェクトとしてItogurumaへ自動登録・監視するProjects rootです。directory名を宛先プロジェクトIDとして使用します。
 - 例: `"workingDirectory": "F:\\Workspace\\Projects"`。
+
+#### `activation.workspaceId`
+
+- 型/必須: string、任意。
+- 既定値: `"default"`。
+- 制約: `^[a-z][a-z0-9]*$`。入力値は小文字へ正規化されます。
+- 動作: `workingDirectory`で構成したWorkspaceをTask、MCP、Monitorで識別します。
+- 例: `"workspaceId": "default"`。
 
 #### `activation.pollIntervalMilliseconds`
 
