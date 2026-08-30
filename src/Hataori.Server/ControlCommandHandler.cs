@@ -105,7 +105,7 @@ public sealed class ControlCommandHandler
             return new MonitorAgentStatus(group.Key, active.FirstOrDefault()?.ConversationId ?? latest.ConversationId, state, active.Length);
         }).OrderBy(agent => agent.AgentId, StringComparer.OrdinalIgnoreCase).ToArray();
         var monitorTasks = tasks.Select(task => new MonitorTask(
-            task.TaskId, task.TaskName, task.AgentId, task.ConversationId, task.Status.ToString().ToLowerInvariant(),
+            task.WorkspaceId, task.TaskId, task.TaskName, task.AgentId, task.ConversationId, task.Status.ToString().ToLowerInvariant(),
             task.CurrentWork, task.ProgressPercent, task.LastActivityAtUtc)).ToArray();
         var monitorSessions = sessions.Select(session => new MonitorSession(
             session.ConversationId, session.AgentId, session.NativeSessionId,

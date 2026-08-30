@@ -56,6 +56,22 @@ public sealed class TaskMcpToolsTests : IDisposable
         conflicts.Should().BeEmpty();
     }
 
+    [Fact]
+    public async Task WorkspaceTools_SeparateTaskListsAndConflictChecks()
+    {
+        var connectionString = new SqliteConnectionStringBuilder { DataSource = _databasePath, ForeignKeys = true, Pooling = false }.ToString();
+        var repository = new SqliteTaskRepository(connectionString);
+        await repository.InitializeAsync(CancellationToken.None);
+        var tools = new TaskMcpTools(new TaskService(repository, TimeProvider.System));
+        await tools.StartInWorkspaceAsync("alpha", "task-alpha", "認証処理を修正", "codex", null, null, "ログイン", "実装中", CancellationToken.None);
+        await tools.StartInWorkspaceAsync("beta", "task-beta", "認証処理を修正", "codex", null, null, "ログイン", "実装中", CancellationToken.None);
+
+        (await tools.ListByWorkspaceAsync("alpha", null, null, CancellationToken.None))
+            .Should().ContainSingle().Which.TaskId.Should().Be("task-alpha");
+        (await tools.FindConflictsInWorkspaceAsync("alpha", "認証処理", "ログイン", "claude-code", CancellationToken.None))
+            .Should().ContainSingle().Which.TaskId.Should().Be("task-alpha");
+    }
+
     public void Dispose()
     {
         SqliteConnection.ClearAllPools();

@@ -24,10 +24,38 @@ public sealed class SqliteTaskRepositoryTests : IDisposable
         var restored = await repository.GetAsync("task-1", CancellationToken.None);
 
         restored.Should().NotBeNull();
-        restored!.Status.Should().Be(HataoriTaskStatus.Completed);
+        restored!.WorkspaceId.Should().Be("default");
+        restored.Status.Should().Be(HataoriTaskStatus.Completed);
         restored.ProgressPercent.Should().Be(100);
         restored.Result.Should().Be("成功");
         (await CountHistoryAsync(connectionString)).Should().Be(3);
+    }
+
+    [Fact]
+    public async Task Initialize_PreWorkspaceSchema_MigratesExistingTasksToDefaultWorkspace()
+    {
+        var connectionString = new SqliteConnectionStringBuilder { DataSource = _databasePath, ForeignKeys = true, Pooling = false }.ToString();
+        await using (var connection = new SqliteConnection(connectionString))
+        {
+            await connection.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText = """
+                CREATE TABLE tasks (
+                    task_id TEXT PRIMARY KEY, task_name TEXT NOT NULL, agent_id TEXT NOT NULL,
+                    conversation_id TEXT NULL, origin_message_id TEXT NULL, status TEXT NOT NULL,
+                    summary TEXT NOT NULL, current_work TEXT NOT NULL, progress_percent INTEGER NOT NULL,
+                    started_at_utc TEXT NOT NULL, last_activity_at_utc TEXT NOT NULL,
+                    completed_at_utc TEXT NULL, result TEXT NULL);
+                INSERT INTO tasks VALUES ('legacy', 'Legacy', 'codex', NULL, NULL, 'Active', '', '', 0,
+                    '2026-01-01T00:00:00.0000000+00:00', '2026-01-01T00:00:00.0000000+00:00', NULL, NULL);
+                """;
+            await command.ExecuteNonQueryAsync();
+        }
+
+        var repository = new SqliteTaskRepository(connectionString);
+        await repository.InitializeAsync(CancellationToken.None);
+
+        (await repository.GetAsync("legacy", CancellationToken.None))!.WorkspaceId.Should().Be("default");
     }
 
     [Fact]

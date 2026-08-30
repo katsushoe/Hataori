@@ -8,6 +8,7 @@ public sealed class ActivationOptions
     public static readonly IReadOnlyList<string> DefaultProviderPriority = ["codex", "claude-code"];
 
     public bool Enabled { get; init; }
+    public string WorkspaceId { get; init; } = Hataori.Core.Workspaces.WorkspaceId.Default;
     public string WorkingDirectory { get; init; } = string.Empty;
     public int PollIntervalMilliseconds { get; init; } = 1000;
 

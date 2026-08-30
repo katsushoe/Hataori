@@ -1,5 +1,7 @@
 ﻿using Hataori.Core.Tasks;
 
+using Hataori.Core.Workspaces;
+
 namespace Hataori.Application.Tasks;
 
 /// <summary>
@@ -26,9 +28,21 @@ public sealed class TaskService
         string? originMessageId,
         string summary,
         string currentWork,
+        CancellationToken cancellationToken) =>
+        await StartAsync(WorkspaceId.Default, taskId, taskName, agentId, conversationId, originMessageId, summary, currentWork, cancellationToken).ConfigureAwait(false);
+
+    public async Task<HataoriTask> StartAsync(
+        string workspaceId,
+        string taskId,
+        string taskName,
+        string agentId,
+        string? conversationId,
+        string? originMessageId,
+        string summary,
+        string currentWork,
         CancellationToken cancellationToken)
     {
-        var task = HataoriTask.Start(taskId, taskName, agentId, conversationId, originMessageId, summary, currentWork, _timeProvider.GetUtcNow());
+        var task = HataoriTask.Start(workspaceId, taskId, taskName, agentId, conversationId, originMessageId, summary, currentWork, _timeProvider.GetUtcNow());
         await _repository.AddAsync(task, cancellationToken).ConfigureAwait(false);
         return task;
     }
@@ -59,12 +73,23 @@ public sealed class TaskService
         return _repository.ListAsync(status, agentId, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<HataoriTask>> ListAsync(string workspaceId, HataoriTaskStatus? status, string? agentId, CancellationToken cancellationToken)
+    {
+        workspaceId = WorkspaceId.Normalize(workspaceId);
+        var tasks = await _repository.ListAsync(status, agentId, cancellationToken).ConfigureAwait(false);
+        return tasks.Where(task => string.Equals(task.WorkspaceId, workspaceId, StringComparison.Ordinal)).ToArray();
+    }
+
     /// <summary>
     /// 提案するTaskの名称・概要と、他Agentのactive Taskとのキーワード重複を検索します。
     /// 構造化されたscope項目がないため、あくまで簡易な参考情報です。
     /// </summary>
-    public async Task<IReadOnlyList<HataoriTask>> FindConflictsAsync(string taskName, string? summary, string? excludeAgentId, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<HataoriTask>> FindConflictsAsync(string taskName, string? summary, string? excludeAgentId, CancellationToken cancellationToken) =>
+        await FindConflictsAsync(WorkspaceId.Default, taskName, summary, excludeAgentId, cancellationToken).ConfigureAwait(false);
+
+    public async Task<IReadOnlyList<HataoriTask>> FindConflictsAsync(string workspaceId, string taskName, string? summary, string? excludeAgentId, CancellationToken cancellationToken)
     {
+        workspaceId = WorkspaceId.Normalize(workspaceId);
         ArgumentException.ThrowIfNullOrWhiteSpace(taskName);
         var active = await _repository.ListAsync(HataoriTaskStatus.Active, null, cancellationToken).ConfigureAwait(false);
         var keywords = Tokenize(taskName).Concat(Tokenize(summary ?? string.Empty)).ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -74,6 +99,7 @@ public sealed class TaskService
         }
 
         return active
+            .Where(task => string.Equals(task.WorkspaceId, workspaceId, StringComparison.Ordinal))
             .Where(task => string.IsNullOrWhiteSpace(excludeAgentId) || !string.Equals(task.AgentId, excludeAgentId, StringComparison.OrdinalIgnoreCase))
             .Where(task => Tokenize(task.TaskName).Concat(Tokenize(task.Summary)).Concat(Tokenize(task.CurrentWork)).Any(keywords.Contains))
             .ToArray();

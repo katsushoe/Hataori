@@ -52,7 +52,7 @@ public static class HookProcessor
         (string.IsNullOrWhiteSpace(agentId) || string.Equals(task.AgentId, agentId, StringComparison.OrdinalIgnoreCase));
 
     private static string BuildContext(string? conversationId, string? agentId, string? messageId, string? mcpUrl, IReadOnlyList<MonitorTask> tasks) =>
-        $"Hataori Task Protocol: 各会話でTask登録前にlist_projectsを呼び、登録済みProject ID候補から対象を選んでください。変更前にTaskをstartし、進捗をheartbeatし、終了時にcomplete/cancelしてください。 conversation_id={conversationId ?? "(none)"}; agent_id={agentId ?? "(none)"}; origin_message_id={messageId ?? "(none)"}; mcp={mcpUrl ?? "(none)"}; active_tasks={string.Join(',', tasks.Select(task => task.TaskId))}.";
+        $"Hataori Task Protocol: 各会話でTask登録前にlist_workspaces、続いてlist_projectsを呼び、登録済みProject ID候補から対象を選んでください。変更前にWorkspace指定でTaskをstartし、進捗をheartbeatし、終了時にcomplete/cancelしてください。 conversation_id={conversationId ?? "(none)"}; agent_id={agentId ?? "(none)"}; origin_message_id={messageId ?? "(none)"}; mcp={mcpUrl ?? "(none)"}; active_tasks={string.Join(',', tasks.Select(task => $"{task.WorkspaceId}:{task.TaskId}"))}.";
 
     private static bool IsMutation(string tool, JsonElement input)
     {

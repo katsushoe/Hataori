@@ -35,4 +35,12 @@ public sealed class ActivationOptionsValidatorTests
 
         new ActivationOptionsValidator().Validate(null, options).Failed.Should().BeTrue();
     }
+
+    [Fact]
+    public void Validate_InvalidWorkspaceId_ReturnsFailure()
+    {
+        var options = new ActivationOptions { WorkspaceId = "invalid-workspace" };
+
+        new ActivationOptionsValidator().Validate(null, options).Failed.Should().BeTrue();
+    }
 }

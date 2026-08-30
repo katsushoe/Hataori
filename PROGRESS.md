@@ -1,8 +1,9 @@
 # PROGRESS.md Version
-2026.08.26
+2026.08.31
 
 # 変更履歴
 
+- 2026.08.31: 3.1.12.0をRelease。MCP `list_projects`、未登録Project候補返却、Task登録前Project選択案内を実装し、179テストと実機Major Upgradeを検証。
 - 2026.08.26: 3.1.9.0をRelease。MCP Server Instructionsと`hataori_workflow` Promptを追加し、実機Major UpgradeとMCP配信を検証。
 - 2026.08.25: 3.1.8.0をRelease。MCP outputSchema契約修正とActivation既定値のBind時重複修正（新規Install起動クラッシュの原因）を反映。
 - 2026.08.18
@@ -27,27 +28,29 @@
 
 ### ≪Hataori≫
 
-| 機能 | 2026.08.16 | 2026.08.18 | 2026.08.25 | 2026.08.26 |
-| :--- | ---: | ---: | ---: | ---: |
-| **グループ全体** | **94%** | **96%** | **96%** | **96%** |
-| Server / Core / SQLite | 88% | 88% | 88% | 88% |
-| Itoguruma連携 | 98% | 98% | 98% | 98% |
-| Session / Activation | 100% | 100% | 100% | 100% |
-| Task管理 | 95% | 95% | 95% | 95% |
-| CLI | 97% | 98% | 98% | 98% |
-| Windows Service | 100% | 100% | 100% | 100% |
-| Monitor | 95% | 95% | 95% | 95% |
-| 運用・復旧 | 97% | 99% | 100% | 100% |
-| 文書・配布 | 75% | 90% | 90% | 90% |
-| テスト | 96% | 96% | 97% | 97% |
+| 機能 | 2026.08.16 | 2026.08.18 | 2026.08.25 | 2026.08.26 | 2026.08.31 |
+| :--- | ---: | ---: | ---: | ---: | ---: |
+| **グループ全体** | **94%** | **96%** | **96%** | **96%** | **97%** |
+| Server / Core / SQLite | 88% | 88% | 88% | 88% | 88% |
+| Itoguruma連携 | 98% | 98% | 98% | 98% | 98% |
+| Session / Activation | 100% | 100% | 100% | 100% | 100% |
+| Task管理 | 95% | 95% | 95% | 95% | 96% |
+| CLI | 97% | 98% | 98% | 98% | 98% |
+| Windows Service | 100% | 100% | 100% | 100% | 100% |
+| Monitor | 95% | 95% | 95% | 95% | 95% |
+| 運用・復旧 | 97% | 99% | 100% | 100% | 100% |
+| 文書・配布 | 75% | 90% | 90% | 90% | 94% |
+| テスト | 96% | 96% | 97% | 97% | 98% |
 
 ## 現在フェーズ
 
 Phase 1（基盤・必須運用機能）: **95%**
 
-算定: Core 88%、Itoguruma 98%、Session / Activation 100%、Task 95%、Monitor 95%の単純平均（95.2%）です。
+算定: Core 88%、Itoguruma 98%、Session / Activation 100%、Task 96%、Monitor 95%の単純平均（95.4%）です。
 
 ## 進捗予測メモ
+
+2026.08.31に3.1.12.0をリリースしました。登録済みProject IDを検索するMCP `list_projects`、未登録Project指定時の候補返却、Server Instructions・MCP Prompt・会話HookによるTask登録前Project選択案内を追加しました。Release構成buildは警告0件・エラー0件、自動テスト179件合格、MSI buildと3.1.11.0からの実機Major Upgradeは成功し、Codex／Claude CodeのMCP互換性と20ツール配信を確認済みです。検証記録は`docs/validation/2026-08-30-installer-3.1.12.0.md`です。
 
 設定・コマンド・運用文書の拡充が主要な残量です。GitHubと利用者向けREADME、MSIインストールガイド、英語・日本語MCPセットアップは整備済みです。Windows Serviceは標準`bin/config/logs/data`構成、SYSTEM・Administrators限定認証設定、x64 MSIのInstall・Major Upgrade・Uninstall保持、Automatic起動、Running、Itoguruma接続を実機確認済みです。Monitorはデータ入り表示、手動更新、異常時の案内・ログ、Itoguruma MCPの実接続状態表示を確認済みです。Codex CLI 0.147.0とClaude Code 2.1.220はstart・resume・Reply・ACKを実機確認し、自動テスト125件、Server、MCP、Hook、Graceful Shutdown、起動異常時の安全停止は確認済みです。
 
@@ -87,7 +90,8 @@ Phase 1（基盤・必須運用機能）: **95%**
 - [x] `hataori doctor`の`itoguruma`チェックがライブなServer状態を参照するよう修正（2026-08-19）
 - [x] 3.0.4.0 MSI Major Upgrade実機検証（2026-08-19）
 - [x] MCP Server Instructionsと`hataori_workflow` Prompt（3.1.9.0、2026-08-26）
-- [x] 自動テスト172件
+- [x] MCP `list_projects`、未登録Project候補返却、Task登録前Project選択案内（3.1.12.0、2026-08-31）
+- [x] 自動テスト179件
 
 ## 部分実装
 

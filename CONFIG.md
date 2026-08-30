@@ -221,7 +221,7 @@ Children: [`executablePath`](#agentsclaudecodeexecutablepath), [`permissionMode`
 
 ### `activation`
 
-Children: [`enabled`](#activationenabled), [`workingDirectory`](#activationworkingdirectory), [`pollIntervalMilliseconds`](#activationpollintervalmilliseconds), [`providerPriority`](#activationproviderpriority), and [`maxConcurrentRuns`](#activationmaxconcurrentruns).
+Children: [`enabled`](#activationenabled), [`workspaceId`](#activationworkspaceid), [`workingDirectory`](#activationworkingdirectory), [`pollIntervalMilliseconds`](#activationpollintervalmilliseconds), [`providerPriority`](#activationproviderpriority), and [`maxConcurrentRuns`](#activationmaxconcurrentruns).
 
 #### `activation.enabled`
 
@@ -237,6 +237,14 @@ Children: [`enabled`](#activationenabled), [`workingDirectory`](#activationworki
 - Constraint: when activation is enabled, it must be an existing absolute directory.
 - Behavior: projects root whose direct children are automatically registered and monitored in Itoguruma; each directory name is converted to invariant lowercase for the destination project ID, and project lookup is case-insensitive.
 - Example: `"workingDirectory": "F:\\Workspace\\Projects"`.
+
+#### `activation.workspaceId`
+
+- Type/required: string, optional.
+- Default: `"default"`.
+- Constraint: `^[a-z][a-z0-9]*$`; values are normalized to lowercase.
+- Behavior: identifies the workspace configured by `workingDirectory` in tasks, MCP tools, and Monitor snapshots.
+- Example: `"workspaceId": "default"`.
 
 #### `activation.pollIntervalMilliseconds`
 

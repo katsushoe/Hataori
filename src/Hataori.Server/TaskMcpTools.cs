@@ -24,6 +24,11 @@ public sealed class TaskMcpTools
     public Task<HataoriTask> StartAsync(string taskId, string taskName, string agentId, string? conversationId, string? originMessageId, string summary, string currentWork, CancellationToken cancellationToken)
         => _service.StartAsync(taskId, taskName, agentId, conversationId, originMessageId, summary, currentWork, cancellationToken);
 
+    [McpServerTool(Name = "task_start_in_workspace", Destructive = false, OpenWorld = false, UseStructuredContent = true)]
+    [Description("Starts a task in a registered workspace. Use list_workspaces before calling this tool.")]
+    public Task<HataoriTask> StartInWorkspaceAsync(string workspaceId, string taskId, string taskName, string agentId, string? conversationId, string? originMessageId, string summary, string currentWork, CancellationToken cancellationToken)
+        => _service.StartAsync(workspaceId, taskId, taskName, agentId, conversationId, originMessageId, summary, currentWork, cancellationToken);
+
     [McpServerTool(Name = "task_get", ReadOnly = true, OpenWorld = false, UseStructuredContent = true)]
     [Description("Gets a task by its unique identifier.")]
     public async Task<HataoriTask> GetAsync(string taskId, CancellationToken cancellationToken)
@@ -34,10 +39,20 @@ public sealed class TaskMcpTools
     public Task<IReadOnlyList<HataoriTask>> ListAsync(HataoriTaskStatus? status, string? agentId, CancellationToken cancellationToken)
         => _service.ListAsync(status, agentId, cancellationToken);
 
+    [McpServerTool(Name = "task_list_by_workspace", ReadOnly = true, OpenWorld = false, UseStructuredContent = true)]
+    [Description("Lists tasks in one workspace, optionally filtered by status and agent.")]
+    public Task<IReadOnlyList<HataoriTask>> ListByWorkspaceAsync(string workspaceId, HataoriTaskStatus? status, string? agentId, CancellationToken cancellationToken)
+        => _service.ListAsync(workspaceId, status, agentId, cancellationToken);
+
     [McpServerTool(Name = "task_find_conflicts", ReadOnly = true, OpenWorld = false, UseStructuredContent = true)]
     [Description("Finds other agents' active tasks that may overlap with a proposed task, by keyword match on name, summary, and current work. A best-effort hint, not authoritative.")]
     public Task<IReadOnlyList<HataoriTask>> FindConflictsAsync(string taskName, string? summary, string? agentId, CancellationToken cancellationToken)
         => _service.FindConflictsAsync(taskName, summary, agentId, cancellationToken);
+
+    [McpServerTool(Name = "task_find_conflicts_in_workspace", ReadOnly = true, OpenWorld = false, UseStructuredContent = true)]
+    [Description("Finds active task conflicts within one workspace.")]
+    public Task<IReadOnlyList<HataoriTask>> FindConflictsInWorkspaceAsync(string workspaceId, string taskName, string? summary, string? agentId, CancellationToken cancellationToken)
+        => _service.FindConflictsAsync(workspaceId, taskName, summary, agentId, cancellationToken);
 
     [McpServerTool(Name = "task_heartbeat", Destructive = false, Idempotent = true, OpenWorld = false, UseStructuredContent = true)]
     [Description("Updates the current work and progress percentage of an active task.")]
