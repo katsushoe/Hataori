@@ -25,7 +25,7 @@ public sealed class HookProcessorTests
 
         var result = HookProcessor.Process(input.RootElement, Snapshot([]), "conversation", "codex", null, "http://localhost/mcp");
 
-        JsonSerializer.Serialize(result.Payload).Should().Contain("list_projects");
+        JsonSerializer.Serialize(result.Payload).Should().Contain("list_workspaces").And.Contain("list_projects");
     }
 
     [Fact]
@@ -68,5 +68,5 @@ public sealed class HookProcessorTests
 
     private static MonitorSnapshot Snapshot(IReadOnlyList<MonitorTask> tasks) => new(tasks, [], [], [], 0, new MonitorSystemStatus("running", "connected", "running", "connected"));
 
-    private static MonitorTask Task(string taskId) => new(taskId, "Hook", "codex", "conversation", "active", "work", 0, DateTimeOffset.UtcNow);
+    private static MonitorTask Task(string taskId) => new("default", taskId, "Hook", "codex", "conversation", "active", "work", 0, DateTimeOffset.UtcNow);
 }

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using Hataori.Core.Workspaces;
 
 namespace Hataori.Server;
 
@@ -7,6 +8,14 @@ public sealed class ActivationOptionsValidator : IValidateOptions<ActivationOpti
     public ValidateOptionsResult Validate(string? name, ActivationOptions options)
     {
         var errors = new List<string>();
+        try
+        {
+            WorkspaceId.Normalize(options.WorkspaceId);
+        }
+        catch (ArgumentException exception)
+        {
+            errors.Add(exception.Message);
+        }
         if (options.Enabled && (string.IsNullOrWhiteSpace(options.WorkingDirectory) || !Path.IsPathFullyQualified(options.WorkingDirectory)))
         {
             errors.Add("Activation workingDirectory must be an absolute path when activation is enabled.");

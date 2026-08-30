@@ -23,6 +23,7 @@ public sealed class SqliteTaskRepository : ITaskRepository
         const string sql = """
             CREATE TABLE IF NOT EXISTS tasks (
                 task_id TEXT PRIMARY KEY,
+                workspace_id TEXT NOT NULL DEFAULT 'default',
                 task_name TEXT NOT NULL,
                 agent_id TEXT NOT NULL,
                 conversation_id TEXT NULL,
@@ -61,6 +62,9 @@ public sealed class SqliteTaskRepository : ITaskRepository
         await using var command = connection.CreateCommand();
         command.CommandText = sql;
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        await EnsureWorkspaceColumnAsync(connection, cancellationToken).ConfigureAwait(false);
+        command.CommandText = "CREATE INDEX IF NOT EXISTS ix_tasks_workspace_status_agent ON tasks(workspace_id, status, agent_id);";
+        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public async Task AddAsync(HataoriTask task, CancellationToken cancellationToken)
@@ -77,7 +81,7 @@ public sealed class SqliteTaskRepository : ITaskRepository
     public async Task<HataoriTask?> GetAsync(string taskId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(taskId);
-        const string sql = "SELECT task_id, task_name, agent_id, conversation_id, origin_message_id, status, summary, current_work, progress_percent, started_at_utc, last_activity_at_utc, completed_at_utc, result FROM tasks WHERE task_id = $task_id;";
+        const string sql = "SELECT workspace_id, task_id, task_name, agent_id, conversation_id, origin_message_id, status, summary, current_work, progress_percent, started_at_utc, last_activity_at_utc, completed_at_utc, result FROM tasks WHERE task_id = $task_id;";
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
         await using var command = connection.CreateCommand();
@@ -95,7 +99,7 @@ public sealed class SqliteTaskRepository : ITaskRepository
     public async Task<IReadOnlyList<HataoriTask>> ListAsync(HataoriTaskStatus? status, string? agentId, CancellationToken cancellationToken)
     {
         const string sql = """
-            SELECT task_id, task_name, agent_id, conversation_id, origin_message_id, status, summary, current_work, progress_percent, started_at_utc, last_activity_at_utc, completed_at_utc, result
+            SELECT workspace_id, task_id, task_name, agent_id, conversation_id, origin_message_id, status, summary, current_work, progress_percent, started_at_utc, last_activity_at_utc, completed_at_utc, result
             FROM tasks
             WHERE ($status IS NULL OR status = $status) AND ($agent_id IS NULL OR agent_id = $agent_id)
             ORDER BY started_at_utc DESC, task_id;
@@ -188,8 +192,8 @@ public sealed class SqliteTaskRepository : ITaskRepository
     private static async Task UpsertTaskAsync(SqliteConnection connection, System.Data.Common.DbTransaction transaction, HataoriTask task, CancellationToken cancellationToken)
     {
         const string sql = """
-            INSERT INTO tasks (task_id, task_name, agent_id, conversation_id, origin_message_id, status, summary, current_work, progress_percent, started_at_utc, last_activity_at_utc, completed_at_utc, result)
-            VALUES ($task_id, $task_name, $agent_id, $conversation_id, $origin_message_id, $status, $summary, $current_work, $progress_percent, $started_at_utc, $last_activity_at_utc, $completed_at_utc, $result)
+            INSERT INTO tasks (workspace_id, task_id, task_name, agent_id, conversation_id, origin_message_id, status, summary, current_work, progress_percent, started_at_utc, last_activity_at_utc, completed_at_utc, result)
+            VALUES ($workspace_id, $task_id, $task_name, $agent_id, $conversation_id, $origin_message_id, $status, $summary, $current_work, $progress_percent, $started_at_utc, $last_activity_at_utc, $completed_at_utc, $result)
             ON CONFLICT(task_id) DO UPDATE SET status=$status, summary=$summary, current_work=$current_work, progress_percent=$progress_percent, last_activity_at_utc=$last_activity_at_utc, completed_at_utc=$completed_at_utc, result=$result;
             """;
         await using var command = connection.CreateCommand();
@@ -218,6 +222,7 @@ public sealed class SqliteTaskRepository : ITaskRepository
 
     private static void AddParameters(SqliteCommand command, HataoriTask task)
     {
+        command.Parameters.AddWithValue("$workspace_id", task.WorkspaceId);
         command.Parameters.AddWithValue("$task_id", task.TaskId);
         command.Parameters.AddWithValue("$task_name", task.TaskName);
         command.Parameters.AddWithValue("$agent_id", task.AgentId);
@@ -235,9 +240,31 @@ public sealed class SqliteTaskRepository : ITaskRepository
 
     private static string? GetNullableString(SqliteDataReader reader, int ordinal) => reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
     private static HataoriTask ReadTask(SqliteDataReader reader) => HataoriTask.Restore(
-        reader.GetString(0), reader.GetString(1), reader.GetString(2), GetNullableString(reader, 3), GetNullableString(reader, 4),
-        Enum.Parse<HataoriTaskStatus>(reader.GetString(5), true), reader.GetString(6), reader.GetString(7), reader.GetInt32(8),
-        ParseDate(reader.GetString(9)), ParseDate(reader.GetString(10)), reader.IsDBNull(11) ? null : ParseDate(reader.GetString(11)), GetNullableString(reader, 12));
+        reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetString(3), GetNullableString(reader, 4), GetNullableString(reader, 5),
+        Enum.Parse<HataoriTaskStatus>(reader.GetString(6), true), reader.GetString(7), reader.GetString(8), reader.GetInt32(9),
+        ParseDate(reader.GetString(10)), ParseDate(reader.GetString(11)), reader.IsDBNull(12) ? null : ParseDate(reader.GetString(12)), GetNullableString(reader, 13));
+
+    private static async Task EnsureWorkspaceColumnAsync(SqliteConnection connection, CancellationToken cancellationToken)
+    {
+        await using var inspect = connection.CreateCommand();
+        inspect.CommandText = "PRAGMA table_info(tasks);";
+        await using var reader = await inspect.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        var exists = false;
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            exists |= string.Equals(reader.GetString(1), "workspace_id", StringComparison.Ordinal);
+        }
+
+        await reader.DisposeAsync().ConfigureAwait(false);
+        if (exists)
+        {
+            return;
+        }
+
+        await using var alter = connection.CreateCommand();
+        alter.CommandText = "ALTER TABLE tasks ADD COLUMN workspace_id TEXT NOT NULL DEFAULT 'default';";
+        await alter.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+    }
     private static string FormatDate(DateTimeOffset value) => value.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
     private static DateTimeOffset ParseDate(string value) => DateTimeOffset.ParseExact(value, "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
 }

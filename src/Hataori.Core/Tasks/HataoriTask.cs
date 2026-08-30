@@ -1,11 +1,14 @@
 namespace Hataori.Core.Tasks;
 
+using WorkspaceIdentifier = Hataori.Core.Workspaces.WorkspaceId;
+
 /// <summary>
 /// AI エージェントが実行する作業単位を表します。
 /// </summary>
 public sealed class HataoriTask
 {
     private HataoriTask(
+        string workspaceId,
         string taskId,
         string taskName,
         string agentId,
@@ -15,6 +18,7 @@ public sealed class HataoriTask
         string currentWork,
         DateTimeOffset startedAtUtc)
     {
+        WorkspaceId = WorkspaceIdentifier.Normalize(workspaceId);
         TaskId = taskId;
         TaskName = taskName;
         AgentId = agentId;
@@ -27,6 +31,7 @@ public sealed class HataoriTask
         LastActivityAtUtc = startedAtUtc;
     }
 
+    public string WorkspaceId { get; }
     public string TaskId { get; }
     public string TaskName { get; }
     public string AgentId { get; }
@@ -53,7 +58,21 @@ public sealed class HataoriTask
         string summary,
         string currentWork,
         DateTimeOffset startedAtUtc)
+        => Start(WorkspaceIdentifier.Default, taskId, taskName, agentId, conversationId, originMessageId, summary, currentWork, startedAtUtc);
+
+    /// <summary>指定Workspaceで新しいactive Taskを作成します。</summary>
+    public static HataoriTask Start(
+        string workspaceId,
+        string taskId,
+        string taskName,
+        string agentId,
+        string? conversationId,
+        string? originMessageId,
+        string summary,
+        string currentWork,
+        DateTimeOffset startedAtUtc)
     {
+        workspaceId = WorkspaceIdentifier.Normalize(workspaceId);
         ArgumentException.ThrowIfNullOrWhiteSpace(taskId);
         ArgumentException.ThrowIfNullOrWhiteSpace(taskName);
         ArgumentException.ThrowIfNullOrWhiteSpace(agentId);
@@ -61,6 +80,7 @@ public sealed class HataoriTask
         ArgumentNullException.ThrowIfNull(currentWork);
 
         return new HataoriTask(
+            workspaceId,
             taskId,
             taskName,
             agentId,
@@ -88,8 +108,26 @@ public sealed class HataoriTask
         DateTimeOffset lastActivityAtUtc,
         DateTimeOffset? completedAtUtc,
         string? result)
+        => Restore(WorkspaceIdentifier.Default, taskId, taskName, agentId, conversationId, originMessageId, status, summary, currentWork, progressPercent, startedAtUtc, lastActivityAtUtc, completedAtUtc, result);
+
+    /// <summary>指定Workspaceの永続化された値からTaskを復元します。</summary>
+    public static HataoriTask Restore(
+        string workspaceId,
+        string taskId,
+        string taskName,
+        string agentId,
+        string? conversationId,
+        string? originMessageId,
+        HataoriTaskStatus status,
+        string summary,
+        string currentWork,
+        int progressPercent,
+        DateTimeOffset startedAtUtc,
+        DateTimeOffset lastActivityAtUtc,
+        DateTimeOffset? completedAtUtc,
+        string? result)
     {
-        var task = Start(taskId, taskName, agentId, conversationId, originMessageId, summary, currentWork, startedAtUtc);
+        var task = Start(workspaceId, taskId, taskName, agentId, conversationId, originMessageId, summary, currentWork, startedAtUtc);
         ArgumentOutOfRangeException.ThrowIfLessThan(progressPercent, 0);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(progressPercent, 100);
         task.Status = status;

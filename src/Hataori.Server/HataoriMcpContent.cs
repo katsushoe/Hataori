@@ -10,7 +10,7 @@ public static class HataoriMcpInstructions
     public const string Text = """
         Hataori coordinates work performed by Codex Desktop, Codex CLI, and Claude Code on this Windows machine. It tracks tasks, progress, relationships, conversation sessions, messages, and agent runs so agents can avoid duplicate work and leave an auditable history.
 
-        For every conversation, before task registration, call list_projects to find candidate project IDs and select the registered project that matches the work. Then call task_list and task_find_conflicts, followed by task_start with a stable task ID. While working, call task_heartbeat with an explicit progress percentage. Finish with task_complete, task_fail, or task_cancel. Use task_get, task_history, and task_relations to inspect state. Use agent-run and provider-priority tools only when agent execution or provider selection is part of the requested work.
+        For every conversation, before task registration, call list_workspaces and then list_projects to find candidate project IDs and select the registered project that matches the work. Use task_list_by_workspace and task_find_conflicts_in_workspace, followed by task_start_in_workspace with a stable task ID. The legacy task_list, task_find_conflicts, and task_start tools operate in the default workspace. While working, call task_heartbeat with an explicit progress percentage. Finish with task_complete, task_fail, or task_cancel. Use task_get, task_history, and task_relations to inspect state. Use agent-run and provider-priority tools only when agent execution or provider selection is part of the requested work.
 
         Hataori is the task and agent-run coordinator. It does not replace project-specific instructions, source control procedures, tests, or direct project-to-project communication through Itoguruma. Do not place Itoguruma credentials in Hataori MCP requests or client settings.
 
@@ -32,9 +32,9 @@ public sealed class HataoriMcpPrompts
         return $"""
             Coordinate this work with Hataori: {work}
 
-            1. Call list_projects and select the registered project ID that matches this conversation's work before registering a task.
-            2. Read the active task list and check for conflicting work before changing files.
-            3. If there is no conflict, start one task with a stable task ID, clear summary, current work, and agent identity.
+            1. Call list_workspaces, then call list_projects and select the registered project ID that matches this conversation's work before registering a task.
+            2. Read the workspace's active task list and check for conflicting work before changing files.
+            3. If there is no conflict, start one task in the selected workspace with a stable task ID, clear summary, current work, and agent identity.
             4. Follow the repository's own instructions and keep changes within the requested project scope.
             5. Send task heartbeats during meaningful progress updates; always include an explicit progress percentage from 0 through 100.
             6. Inspect task history or relationships when prior work or dependencies matter.

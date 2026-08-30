@@ -21,6 +21,7 @@ public sealed record MonitorSnapshot(
 
 /// <summary>Monitorへ返すタスク表示情報です。</summary>
 public sealed record MonitorTask(
+    string WorkspaceId,
     string TaskId,
     string TaskName,
     string AgentId,

@@ -10,6 +10,8 @@ public sealed class HataoriMcpContentTests
     {
         HataoriMcpInstructions.Text.Should().Contain("coordinates work");
         HataoriMcpInstructions.Text.Should().Contain("list_projects");
+        HataoriMcpInstructions.Text.Should().Contain("list_workspaces");
+        HataoriMcpInstructions.Text.Should().Contain("task_start_in_workspace");
         HataoriMcpInstructions.Text.Should().Contain("task_find_conflicts");
         HataoriMcpInstructions.Text.Should().Contain("task_heartbeat");
         HataoriMcpInstructions.Text.Should().Contain("Itoguruma");
@@ -22,6 +24,7 @@ public sealed class HataoriMcpContentTests
 
         result.Should().Contain("Server Instructionsを実装する");
         result.Should().Contain("list_projects");
+        result.Should().Contain("list_workspaces");
         result.Should().Contain("start one task");
         result.Should().Contain("explicit progress percentage");
         result.Should().Contain("Complete the task");

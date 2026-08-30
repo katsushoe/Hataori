@@ -36,6 +36,31 @@ public sealed class ProjectMcpToolsTests : IDisposable
             .WithMessage("*Registered project candidates: hataori, kotodama.*");
     }
 
+    [Fact]
+    public void ListWorkspaces_ConfiguredRoot_ReturnsWorkspaceAndProjects()
+    {
+        Directory.CreateDirectory(Path.Combine(_projectsRoot, "Hataori"));
+        var tools = new ProjectMcpTools(
+            new AgentProviderSelector(Array.Empty<IAgentDriver>()),
+            Options.Create(new ActivationOptions { WorkspaceId = "Main", WorkingDirectory = _projectsRoot }));
+
+        var workspace = tools.ListWorkspaces().Should().ContainSingle().Subject;
+
+        workspace.WorkspaceId.Should().Be("main");
+        workspace.WorkingDirectory.Should().Be(Path.GetFullPath(_projectsRoot));
+        workspace.ProjectIds.Should().Equal("hataori");
+    }
+
+    [Fact]
+    public void List_NoConfiguredRoot_ReturnsEmpty()
+    {
+        var tools = new ProjectMcpTools(
+            new AgentProviderSelector(Array.Empty<IAgentDriver>()),
+            Options.Create(new ActivationOptions()));
+
+        tools.List(null).Should().BeEmpty();
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_projectsRoot))
