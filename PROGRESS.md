@@ -3,6 +3,7 @@
 
 # 変更履歴
 
+- 2026.08.31: 3.1.13.0をRelease。Workspace単位のTask管理、`list_workspaces`、SQLite移行、Monitor・会話Hook連携を実装し、189テストと実機Major Upgradeを検証。
 - 2026.08.31: 3.1.12.0をRelease。MCP `list_projects`、未登録Project候補返却、Task登録前Project選択案内を実装し、179テストと実機Major Upgradeを検証。
 - 2026.08.26: 3.1.9.0をRelease。MCP Server Instructionsと`hataori_workflow` Promptを追加し、実機Major UpgradeとMCP配信を検証。
 - 2026.08.25: 3.1.8.0をRelease。MCP outputSchema契約修正とActivation既定値のBind時重複修正（新規Install起動クラッシュの原因）を反映。
@@ -34,21 +35,23 @@
 | Server / Core / SQLite | 88% | 88% | 88% | 88% | 88% |
 | Itoguruma連携 | 98% | 98% | 98% | 98% | 98% |
 | Session / Activation | 100% | 100% | 100% | 100% | 100% |
-| Task管理 | 95% | 95% | 95% | 95% | 96% |
+| Task管理 | 95% | 95% | 95% | 95% | 97% |
 | CLI | 97% | 98% | 98% | 98% | 98% |
 | Windows Service | 100% | 100% | 100% | 100% | 100% |
-| Monitor | 95% | 95% | 95% | 95% | 95% |
+| Monitor | 95% | 95% | 95% | 95% | 96% |
 | 運用・復旧 | 97% | 99% | 100% | 100% | 100% |
-| 文書・配布 | 75% | 90% | 90% | 90% | 94% |
-| テスト | 96% | 96% | 97% | 97% | 98% |
+| 文書・配布 | 75% | 90% | 90% | 90% | 95% |
+| テスト | 96% | 96% | 97% | 97% | 99% |
 
 ## 現在フェーズ
 
-Phase 1（基盤・必須運用機能）: **95%**
+Phase 1（基盤・必須運用機能）: **96%**
 
-算定: Core 88%、Itoguruma 98%、Session / Activation 100%、Task 96%、Monitor 95%の単純平均（95.4%）です。
+算定: Core 88%、Itoguruma 98%、Session / Activation 100%、Task 97%、Monitor 96%の単純平均（95.8%）です。
 
 ## 進捗予測メモ
+
+2026.08.31に3.1.13.0をリリースしました。Workspace ID、Workspace単位のTask登録・一覧・競合検索、MCP `list_workspaces`、既存SQLite Taskの`default` Workspace移行、Monitor Task・会話Hook連携を追加しました。Release構成buildは警告0件・エラー0件、自動テスト189件合格、MSI buildと実機Major Upgradeは成功し、CLI 3.1.13.0、Windows Service Running / Automatic、MCP 24ツールを確認済みです。実機設定へ`activation.workspaceId=default`と`activation.workingDirectory=F:\Workspace\Projects`を反映し、`list_workspaces`で27 Project、`list_projects`で`hataori`候補を確認しました。検証記録は`docs/validation/2026-08-31-installer-3.1.13.0.md`です。Session・Message・Agent RunへのWorkspace ID伝播は、複数Workspace同時稼働を導入する将来段階へ延期しています。
 
 2026.08.31に3.1.12.0をリリースしました。登録済みProject IDを検索するMCP `list_projects`、未登録Project指定時の候補返却、Server Instructions・MCP Prompt・会話HookによるTask登録前Project選択案内を追加しました。Release構成buildは警告0件・エラー0件、自動テスト179件合格、MSI buildと3.1.11.0からの実機Major Upgradeは成功し、Codex／Claude CodeのMCP互換性と20ツール配信を確認済みです。検証記録は`docs/validation/2026-08-30-installer-3.1.12.0.md`です。
 
@@ -91,7 +94,8 @@ Phase 1（基盤・必須運用機能）: **95%**
 - [x] 3.0.4.0 MSI Major Upgrade実機検証（2026-08-19）
 - [x] MCP Server Instructionsと`hataori_workflow` Prompt（3.1.9.0、2026-08-26）
 - [x] MCP `list_projects`、未登録Project候補返却、Task登録前Project選択案内（3.1.12.0、2026-08-31）
-- [x] 自動テスト179件
+- [x] Workspace単位のTask管理、MCP `list_workspaces`、SQLite移行、Monitor・会話Hook連携（3.1.13.0、2026-08-31）
+- [x] 自動テスト189件
 
 ## 部分実装
 
