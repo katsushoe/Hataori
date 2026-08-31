@@ -25,6 +25,18 @@ public sealed class SqliteMessageQueueRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task EnqueueAsync_WorkspaceMessage_RestoresWorkspace()
+    {
+        var repository = CreateRepository();
+        await repository.InitializeAsync(CancellationToken.None);
+        var source = CreateMessage("workspace-message", "body") with { WorkspaceId = "alpha" };
+
+        await repository.EnqueueAsync(source, 0, CancellationToken.None);
+
+        (await repository.GetQueuedAsync("workspace-message", CancellationToken.None))!.Message.WorkspaceId.Should().Be("alpha");
+    }
+
+    [Fact]
     public async Task TryClaimNextAsync_SamePriority_ClaimsInFifoOrder()
     {
         var repository = CreateRepository();
@@ -133,7 +145,7 @@ public sealed class SqliteMessageQueueRepositoryTests : IDisposable
             columns.Add(reader.GetString(1));
         }
 
-        columns.Should().Contain(["reply_attempt_count", "next_reply_attempt_at_utc", "reply_error", "reply_message_id"]);
+        columns.Should().Contain(["reply_attempt_count", "next_reply_attempt_at_utc", "reply_error", "reply_message_id", "workspace_id"]);
     }
 
     public void Dispose()

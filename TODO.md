@@ -3,6 +3,7 @@
 
 # 変更履歴
 
+- 2026.08.31: Workspace管理v2としてSession・Message・Agent Runへ`workspace_id`を伝播し、既存SQLiteデータ移行とCLI Workspace filterを実装。
 - 2026.08.31: 3.1.13.0をRelease。Workspace単位のTask管理、`list_workspaces`、SQLite移行、Monitor・会話Hook連携を実装し、189テストと実機Major Upgradeを検証。
 - 2026.08.31: 3.1.12.0をRelease。MCP `list_projects`、未登録Project候補返却、Task登録前Project選択案内を実装し、179テストと実機Major Upgradeを検証。
 - 2026.08.29: Agent Run作成前の異常終了で孤立したactive Messageを起動時にfailedへ復旧し、Reply Retry待機中Messageを保護するSession recovery強化を実装。
@@ -75,7 +76,7 @@ Obsidian「Hataori 全仕様書」143節の11項目に対する実装状況（20
 - [X] Task conflict detection強化（`task_find_conflicts` MCP toolを実装。CJK bigramベースの簡易キーワード一致、参考情報扱い）
 - [X] Session recovery強化（Agent Run作成前に孤立したactive Messageの失敗復旧とReply Retry待機中Messageの保護を実装）
 - [X] Project候補検索（MCP `list_projects`、未登録Project指定時の候補返却、Task登録前の選択案内を実装）
-- [X] Workspace管理v1（Taskへ`workspace_id`を導入し、`list_workspaces`、Workspace単位のTask MCP、SQLite移行、Monitor・会話Hook連携を実装。Session・Message・Agent Runへの伝播と複数Workspace同時稼働は将来段階へ延期、`docs/adr/0020-workspace-scoped-task-coordination.md`参照）
+- [X] Workspace管理v2（Task・Session・Message・Agent Runへ`workspace_id`を導入し、`list_workspaces`、Workspace単位のTask MCP、SQLite移行、Monitor・会話Hook・CLI filterへ伝播。複数Activation rootの設定モデルは将来段階、`docs/adr/0020-workspace-scoped-task-coordination.md`参照）
 - [ ] Monitor管理操作（Monitorは引き続き読み取り専用）
 - [ ] Agent definitions DB化（Agent定義は設定fileのまま）
 - [ ] 詳細なMetrics

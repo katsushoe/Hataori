@@ -3,6 +3,7 @@
 
 # 変更履歴
 
+- 2026.08.31: Workspace管理v2を実装。Session・Message・Agent RunへWorkspace IDを伝播し、既存SQLite移行、Monitor表示、CLI filter、193テストを検証。
 - 2026.08.31: 3.1.13.0をRelease。Workspace単位のTask管理、`list_workspaces`、SQLite移行、Monitor・会話Hook連携を実装し、189テストと実機Major Upgradeを検証。
 - 2026.08.31: 3.1.12.0をRelease。MCP `list_projects`、未登録Project候補返却、Task登録前Project選択案内を実装し、179テストと実機Major Upgradeを検証。
 - 2026.08.26: 3.1.9.0をRelease。MCP Server Instructionsと`hataori_workflow` Promptを追加し、実機Major UpgradeとMCP配信を検証。
@@ -51,7 +52,9 @@ Phase 1（基盤・必須運用機能）: **96%**
 
 ## 進捗予測メモ
 
-2026.08.31に3.1.13.0をリリースしました。Workspace ID、Workspace単位のTask登録・一覧・競合検索、MCP `list_workspaces`、既存SQLite Taskの`default` Workspace移行、Monitor Task・会話Hook連携を追加しました。Release構成buildは警告0件・エラー0件、自動テスト189件合格、MSI buildと実機Major Upgradeは成功し、CLI 3.1.13.0、Windows Service Running / Automatic、MCP 24ツールを確認済みです。実機設定へ`activation.workspaceId=default`と`activation.workingDirectory=F:\Workspace\Projects`を反映し、`list_workspaces`で27 Project、`list_projects`で`hataori`候補を確認しました。検証記録は`docs/validation/2026-08-31-installer-3.1.13.0.md`です。Session・Message・Agent RunへのWorkspace ID伝播は、複数Workspace同時稼働を導入する将来段階へ延期しています。
+2026.08.31に3.1.13.0をリリースしました。Workspace ID、Workspace単位のTask登録・一覧・競合検索、MCP `list_workspaces`、既存SQLite Taskの`default` Workspace移行、Monitor Task・会話Hook連携を追加しました。Release構成buildは警告0件・エラー0件、自動テスト189件合格、MSI buildと実機Major Upgradeは成功し、CLI 3.1.13.0、Windows Service Running / Automatic、MCP 24ツールを確認済みです。実機設定へ`activation.workspaceId=default`と`activation.workingDirectory=F:\Workspace\Projects`を反映し、`list_workspaces`で27 Project、`list_projects`で`hataori`候補を確認しました。検証記録は`docs/validation/2026-08-31-installer-3.1.13.0.md`です。3.1.13.0のRelease時点では、Session・Message・Agent RunへのWorkspace ID伝播は未実装でした。
+
+同日、Workspace管理v2としてSession・Message・Agent RunへWorkspace IDを伝播しました。既存Session tableは複合主キーを含む新tableへtransaction内で移行し、既存Message・Agent Runは`default`へ移行します。同一Conversation IDを異なるWorkspaceで独立保持でき、ActivationのMutexもWorkspace単位で分離します。Agent Run、Conversation、QueueのCLI一覧・取得は`--workspace` filterへ対応し、自動テスト193件が合格しました。複数Activation rootを同時構成する設定モデルは未導入です。
 
 2026.08.31に3.1.12.0をリリースしました。登録済みProject IDを検索するMCP `list_projects`、未登録Project指定時の候補返却、Server Instructions・MCP Prompt・会話HookによるTask登録前Project選択案内を追加しました。Release構成buildは警告0件・エラー0件、自動テスト179件合格、MSI buildと3.1.11.0からの実機Major Upgradeは成功し、Codex／Claude CodeのMCP互換性と20ツール配信を確認済みです。検証記録は`docs/validation/2026-08-30-installer-3.1.12.0.md`です。
 
@@ -95,7 +98,8 @@ Phase 1（基盤・必須運用機能）: **96%**
 - [x] MCP Server Instructionsと`hataori_workflow` Prompt（3.1.9.0、2026-08-26）
 - [x] MCP `list_projects`、未登録Project候補返却、Task登録前Project選択案内（3.1.12.0、2026-08-31）
 - [x] Workspace単位のTask管理、MCP `list_workspaces`、SQLite移行、Monitor・会話Hook連携（3.1.13.0、2026-08-31）
-- [x] 自動テスト189件
+- [x] Workspace管理v2（Session・Message・Agent Run、SQLite移行、Monitor、CLI filter、2026-08-31）
+- [x] 自動テスト193件
 
 ## 部分実装
 

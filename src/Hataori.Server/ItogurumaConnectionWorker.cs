@@ -125,7 +125,8 @@ public sealed class ItogurumaConnectionWorker(
             message.MessageType,
             message.Body,
             message.PayloadJson,
-            message.CreatedAt);
+            message.CreatedAt,
+            activation.WorkspaceId);
         var inserted = await messageQueue.EnqueueAsync(incoming, 0, cancellationToken).ConfigureAwait(false);
         var acknowledged = await client.AcknowledgeAsync(agentId, message.MessageId, cancellationToken).ConfigureAwait(false);
         if (!acknowledged)

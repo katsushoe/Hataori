@@ -1,9 +1,12 @@
 namespace Hataori.Core.Runs;
 
+using WorkspaceIdentifier = Hataori.Core.Workspaces.WorkspaceId;
+
 public sealed class AgentRun
 {
-    private AgentRun(string runId, string messageId, string conversationId, string agentId, DateTimeOffset queuedAtUtc)
+    private AgentRun(string workspaceId, string runId, string messageId, string conversationId, string agentId, DateTimeOffset queuedAtUtc)
     {
+        WorkspaceId = WorkspaceIdentifier.Normalize(workspaceId);
         RunId = runId;
         MessageId = messageId;
         ConversationId = conversationId;
@@ -12,6 +15,7 @@ public sealed class AgentRun
         QueuedAtUtc = queuedAtUtc.ToUniversalTime();
     }
 
+    public string WorkspaceId { get; }
     public string RunId { get; }
     public string MessageId { get; }
     public string ConversationId { get; }
@@ -27,20 +31,30 @@ public sealed class AgentRun
     public string? Error { get; private set; }
 
     public static AgentRun Queue(string runId, string messageId, string conversationId, string agentId, DateTimeOffset queuedAtUtc)
+        => Queue(WorkspaceIdentifier.Default, runId, messageId, conversationId, agentId, queuedAtUtc);
+
+    public static AgentRun Queue(string workspaceId, string runId, string messageId, string conversationId, string agentId, DateTimeOffset queuedAtUtc)
     {
+        workspaceId = WorkspaceIdentifier.Normalize(workspaceId);
         ArgumentException.ThrowIfNullOrWhiteSpace(runId);
         ArgumentException.ThrowIfNullOrWhiteSpace(messageId);
         ArgumentException.ThrowIfNullOrWhiteSpace(conversationId);
         ArgumentException.ThrowIfNullOrWhiteSpace(agentId);
-        return new AgentRun(runId, messageId, conversationId, agentId, queuedAtUtc);
+        return new AgentRun(workspaceId, runId, messageId, conversationId, agentId, queuedAtUtc);
     }
 
     public static AgentRun Restore(
         string runId, string messageId, string conversationId, string agentId, string? nativeSessionId,
         int? processId, AgentRunStatus status, DateTimeOffset queuedAtUtc, DateTimeOffset? startedAtUtc,
         DateTimeOffset? endedAtUtc, int? exitCode, string? finalMessage, string? error)
+        => Restore(WorkspaceIdentifier.Default, runId, messageId, conversationId, agentId, nativeSessionId, processId, status, queuedAtUtc, startedAtUtc, endedAtUtc, exitCode, finalMessage, error);
+
+    public static AgentRun Restore(
+        string workspaceId, string runId, string messageId, string conversationId, string agentId, string? nativeSessionId,
+        int? processId, AgentRunStatus status, DateTimeOffset queuedAtUtc, DateTimeOffset? startedAtUtc,
+        DateTimeOffset? endedAtUtc, int? exitCode, string? finalMessage, string? error)
     {
-        var run = Queue(runId, messageId, conversationId, agentId, queuedAtUtc);
+        var run = Queue(workspaceId, runId, messageId, conversationId, agentId, queuedAtUtc);
         run.NativeSessionId = nativeSessionId;
         run.ProcessId = processId;
         run.Status = status;

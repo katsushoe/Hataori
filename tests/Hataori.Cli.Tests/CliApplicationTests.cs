@@ -161,9 +161,9 @@ public sealed class CliApplicationTests : IDisposable
     {
         var repository = new SqliteAgentRunRepository(GetConnectionString());
         await repository.InitializeAsync(CancellationToken.None);
-        await repository.AddAsync(AgentRun.Queue("run-1", "message-1", "conversation-1", "codex", DateTimeOffset.UtcNow), CancellationToken.None);
+        await repository.AddAsync(AgentRun.Queue("alpha", "run-1", "message-1", "conversation-1", "codex", DateTimeOffset.UtcNow), CancellationToken.None);
 
-        var response = await RunAsync("agent", "runs", "--database", _databasePath, "--agent", "codex");
+        var response = await RunAsync("agent", "runs", "--database", _databasePath, "--agent", "codex", "--workspace", "alpha");
 
         response.ExitCode.Should().Be(0);
         using var document = JsonDocument.Parse(response.Output);
@@ -176,9 +176,9 @@ public sealed class CliApplicationTests : IDisposable
     {
         var repository = new SqliteConversationSessionRepository(GetConnectionString());
         await repository.InitializeAsync(CancellationToken.None);
-        await repository.SaveAsync(ConversationSession.Create("conversation-1", "codex", "session-1", DateTimeOffset.UtcNow), CancellationToken.None);
+        await repository.SaveAsync(ConversationSession.Create("alpha", "conversation-1", "codex", "session-1", DateTimeOffset.UtcNow), CancellationToken.None);
 
-        var response = await RunAsync("conversation", "list", "--database", _databasePath, "--agent", "codex");
+        var response = await RunAsync("conversation", "list", "--database", _databasePath, "--agent", "codex", "--workspace", "alpha");
 
         response.ExitCode.Should().Be(0);
         using var document = JsonDocument.Parse(response.Output);
@@ -191,10 +191,10 @@ public sealed class CliApplicationTests : IDisposable
     {
         var repository = new SqliteMessageQueueRepository(GetConnectionString());
         await repository.InitializeAsync(CancellationToken.None);
-        var message = new IncomingMessage("message-1", "conversation-1", "codex", Directory.GetCurrentDirectory(), "sender", null, "prompt", "body", null, DateTimeOffset.UtcNow);
+        var message = new IncomingMessage("message-1", "conversation-1", "codex", Directory.GetCurrentDirectory(), "sender", null, "prompt", "body", null, DateTimeOffset.UtcNow, "alpha");
         await repository.EnqueueAsync(message, 0, CancellationToken.None);
 
-        var response = await RunAsync("queue", "list", "--database", _databasePath, "--agent", "codex");
+        var response = await RunAsync("queue", "list", "--database", _databasePath, "--agent", "codex", "--workspace", "alpha");
 
         response.ExitCode.Should().Be(0);
         using var document = JsonDocument.Parse(response.Output);
