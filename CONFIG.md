@@ -270,6 +270,8 @@ Children: [`enabled`](#activationenabled), [`workspaces`](#activationworkspaces)
 
 #### `activation.maxConcurrentRuns`
 
+This map bootstraps Agent definitions only when a workspace has no persisted definitions. After initialization, SQLite Agent definitions are the source of truth; use `hataori agent set` and restart the service to apply changes.
+
 - Type/required: object/dictionary of agent ID to integer, conditionally required.
 - Default: `{"codex": 2, "claude-code": 2}` in the generated file.
 - Constraint: when activation is enabled, at least one non-empty key is required; every value must be `1` through `32`.

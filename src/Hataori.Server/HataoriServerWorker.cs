@@ -6,6 +6,8 @@ using Hataori.Application.Control;
 using Hataori.Application.Tasks;
 using Hataori.Application.Sessions;
 using Hataori.Application.Runs;
+using Hataori.Application.Agents;
+using Hataori.Application.Activation;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -26,17 +28,25 @@ public sealed class HataoriServerWorker : BackgroundService
     private readonly ITaskRepository _repository;
     private readonly IConversationSessionRepository _sessionRepository;
     private readonly IAgentRunRepository _runRepository;
+    private readonly IAgentDefinitionRepository _agentDefinitionRepository;
+    private readonly AgentDefinitionService _agentDefinitionService;
+    private readonly IReadOnlyList<IAgentDriver> _agentDrivers;
+    private readonly ActivationOptions _activationOptions;
     private readonly ControlCommandHandler _handler;
     private readonly DatabaseInitializationGate _initializationGate;
     private readonly IHostApplicationLifetime _applicationLifetime;
     private readonly ServerOptions _options;
     private readonly ILogger<HataoriServerWorker> _logger;
 
-    public HataoriServerWorker(ITaskRepository repository, IConversationSessionRepository sessionRepository, IAgentRunRepository runRepository, ControlCommandHandler handler, DatabaseInitializationGate initializationGate, IHostApplicationLifetime applicationLifetime, IOptions<ServerOptions> options, ILogger<HataoriServerWorker> logger)
+    public HataoriServerWorker(ITaskRepository repository, IConversationSessionRepository sessionRepository, IAgentRunRepository runRepository, IAgentDefinitionRepository agentDefinitionRepository, AgentDefinitionService agentDefinitionService, IEnumerable<IAgentDriver> agentDrivers, IOptions<ActivationOptions> activationOptions, ControlCommandHandler handler, DatabaseInitializationGate initializationGate, IHostApplicationLifetime applicationLifetime, IOptions<ServerOptions> options, ILogger<HataoriServerWorker> logger)
     {
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(sessionRepository);
         ArgumentNullException.ThrowIfNull(runRepository);
+        ArgumentNullException.ThrowIfNull(agentDefinitionRepository);
+        ArgumentNullException.ThrowIfNull(agentDefinitionService);
+        ArgumentNullException.ThrowIfNull(agentDrivers);
+        ArgumentNullException.ThrowIfNull(activationOptions);
         ArgumentNullException.ThrowIfNull(handler);
         ArgumentNullException.ThrowIfNull(initializationGate);
         ArgumentNullException.ThrowIfNull(applicationLifetime);
@@ -45,6 +55,10 @@ public sealed class HataoriServerWorker : BackgroundService
         _repository = repository;
         _sessionRepository = sessionRepository;
         _runRepository = runRepository;
+        _agentDefinitionRepository = agentDefinitionRepository;
+        _agentDefinitionService = agentDefinitionService;
+        _agentDrivers = agentDrivers.ToArray();
+        _activationOptions = activationOptions.Value;
         _handler = handler;
         _initializationGate = initializationGate;
         _applicationLifetime = applicationLifetime;
@@ -59,6 +73,8 @@ public sealed class HataoriServerWorker : BackgroundService
             await _repository.InitializeAsync(stoppingToken).ConfigureAwait(false);
             await _sessionRepository.InitializeAsync(stoppingToken).ConfigureAwait(false);
             await _runRepository.InitializeAsync(stoppingToken).ConfigureAwait(false);
+            await _agentDefinitionRepository.InitializeAsync(stoppingToken).ConfigureAwait(false);
+            await SeedAgentDefinitionsAsync(stoppingToken).ConfigureAwait(false);
             _initializationGate.Complete();
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -100,6 +116,23 @@ public sealed class HataoriServerWorker : BackgroundService
         }
 
         _logger.LogInformation(Hataori.Application.Localization.DisplayLanguage.Text("[停止][ControlPipe] Hataori Serverを停止しました", "[Shutdown][ControlPipe] Hataori Server stopped"));
+    }
+
+    private async Task SeedAgentDefinitionsAsync(CancellationToken cancellationToken)
+    {
+        foreach (var workspace in ActivationWorkspaceResolver.Resolve(_activationOptions))
+        {
+            if ((await _agentDefinitionRepository.ListAsync(workspace.WorkspaceId, cancellationToken).ConfigureAwait(false)).Count > 0)
+            {
+                continue;
+            }
+
+            foreach (var driver in _agentDrivers)
+            {
+                var maxRuns = _activationOptions.MaxConcurrentRuns.GetValueOrDefault(driver.AgentType);
+                await _agentDefinitionService.SetAsync(workspace.WorkspaceId, driver.AgentType, true, maxRuns, cancellationToken).ConfigureAwait(false);
+            }
+        }
     }
 
     private async Task AcceptClientAsync(CancellationToken cancellationToken)

@@ -11,7 +11,7 @@
 | [Server](#server-commands) | `start`、`stop`、`restart`、`status` | 実行fileとControl Pipeによるforeground Server管理。 |
 | [Service](#service-commands) | `service setup/install/uninstall/start/stop/restart/status` | Windows Service設定と制御。 |
 | [Task](#task-commands) | `task start/get/list/find-conflicts/heartbeat/complete/cancel/fail/expire/history/relation-add/relations` | 永続TaskとRelation管理。 |
-| [Agent](#agent-commands) | `agent list/status/runs` | 設定済みAgentとRun参照。 |
+| [Agent](#agent-commands) | `agent list/status/set/history/runs` | 永続化Agent定義の管理とRun参照。 |
 | [Conversation](#conversation-commands) | `conversation list/get/reset` | Conversation Session参照と無効化。 |
 | [Queue](#queue-commands) | `queue list/get/retry/cancel` | Queue Message参照と操作。 |
 | [Database](#database-commands) | `db status/integrity` | 読み取り専用SQLite診断。 |
@@ -269,19 +269,31 @@ Command: [`list`](#hataori-agent-list)、[`status`](#hataori-agent-status)、[`r
 #### `hataori agent list`
 
 - 目的: 設定済みAgent summaryを一覧化します。
-- 構文: `hataori agent list --database <path> [--config <path>]`。
+- 構文: `hataori agent list --database <path> [--workspace <id>]`。
 - 引数: DB必須です。
 - 処理・戻り値: Driver設定、Activation上限、Running件数を統合し、`agent_id/enabled/running/max_runs` arrayを返します。
-- 例: `hataori agent list --database F:\Hataori\data\hataori.db`。
+- 例: `hataori agent list --database C:\Hataori\data\hataori.db --workspace default`。
 - 安全: 読み取り専用です。
 
 #### `hataori agent status`
 
 - 目的: 1 Agent summaryを読みます。
-- 構文: `hataori agent status <agent-id> --database <path> [--config <path>]`。
+- 構文: `hataori agent status <agent-id> --database <path> [--workspace <id>]`。
 - 引数: Agent IDは位置引数または`--agent`、DB必須です。
 - 処理・戻り値: Codex/Claude設定から一致summaryを返し、未知Agentは終了`4`です。
-- 例: `hataori agent status codex --database F:\Hataori\data\hataori.db`。
+- 例: `hataori agent status codex --database C:\Hataori\data\hataori.db --workspace default`。
+
+#### `hataori agent set`
+
+- 用途: Workspace単位のAgent定義を登録・更新し、監査履歴を追加します。laneへの反映にはService再起動が必要です。
+- 構文: `hataori agent set <agent-id> --enabled <true|false> --max-runs <0..64> --database <path> [--workspace <id>]`。
+- 例: `hataori agent set claude-code --enabled true --max-runs 2 --database C:\Hataori\data\hataori.db`。
+
+#### `hataori agent history`
+
+- 用途: Workspace単位のAgent定義に対する監査履歴を一覧します。
+- 構文: `hataori agent history <agent-id> --database <path> [--workspace <id>]`。
+- 例: `hataori agent history claude-code --database C:\Hataori\data\hataori.db`。
 - 安全: 読み取り専用です。
 
 #### `hataori agent runs`

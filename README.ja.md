@@ -2,7 +2,7 @@
 
 [English](README.md) | [日本語](README.ja.md)
 
-Hataoriは、Codex Desktop、Codex CLI、Claude Codeを調整するWindows向けローカル実行サービスです。Task、Conversation Session、Message、Agent RunをSQLiteへ永続化し、Itoguruma連携、Streamable HTTP MCP Server、管理CLI、状態表示とキャンセル操作を備えたMonitorを提供します。Codex宛MessageはCodex Desktop内の固定受信Taskが期限付きで取得し、保存済みProject配下へ表示可能なTaskを作成します。
+Hataoriは、Codex Desktop、Codex CLI、Claude Codeを調整するWindows向けローカル実行サービスです。Task、Conversation Session、Message、Agent定義、Agent RunをSQLiteへ永続化し、Itoguruma連携、Streamable HTTP MCP Server、管理CLI、状態表示とキャンセル操作を備えたMonitorを提供します。Codex宛MessageはCodex Desktop内の固定受信Taskが期限付きで取得し、保存済みProject配下へ表示可能なTaskを作成します。
 
 ## Getting Started
 
@@ -25,7 +25,7 @@ hataori mcp status
 標準成果物は自己完結型Windows x64 MSIです。ダブルクリックしてUACを承認するか、管理者ターミナルから任意のインストール先を指定します。
 
 ```powershell
-msiexec.exe /i Hataori-3.1.16.0-x64.msi INSTALL_ROOT="C:\Hataori"
+msiexec.exe /i Hataori-3.1.18.0-x64.msi INSTALL_ROOT="C:\Hataori"
 ```
 
 MSIはServer、CLI、Monitor、Windows Service登録、System `PATH`、Start Menu Shortcutを導入します。Install、Upgrade、Uninstallの動作は[インストール](docs/installation.ja.md)を参照してください。

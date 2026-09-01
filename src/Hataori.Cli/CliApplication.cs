@@ -7,12 +7,14 @@ using Hataori.Application.Localization;
 using Hataori.Application.Sessions;
 using Hataori.Application.Tasks;
 using Hataori.Application.Codex;
+using Hataori.Application.Agents;
 using Hataori.Core.Runs;
 using Hataori.Core.Sessions;
 using Hataori.Core.Tasks;
 using Hataori.Core.Workspaces;
 using Hataori.Infrastructure.Agents.ClaudeCode;
 using Hataori.Infrastructure.Agents.Codex;
+using Hataori.Infrastructure.Agents;
 using Hataori.Infrastructure.Messages;
 using Hataori.Infrastructure.Runs;
 using Hataori.Infrastructure.Sessions;
@@ -602,28 +604,38 @@ public static class CliApplication
 
     private static async Task<object> ExecuteAgentAsync(string command, string? positional, IReadOnlyDictionary<string, string> options, string connectionString, CancellationToken cancellationToken)
     {
-        var repository = new SqliteAgentRunRepository(connectionString);
-        await repository.InitializeAsync(cancellationToken).ConfigureAwait(false);
+        var runRepository = new SqliteAgentRunRepository(connectionString);
+        await runRepository.InitializeAsync(cancellationToken).ConfigureAwait(false);
         if (command.Equals("runs", StringComparison.OrdinalIgnoreCase))
         {
-            var runs = await repository.ListAsync(ParseRunStatus(Optional(options, "status")), Optional(options, "agent"), cancellationToken).ConfigureAwait(false);
+            var runs = await runRepository.ListAsync(ParseRunStatus(Optional(options, "status")), Optional(options, "agent"), cancellationToken).ConfigureAwait(false);
             return FilterByWorkspace(runs, Optional(options, "workspace"), run => run.WorkspaceId);
         }
 
+        var definitionRepository = new SqliteAgentDefinitionRepository(connectionString);
+        await definitionRepository.InitializeAsync(cancellationToken).ConfigureAwait(false);
+        var service = new AgentDefinitionService(definitionRepository, TimeProvider.System);
+        var workspaceId = Optional(options, "workspace") ?? "default";
+        if (command.Equals("set", StringComparison.OrdinalIgnoreCase))
+        {
+            var agentId = positional ?? Required(options, "agent");
+            var enabled = bool.Parse(Required(options, "enabled"));
+            var maxRuns = int.Parse(Required(options, "max-runs"), CultureInfo.InvariantCulture);
+            return await service.SetAsync(workspaceId, agentId, enabled, maxRuns, cancellationToken).ConfigureAwait(false);
+        }
+        if (command.Equals("history", StringComparison.OrdinalIgnoreCase))
+        {
+            return await service.HistoryAsync(workspaceId, positional ?? Required(options, "agent"), cancellationToken).ConfigureAwait(false);
+        }
         if (!command.Equals("list", StringComparison.OrdinalIgnoreCase) && !command.Equals("status", StringComparison.OrdinalIgnoreCase))
         {
             throw new ArgumentException(DisplayLanguage.Text($"不明なagentコマンドです: '{command}'。", $"Unknown agent command '{command}'."));
         }
 
-        var configuration = LoadConfiguration(options);
-        var activation = configuration.GetRequiredSection(ActivationOptions.SectionName).Get<ActivationOptions>() ?? new ActivationOptions();
-        var running = await repository.ListAsync(AgentRunStatus.Running, null, cancellationToken).ConfigureAwait(false);
-        running = FilterByWorkspace(running, Optional(options, "workspace"), run => run.WorkspaceId);
-        var summaries = new[]
-        {
-            CreateAgentSummary("codex", configuration.GetSection(CodexDriverOptions.SectionName).Exists(), activation, running),
-            CreateAgentSummary("claude-code", configuration.GetSection(ClaudeCodeDriverOptions.SectionName).Exists(), activation, running),
-        };
+        var definitions = await service.ListAsync(workspaceId, cancellationToken).ConfigureAwait(false);
+        var running = await runRepository.ListAsync(AgentRunStatus.Running, null, cancellationToken).ConfigureAwait(false);
+        running = FilterByWorkspace(running, workspaceId, run => run.WorkspaceId);
+        var summaries = definitions.Select(definition => new AgentSummary(definition.WorkspaceId, definition.AgentId, definition.Enabled, running.Count(run => run.AgentId.Equals(definition.AgentId, StringComparison.OrdinalIgnoreCase)), definition.MaxConcurrentRuns)).ToArray();
         if (command.Equals("status", StringComparison.OrdinalIgnoreCase))
         {
             var agentId = positional ?? Required(options, "agent");
@@ -633,9 +645,6 @@ public static class CliApplication
 
         return summaries;
     }
-
-    private static AgentSummary CreateAgentSummary(string agentId, bool configured, ActivationOptions activation, IReadOnlyList<AgentRun> running) =>
-        new(agentId, configured, running.Count(run => run.AgentId.Equals(agentId, StringComparison.OrdinalIgnoreCase)), activation.MaxConcurrentRuns.GetValueOrDefault(agentId));
 
     private static async Task<object> ExecuteConversationAsync(string command, string? positional, IReadOnlyDictionary<string, string> options, string connectionString, CancellationToken cancellationToken)
     {
@@ -909,5 +918,5 @@ public static class CliApplication
     private static string GetSubcommandHelp(string command) => DisplayLanguage.Text($"使い方: hataori {command} <コマンド> [引数] [オプション]", $"Usage: hataori {command} <command> [arguments] [options]");
 
     private sealed record DoctorCheck(string Name, bool Ok, string? Error, bool Skipped = false);
-    private sealed record AgentSummary(string AgentId, bool Enabled, int Running, int MaxRuns);
+    private sealed record AgentSummary(string WorkspaceId, string AgentId, bool Enabled, int Running, int MaxRuns);
 }
