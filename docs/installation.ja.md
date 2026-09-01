@@ -16,7 +16,7 @@ HataoriのWindows標準成果物はx64 MSIです。MSIはServer、CLI、Monitor�
 既定の`%INSTALL_ROOT%`は64bit Program Files配下の`Hataori`です。本Projectの実機環境は`C:\Hataori`を使用します。非対話インストールでこの場所へ導入する場合は、管理者ターミナルから正確なMSI property名`INSTALL_ROOT`を指定します。
 
 ```powershell
-msiexec.exe /i Hataori-3.1.18.0-x64.msi INSTALL_ROOT="C:\Hataori" /qn /norestart
+msiexec.exe /i Hataori-3.1.19.0-x64.msi INSTALL_ROOT="C:\Hataori" /qn /norestart
 ```
 
 `INSTALLFOLDER`は未対応です。`INSTALL_ROOT`を省略または誤記すると、Windows Installerは既定のProgram Files配下へ導入します。Upgrade時も同じ`INSTALL_ROOT`を必ず指定してください。

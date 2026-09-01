@@ -3,6 +3,7 @@
 
 # 変更履歴
 
+- 2026.09.02: 3.1.19.0へVersion更新。詳細MetricsをMSI化し、実機`C:\Hataori`へのMajor Upgradeと稼働確認を完了。
 - 2026.09.02: 3.1.18.0へVersion更新し、実機`C:\Hataori`へのMajor Upgradeと稼働確認を完了。
 - 2026.09.01: 3.1.17.0へVersion更新。Agent定義SQLite永続化をMSI化し、実機`C:\Hataori`へのMajor Upgradeと稼働確認を完了。
 
@@ -88,4 +89,4 @@ Obsidian「Hataori 全仕様書」143節の11項目に対する実装状況（20
 - [X] Workspace管理v2（Task・Session・Message・Agent Runへ`workspace_id`を導入し、`list_workspaces`、Workspace単位のTask MCP、SQLite移行、Monitor・会話Hook・CLI filter、複数Activation root設定へ伝播）
 - [X] Monitor管理操作（選択したTaskとAgent Runのキャンセル）
 - [X] Agent definitions DB化（Workspace単位のSQLite正本、初回設定移行、CLI／MCP管理、監査履歴）
-- [ ] 詳細なMetrics
+- [X] 詳細なMetrics（Workspace単位のTask／Message／Agent Run件数、成功率、再試行、平均時間、Agent別内訳をCLI／MCPで公開）
