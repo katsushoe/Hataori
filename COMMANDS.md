@@ -11,7 +11,7 @@ This document is the source of truth for the Hataori CLI, service controls, inte
 | [Server](#server-commands) | `start`, `stop`, `restart`, `status` | Manage a foreground Server process through its executable and Control Pipe. |
 | [Service](#service-commands) | `service setup/install/uninstall/start/stop/restart/status` | Configure and control the Windows Service. |
 | [Task](#task-commands) | `task start/get/list/find-conflicts/heartbeat/complete/cancel/fail/expire/history/relation-add/relations` | Manage persisted tasks and relations. |
-| [Agent](#agent-commands) | `agent list/status/runs` | Inspect configured agents and persisted runs. |
+| [Agent](#agent-commands) | `agent list/status/set/history/runs` | Manage persisted Agent definitions and inspect runs. |
 | [Conversation](#conversation-commands) | `conversation list/get/reset` | Inspect or invalidate conversation sessions. |
 | [Queue](#queue-commands) | `queue list/get/retry/cancel` | Inspect and operate on queued messages. |
 | [Database](#database-commands) | `db status/integrity` | Run read-only SQLite diagnostics. |
@@ -340,11 +340,11 @@ Commands: [`list`](#hataori-agent-list), [`status`](#hataori-agent-status), [`ru
 | Item | Specification |
 | :--- | :--- |
 | Purpose | List configured agent summaries. |
-| Syntax | `hataori agent list --database <path> [--config <path>]` |
+| Syntax | `hataori agent list --database <path> [--workspace <id>]` |
 | Arguments | Database is required. |
 | Processing | Combines configured drivers, activation limits, and running-run counts. |
 | Result | JSON array with `agent_id`, `enabled`, `running`, and `max_runs`; values vary with config and DB state. |
-| Example | `hataori agent list --database F:\Hataori\data\hataori.db` |
+| Example | `hataori agent list --database C:\Hataori\data\hataori.db --workspace default` |
 | Safety | Read-only. |
 
 #### `hataori agent status`
@@ -352,11 +352,27 @@ Commands: [`list`](#hataori-agent-list), [`status`](#hataori-agent-status), [`ru
 | Item | Specification |
 | :--- | :--- |
 | Purpose | Read one configured agent summary. |
-| Syntax | `hataori agent status <agent-id> --database <path> [--config <path>]` |
+| Syntax | `hataori agent status <agent-id> --database <path> [--workspace <id>]` |
 | Arguments | Agent ID is positional or `--agent`; database is required. |
 | Processing | Selects the matching summary from Codex and Claude Code configuration. |
 | Result | One JSON agent summary; unknown agent exits `4`. |
-| Example | `hataori agent status codex --database F:\Hataori\data\hataori.db` |
+| Example | `hataori agent status codex --database C:\Hataori\data\hataori.db --workspace default` |
+
+#### `hataori agent set`
+
+| Item | Value |
+|---|---|
+| Purpose | Create or update a workspace-scoped Agent definition and append audit history. Restart the service to apply lane changes. |
+| Syntax | `hataori agent set <agent-id> --enabled <true|false> --max-runs <0..64> --database <path> [--workspace <id>]` |
+| Example | `hataori agent set claude-code --enabled true --max-runs 2 --database C:\Hataori\data\hataori.db` |
+
+#### `hataori agent history`
+
+| Item | Value |
+|---|---|
+| Purpose | List audit history for a workspace-scoped Agent definition. |
+| Syntax | `hataori agent history <agent-id> --database <path> [--workspace <id>]` |
+| Example | `hataori agent history claude-code --database C:\Hataori\data\hataori.db` |
 | Safety | Read-only. |
 
 #### `hataori agent runs`

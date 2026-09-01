@@ -2,7 +2,7 @@
 
 [English](README.md) | [日本語](README.ja.md)
 
-Hataori is a local Windows orchestration service for Codex Desktop, Codex CLI, and Claude Code. It persists tasks, conversation sessions, messages, and agent runs in SQLite, integrates with Itoguruma, and exposes a Streamable HTTP MCP server, a management CLI, and a monitor with status display and cancellation controls. Codex-addressed messages are leased to a fixed receiver inside Codex Desktop so it can create visible tasks under saved projects.
+Hataori is a local Windows orchestration service for Codex Desktop, Codex CLI, and Claude Code. It persists tasks, conversation sessions, messages, agent definitions, and agent runs in SQLite, integrates with Itoguruma, and exposes a Streamable HTTP MCP server, a management CLI, and a monitor with status display and cancellation controls. Codex-addressed messages are leased to a fixed receiver inside Codex Desktop so it can create visible tasks under saved projects.
 
 ## Getting Started
 

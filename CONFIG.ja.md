@@ -270,6 +270,8 @@ Hataoriには名前付きprofile fileがありません。通常file path、環�
 
 #### `activation.maxConcurrentRuns`
 
+このmapはWorkspaceに永続化済みAgent定義がない初回だけ登録値として使います。初期化後はSQLiteのAgent定義が正本です。変更は`hataori agent set`で行い、Service再起動後に反映します。
+
 - 型/必須: Agent IDをkey、integerをvalueとするobject/dictionary、条件付き必須。
 - 既定値: 生成fileでは`{"codex": 2, "claude-code": 2}`。
 - 制約: Activation有効時は空でないkeyが1件以上必要で、各valueは`1`から`32`です。

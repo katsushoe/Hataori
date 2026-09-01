@@ -84,5 +84,5 @@ Obsidian「Hataori 全仕様書」143節の11項目に対する実装状況（20
 - [X] Project候補検索（MCP `list_projects`、未登録Project指定時の候補返却、Task登録前の選択案内を実装）
 - [X] Workspace管理v2（Task・Session・Message・Agent Runへ`workspace_id`を導入し、`list_workspaces`、Workspace単位のTask MCP、SQLite移行、Monitor・会話Hook・CLI filter、複数Activation root設定へ伝播）
 - [X] Monitor管理操作（選択したTaskとAgent Runのキャンセル）
-- [ ] Agent definitions DB化（Agent定義は設定fileのまま）
+- [X] Agent definitions DB化（Workspace単位のSQLite正本、初回設定移行、CLI／MCP管理、監査履歴）
 - [ ] 詳細なMetrics

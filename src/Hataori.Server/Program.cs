@@ -15,6 +15,7 @@ using Hataori.Infrastructure.Sessions;
 using Hataori.Infrastructure.Runs;
 using Hataori.Infrastructure.Agents.Codex;
 using Hataori.Infrastructure.Agents.ClaudeCode;
+using Hataori.Infrastructure.Agents;
 using Hataori.Infrastructure.Tasks;
 using Hataori.Infrastructure.Maintenance;
 using Hataori.Infrastructure.Codex;
@@ -144,6 +145,13 @@ try
         var connectionString = new SqliteConnectionStringBuilder { DataSource = path, ForeignKeys = true }.ToString();
         return new SqliteAgentRunRepository(connectionString);
     });
+    builder.Services.AddSingleton<IAgentDefinitionRepository>(services =>
+    {
+        var options = services.GetRequiredService<IOptions<ServerOptions>>().Value;
+        var path = ServerPaths.ResolveDatabasePath(options.DatabasePath, layout.RootPath);
+        var connectionString = new SqliteConnectionStringBuilder { DataSource = path, ForeignKeys = true }.ToString();
+        return new SqliteAgentDefinitionRepository(connectionString);
+    });
     builder.Services.AddSingleton<IConversationMutex, ConversationMutex>();
     builder.Services.AddSingleton<IAgentProcessManager, SystemAgentProcessManager>();
     builder.Services.AddSingleton<IAgentProcessProbe, SystemAgentProcessProbe>();
@@ -158,6 +166,7 @@ try
     builder.Services.AddSingleton<CodexTaskLaunchService>();
     builder.Services.AddSingleton<ConversationSessionService>();
     builder.Services.AddSingleton<AgentRunService>();
+    builder.Services.AddSingleton<AgentDefinitionService>();
     builder.Services.AddSingleton<ActivationManager>();
     builder.Services.AddSingleton<AgentProviderSelector>();
     builder.Services.AddSingleton(new ProviderPriorityService(configurationPath));
@@ -195,6 +204,7 @@ try
         .WithTools<ProjectMcpTools>()
         .WithTools<TaskMcpTools>()
         .WithTools<AgentRunMcpTools>()
+        .WithTools<AgentDefinitionMcpTools>()
         .WithTools<ProviderMcpTools>()
         .WithTools<CodexTaskMcpTools>()
         .WithTools<SystemMcpTools>();

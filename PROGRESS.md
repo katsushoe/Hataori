@@ -10,6 +10,7 @@
 - 2026.09.01: 3.1.14.0をRelease。Workspace管理v2をMSI化し、193テスト、実機Major Upgrade、Service・MCP・doctorを検証。
 - 2026.09.01: 複数Activation root設定とWorkspace別Itoguruma取り込みを実装し、198テストを検証。
 - 2026.09.01: MonitorへTask／Agent Runキャンセル操作を追加し、200テストを検証。
+- 2026.09.01: Agent定義をWorkspace単位のSQLiteへ永続化。初回設定移行、CLI／MCP管理、監査履歴、DB定義に基づくActivation laneを実装し、203テストを検証。
 - 2026.08.31: Workspace管理v2を実装。Session・Message・Agent RunへWorkspace IDを伝播し、既存SQLite移行、Monitor表示、CLI filter、193テストを検証。
 - 2026.08.31: 3.1.13.0をRelease。Workspace単位のTask管理、`list_workspaces`、SQLite移行、Monitor・会話Hook連携を実装し、189テストと実機Major Upgradeを検証。
 - 2026.08.31: 3.1.12.0をRelease。MCP `list_projects`、未登録Project候補返却、Task登録前Project選択案内を実装し、179テストと実機Major Upgradeを検証。
@@ -89,6 +90,7 @@ Phase 1（基盤・必須運用機能）: **96%**
 
 - [x] Server基盤、Control Pipe、MCP Server
 - [x] SQLite Task・Session・Message Queue・Agent Run永続化
+- [x] Workspace単位のAgent定義・監査履歴SQLite永続化
 - [x] Task lifecycleとMCP Tools
 - [x] Itoguruma受信、Queue、Reply、永続Reply Retry
 - [x] Codex / Claude Codeのstart・resume Driver

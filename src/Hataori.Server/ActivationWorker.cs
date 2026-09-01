@@ -1,5 +1,6 @@
 ﻿using Hataori.Application.Activation;
 using Hataori.Application.Messages;
+using Hataori.Application.Agents;
 using Microsoft.Extensions.Options;
 
 namespace Hataori.Server;
@@ -7,6 +8,7 @@ namespace Hataori.Server;
 public sealed class ActivationWorker(
     ActivationManager activationManager,
     IMessageQueueRepository messageQueue,
+    IAgentDefinitionRepository agentDefinitions,
     IOptions<ActivationOptions> activationOptions,
     IOptions<ServerOptions> serverOptions,
     StartupRecoveryGate recoveryGate,
@@ -30,7 +32,11 @@ public sealed class ActivationWorker(
         var mcpUrl = $"http://{server.McpHost}:{server.McpPort}{server.McpPath}";
         var workspace = ActivationWorkspaceResolver.Resolve(activationOptions.Value)[0];
         var request = new ActivationRequest(workspace.WorkingDirectory, AppContext.BaseDirectory, mcpUrl);
-        var lanes = ActivationLanePlan.Create(activationOptions.Value.MaxConcurrentRuns);
+        var configuredRuns = (await agentDefinitions.ListAsync(null, stoppingToken).ConfigureAwait(false))
+            .Where(definition => definition.Enabled)
+            .GroupBy(definition => definition.AgentId, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.Max(definition => definition.MaxConcurrentRuns), StringComparer.OrdinalIgnoreCase);
+        var lanes = ActivationLanePlan.Create(configuredRuns);
         logger.LogInformation(Hataori.Application.Localization.DisplayLanguage.Text("Activation Managerを{LaneCount} laneで開始しました", "Activation Manager started with {LaneCount} lanes"), lanes.Count);
         await Task.WhenAll(lanes.Select((agentId, index) => RunLaneAsync(agentId, index + 1, request, stoppingToken))).ConfigureAwait(false);
     }
