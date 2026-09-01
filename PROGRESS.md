@@ -3,7 +3,7 @@
 
 # 変更履歴
 
-- 2026.09.01: 複数Activation root対応を3.1.15.0としてMSI化。198テスト、実機Major Upgrade、2 root MCP列挙を検証。
+- 2026.09.01: 3.1.15.0をRelease。複数Activation root対応をMSI化し、198テスト、実機Major Upgrade、2 root MCP列挙を検証。
 - 2026.09.01: 3.1.14.0をRelease。Workspace管理v2をMSI化し、193テスト、実機Major Upgrade、Service・MCP・doctorを検証。
 - 2026.09.01: 複数Activation root設定とWorkspace別Itoguruma取り込みを実装し、198テストを検証。
 - 2026.08.31: Workspace管理v2を実装。Session・Message・Agent RunへWorkspace IDを伝播し、既存SQLite移行、Monitor表示、CLI filter、193テストを検証。
@@ -55,7 +55,7 @@ Phase 1（基盤・必須運用機能）: **96%**
 
 ## 進捗予測メモ
 
-2026.09.01に複数Activation root対応を3.1.15.0としてMSI化しました。Release構成buildは警告0件・エラー0件、自動テスト198件合格、WiX MSI buildは警告0件・エラー0件でした。3.1.14.0から`F:\Hataori`への実機Major Upgradeは終了コード0で成功しました。一時的な`default`・`validation`の2 root設定で`list_workspaces`が両Workspaceと各Projectを返し、`list_projects`が第2 rootの`labproject`を返すことを確認後、設定とServiceを元の正常状態へ復元しました。検証記録は`docs/validation/2026-09-01-installer-3.1.15.0.md`です。
+2026.09.01に複数Activation root対応を3.1.15.0としてリリースしました。Release構成buildは警告0件・エラー0件、自動テスト198件合格、WiX MSI buildは警告0件・エラー0件でした。3.1.14.0から`F:\Hataori`への実機Major Upgradeは終了コード0で成功しました。一時的な`default`・`validation`の2 root設定で`list_workspaces`が両Workspaceと各Projectを返し、`list_projects`が第2 rootの`labproject`を返すことを確認後、設定とServiceを元の正常状態へ復元しました。検証記録は`docs/validation/2026-09-01-installer-3.1.15.0.md`です。
 
 2026.09.01に`activation.workspaces`による複数Projects root構成を実装しました。従来の`workspaceId`／`workingDirectory`は単一root設定として後方互換を維持します。Workspace ID、root path、Project IDの重複を起動時に拒否し、Itoguruma受信Messageへrootに対応するWorkspace IDを保存します。Release構成buildは警告0件・エラー0件、自動テスト198件が合格しました。
 

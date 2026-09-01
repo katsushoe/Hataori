@@ -3,7 +3,7 @@
 
 # 変更履歴
 
-- 2026.09.01: 複数Activation root対応を3.1.15.0としてMSI化し、実機Major Upgradeと2 root MCP検証を完了。
+- 2026.09.01: 3.1.15.0をRelease。複数Activation root対応をMSI化し、実機Major Upgradeと2 root MCP検証を完了。
 - 2026.09.01: 3.1.14.0をRelease。Workspace管理v2をMSI化し、実機Major Upgradeと稼働確認を完了。
 - 2026.09.01: 複数Activation root設定、重複検証、Workspace別Itoguruma取り込みを実装。
 - 2026.08.31: Workspace管理v2としてSession・Message・Agent Runへ`workspace_id`を伝播し、既存SQLiteデータ移行とCLI Workspace filterを実装。
