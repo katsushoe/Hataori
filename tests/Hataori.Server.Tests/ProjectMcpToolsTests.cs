@@ -61,6 +61,30 @@ public sealed class ProjectMcpToolsTests : IDisposable
         tools.List(null).Should().BeEmpty();
     }
 
+    [Fact]
+    public void ListWorkspaces_MultipleRoots_ReturnsEachWorkspace()
+    {
+        var secondRoot = Path.Combine(Path.GetTempPath(), $"hataori-projects-second-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(Path.Combine(_projectsRoot, "Hataori"));
+        Directory.CreateDirectory(Path.Combine(secondRoot, "Kotodama"));
+        var tools = new ProjectMcpTools(
+            new AgentProviderSelector(Array.Empty<IAgentDriver>()),
+            Options.Create(new ActivationOptions
+            {
+                Workspaces =
+                [
+                    new ActivationWorkspaceOptions { WorkspaceId = "alpha", WorkingDirectory = _projectsRoot },
+                    new ActivationWorkspaceOptions { WorkspaceId = "beta", WorkingDirectory = secondRoot },
+                ],
+            }));
+
+        var workspaces = tools.ListWorkspaces();
+
+        workspaces.Select(workspace => workspace.WorkspaceId).Should().Equal("alpha", "beta");
+        tools.List(null).Should().Equal("hataori", "kotodama");
+        Directory.Delete(secondRoot, true);
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_projectsRoot))

@@ -83,18 +83,30 @@ public sealed class ItogurumaConnectionWorker(
     public async Task PollProjectsAsync(CancellationToken cancellationToken)
     {
         var activation = activationOptions.CurrentValue;
-        foreach (var project in providerSelector.DiscoverProjects(activation.WorkingDirectory))
+        var projects = ActivationWorkspaceResolver.Resolve(activation)
+            .SelectMany(workspace => providerSelector.DiscoverProjects(workspace.WorkingDirectory)
+                .Select(project => (Workspace: workspace, Project: project)))
+            .ToArray();
+        var duplicate = projects
+            .GroupBy(entry => entry.Project.ProjectId, StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault(group => group.Count() > 1);
+        if (duplicate is not null)
         {
-            await client.RegisterProjectAsync(project.ProjectId, cancellationToken).ConfigureAwait(false);
+            throw new InvalidOperationException($"Project ID '{duplicate.Key}' exists in more than one activation workspace.");
+        }
+
+        foreach (var entry in projects)
+        {
+            await client.RegisterProjectAsync(entry.Project.ProjectId, cancellationToken).ConfigureAwait(false);
             var messages = await client.GetMessagesAsync(
-                project.ProjectId,
+                entry.Project.ProjectId,
                 options.Value.ReceiveBatchSize,
                 options.Value.LeaseSeconds,
                 null,
                 cancellationToken).ConfigureAwait(false);
             foreach (var message in messages)
             {
-                await PersistAndAcknowledgeAsync(project.ProjectId, message, cancellationToken).ConfigureAwait(false);
+                await PersistAndAcknowledgeAsync(entry.Workspace, entry.Project.ProjectId, message, cancellationToken).ConfigureAwait(false);
             }
         }
     }
@@ -111,10 +123,10 @@ public sealed class ItogurumaConnectionWorker(
         }
     }
 
-    private async Task PersistAndAcknowledgeAsync(string agentId, ItogurumaMessage message, CancellationToken cancellationToken)
+    private async Task PersistAndAcknowledgeAsync(ActivationWorkspace workspace, string agentId, ItogurumaMessage message, CancellationToken cancellationToken)
     {
         var activation = activationOptions.CurrentValue;
-        var selection = providerSelector.Select(activation.WorkingDirectory, agentId, message.Provider, activation.ProviderPriority);
+        var selection = providerSelector.Select(workspace.WorkingDirectory, agentId, message.Provider, activation.ProviderPriority);
         var incoming = new IncomingMessage(
             message.MessageId,
             message.ThreadId,
@@ -126,7 +138,7 @@ public sealed class ItogurumaConnectionWorker(
             message.Body,
             message.PayloadJson,
             message.CreatedAt,
-            activation.WorkspaceId);
+            workspace.WorkspaceId);
         var inserted = await messageQueue.EnqueueAsync(incoming, 0, cancellationToken).ConfigureAwait(false);
         var acknowledged = await client.AcknowledgeAsync(agentId, message.MessageId, cancellationToken).ConfigureAwait(false);
         if (!acknowledged)

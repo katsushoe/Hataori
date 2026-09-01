@@ -28,7 +28,8 @@ public sealed class ActivationWorker(
         await messageQueue.InitializeAsync(stoppingToken).ConfigureAwait(false);
         var server = serverOptions.Value;
         var mcpUrl = $"http://{server.McpHost}:{server.McpPort}{server.McpPath}";
-        var request = new ActivationRequest(activationOptions.Value.WorkingDirectory, AppContext.BaseDirectory, mcpUrl);
+        var workspace = ActivationWorkspaceResolver.Resolve(activationOptions.Value)[0];
+        var request = new ActivationRequest(workspace.WorkingDirectory, AppContext.BaseDirectory, mcpUrl);
         var lanes = ActivationLanePlan.Create(activationOptions.Value.MaxConcurrentRuns);
         logger.LogInformation(Hataori.Application.Localization.DisplayLanguage.Text("Activation Managerを{LaneCount} laneで開始しました", "Activation Manager started with {LaneCount} lanes"), lanes.Count);
         await Task.WhenAll(lanes.Select((agentId, index) => RunLaneAsync(agentId, index + 1, request, stoppingToken))).ConfigureAwait(false);

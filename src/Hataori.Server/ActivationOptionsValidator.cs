@@ -8,21 +8,58 @@ public sealed class ActivationOptionsValidator : IValidateOptions<ActivationOpti
     public ValidateOptionsResult Validate(string? name, ActivationOptions options)
     {
         var errors = new List<string>();
+        IReadOnlyList<ActivationWorkspace> workspaces = [];
         try
         {
-            WorkspaceId.Normalize(options.WorkspaceId);
+            workspaces = ActivationWorkspaceResolver.Resolve(options);
         }
         catch (ArgumentException exception)
         {
             errors.Add(exception.Message);
         }
-        if (options.Enabled && (string.IsNullOrWhiteSpace(options.WorkingDirectory) || !Path.IsPathFullyQualified(options.WorkingDirectory)))
+
+        if (options.Workspaces.Count > 0 && !string.IsNullOrWhiteSpace(options.WorkingDirectory))
         {
-            errors.Add("Activation workingDirectory must be an absolute path when activation is enabled.");
+            errors.Add("Activation workspaces cannot be combined with the legacy workingDirectory.");
         }
-        else if (options.Enabled && !Directory.Exists(options.WorkingDirectory))
+
+        if (workspaces.Select(workspace => workspace.WorkspaceId).Distinct(StringComparer.Ordinal).Count() != workspaces.Count)
         {
-            errors.Add("Activation workingDirectory must exist when activation is enabled.");
+            errors.Add("Activation workspace IDs must be unique.");
+        }
+
+        var configuredPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var projectIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var workspace in workspaces)
+        {
+            if (options.Enabled && (string.IsNullOrWhiteSpace(workspace.WorkingDirectory) || !Path.IsPathFullyQualified(workspace.WorkingDirectory)))
+            {
+                errors.Add($"Activation workspace '{workspace.WorkspaceId}' workingDirectory must be an absolute path when activation is enabled.");
+                continue;
+            }
+            if (!options.Enabled)
+            {
+                continue;
+            }
+
+            var fullPath = Path.GetFullPath(workspace.WorkingDirectory);
+            if (!Directory.Exists(fullPath))
+            {
+                errors.Add($"Activation workspace '{workspace.WorkspaceId}' workingDirectory must exist when activation is enabled.");
+                continue;
+            }
+            if (!configuredPaths.Add(fullPath))
+            {
+                errors.Add("Activation workspace workingDirectory values must be unique.");
+            }
+            foreach (var directory in Directory.EnumerateDirectories(fullPath))
+            {
+                var projectId = Path.GetFileName(directory).ToLowerInvariant();
+                if (!projectIds.Add(projectId))
+                {
+                    errors.Add($"Activation project ID '{projectId}' exists in more than one workspace.");
+                }
+            }
         }
 
         if (options.PollIntervalMilliseconds is < 100 or > 60000)

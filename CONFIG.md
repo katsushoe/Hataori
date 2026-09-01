@@ -106,7 +106,7 @@ Children: [`endpoint`](#itogurumaendpoint), [`authenticationToken`](#itogurumaau
 
 - Type/required: non-empty string, required.
 - Default: `hataori`; omission fails validation.
-- Behavior: sender ID used by the Hataori Service for replies. It does not limit monitored projects; those are discovered under `activation.workingDirectory`.
+- Behavior: sender ID used by the Hataori Service for replies. It does not limit monitored projects; those are discovered under each root in `activation.workspaces`.
 - Example: `"agentId": "hataori"`.
 
 #### `itoguruma.agentType`
@@ -221,7 +221,7 @@ Children: [`executablePath`](#agentsclaudecodeexecutablepath), [`permissionMode`
 
 ### `activation`
 
-Children: [`enabled`](#activationenabled), [`workspaceId`](#activationworkspaceid), [`workingDirectory`](#activationworkingdirectory), [`pollIntervalMilliseconds`](#activationpollintervalmilliseconds), [`providerPriority`](#activationproviderpriority), and [`maxConcurrentRuns`](#activationmaxconcurrentruns).
+Children: [`enabled`](#activationenabled), [`workspaces`](#activationworkspaces), backward-compatible [`workspaceId`](#activationworkspaceid) and [`workingDirectory`](#activationworkingdirectory), [`pollIntervalMilliseconds`](#activationpollintervalmilliseconds), [`providerPriority`](#activationproviderpriority), and [`maxConcurrentRuns`](#activationmaxconcurrentruns).
 
 #### `activation.enabled`
 
@@ -235,7 +235,7 @@ Children: [`enabled`](#activationenabled), [`workspaceId`](#activationworkspacei
 - Type/required: string, conditionally required.
 - Default: empty string.
 - Constraint: when activation is enabled, it must be an existing absolute directory.
-- Behavior: projects root whose direct children are automatically registered and monitored in Itoguruma; each directory name is converted to invariant lowercase for the destination project ID, and project lookup is case-insensitive.
+- Behavior: backward-compatible single projects root used only when `workspaces` is absent.
 - Example: `"workingDirectory": "F:\\Workspace\\Projects"`.
 
 #### `activation.workspaceId`
@@ -243,8 +243,16 @@ Children: [`enabled`](#activationenabled), [`workspaceId`](#activationworkspacei
 - Type/required: string, optional.
 - Default: `"default"`.
 - Constraint: `^[a-z][a-z0-9]*$`; values are normalized to lowercase.
-- Behavior: identifies the workspace configured by `workingDirectory` in tasks, MCP tools, and Monitor snapshots.
+- Behavior: identifies the workspace configured by `workingDirectory` only when `workspaces` is absent.
 - Example: `"workspaceId": "default"`.
+
+#### `activation.workspaces`
+
+- Type/required: array of objects containing `workspaceId` and `workingDirectory`; conditionally required when Activation is enabled.
+- Default: one `default` workspace in the generated file.
+- Constraint: workspace IDs, absolute directories, and project IDs discovered directly below roots must be unique across all workspaces. It cannot be combined with `workingDirectory`.
+- Behavior: registers and monitors every direct child directory under each root in Itoguruma and persists the matching workspace ID on received messages.
+- Example: `"workspaces": [{"workspaceId": "main", "workingDirectory": "F:\\Workspace\\Projects"}, {"workspaceId": "labs", "workingDirectory": "F:\\Workspace\\Labs"}]`.
 
 #### `activation.pollIntervalMilliseconds`
 
