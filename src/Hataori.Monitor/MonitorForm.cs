@@ -4,7 +4,7 @@ using Hataori.Application.Localization;
 
 namespace Hataori.Monitor;
 
-/// <summary>Hataoriの状態を読み取り専用で表示します。</summary>
+/// <summary>Hataoriの状態表示と安全なキャンセル操作を提供します。</summary>
 public partial class MonitorForm : Form
 {
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(5);
@@ -47,15 +47,17 @@ public partial class MonitorForm : Form
         try
         {
             var snapshot = await _client.GetSnapshotAsync(_pipeName, RequestTimeout, CancellationToken.None).ConfigureAwait(true);
-            taskGrid.DataSource = snapshot.Tasks.Select(task => new { task.TaskName, task.AgentId, task.ProgressPercent, task.CurrentWork, task.LastActivityAtUtc, task.ConversationId, task.Status }).ToArray();
+            taskGrid.DataSource = snapshot.Tasks.Select(task => new { task.TaskId, task.WorkspaceId, task.TaskName, task.AgentId, task.ProgressPercent, task.CurrentWork, task.LastActivityAtUtc, task.ConversationId, task.Status }).ToArray();
             agentGrid.DataSource = snapshot.Agents.ToArray();
             sessionGrid.DataSource = snapshot.Sessions.Select(session => new { session.ConversationId, session.AgentId, session.NativeSessionId, session.Status, session.LastUsedAtUtc }).ToArray();
+            runGrid.DataSource = snapshot.Runs.Select(run => new { run.RunId, run.WorkspaceId, run.AgentId, run.ConversationId, run.Status, run.QueuedAtUtc, run.StartedAtUtc, run.EndedAtUtc, run.Error }).ToArray();
             queueValueLabel.Text = snapshot.QueueCount.ToString(System.Globalization.CultureInfo.CurrentCulture);
             serverValueLabel.Text = snapshot.System.Server;
             itogurumaValueLabel.Text = snapshot.System.Itoguruma;
             mcpValueLabel.Text = snapshot.System.Mcp;
             sqliteValueLabel.Text = snapshot.System.Sqlite;
             connectionStatusLabel.Text = DisplayLanguage.Text($"接続中: {_pipeName} / {DateTimeOffset.Now:T}", $"Connected: {_pipeName} / {DateTimeOffset.Now:T}");
+            UpdateActionButtons();
         }
         catch (Exception exception)
         {
@@ -73,13 +75,95 @@ public partial class MonitorForm : Form
         }
     }
 
+    private void GridSelectionChanged(object? sender, EventArgs e) => UpdateActionButtons();
+
+    private void UpdateActionButtons()
+    {
+        cancelTaskButton.Enabled = !_refreshing && TryGetSelectedValue(taskGrid, "Status", out var taskStatus)
+            && string.Equals(taskStatus, "active", StringComparison.OrdinalIgnoreCase);
+        cancelRunButton.Enabled = !_refreshing && TryGetSelectedValue(runGrid, "Status", out var runStatus)
+            && IsCancellableRunStatus(runStatus);
+    }
+
+    private async void CancelTaskButtonClick(object? sender, EventArgs e)
+    {
+        if (!TryGetSelectedValue(taskGrid, "TaskId", out var taskId) || !ConfirmCancel("Task", taskId))
+        {
+            return;
+        }
+
+        await ExecuteCancelAsync(() => _client.CancelTaskAsync(_pipeName, taskId, RequestTimeout, CancellationToken.None)).ConfigureAwait(true);
+    }
+
+    private async void CancelRunButtonClick(object? sender, EventArgs e)
+    {
+        if (!TryGetSelectedValue(runGrid, "RunId", out var runId) || !ConfirmCancel("Agent Run", runId))
+        {
+            return;
+        }
+
+        await ExecuteCancelAsync(() => _client.CancelRunAsync(_pipeName, runId, RequestTimeout, CancellationToken.None)).ConfigureAwait(true);
+    }
+
+    private async Task ExecuteCancelAsync(Func<Task<ControlResponse>> operation)
+    {
+        cancelTaskButton.Enabled = false;
+        cancelRunButton.Enabled = false;
+        try
+        {
+            var response = await operation().ConfigureAwait(true);
+            if (!response.Success)
+            {
+                MessageBox.Show(this, DisplayLanguage.Text($"キャンセルできませんでした: {response.Status}", $"Cancellation failed: {response.Status}"), Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+
+            await RefreshSnapshotAsync().ConfigureAwait(true);
+        }
+        catch (Exception exception)
+        {
+            _errors.Report(exception, this, DisplayLanguage.Text("キャンセル操作に失敗しました。詳細はログを確認してください。", "Cancellation failed. Check the log for details."), showDialog: true);
+        }
+        finally
+        {
+            UpdateActionButtons();
+        }
+    }
+
+    private bool ConfirmCancel(string targetType, string targetId) => MessageBox.Show(
+        this,
+        DisplayLanguage.Text($"{targetType} '{targetId}' をキャンセルしますか？", $"Cancel {targetType} '{targetId}'?"),
+        Text,
+        MessageBoxButtons.YesNo,
+        MessageBoxIcon.Warning,
+        MessageBoxDefaultButton.Button2) == DialogResult.Yes;
+
+    private static bool TryGetSelectedValue(DataGridView grid, string propertyName, out string value)
+    {
+        value = string.Empty;
+        if (grid.CurrentRow?.DataBoundItem is null)
+        {
+            return false;
+        }
+
+        value = grid.CurrentRow.DataBoundItem.GetType().GetProperty(propertyName)?.GetValue(grid.CurrentRow.DataBoundItem)?.ToString() ?? string.Empty;
+        return value.Length > 0;
+    }
+
+    private static bool IsCancellableRunStatus(string status) =>
+        string.Equals(status, "queued", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(status, "starting", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(status, "running", StringComparison.OrdinalIgnoreCase);
+
     private void ApplyLocalizedText()
     {
         refreshButton.Text = DisplayLanguage.Text("更新", "Refresh");
+        cancelTaskButton.Text = DisplayLanguage.Text("Taskをキャンセル", "Cancel Task");
+        cancelRunButton.Text = DisplayLanguage.Text("Agent Runを停止", "Cancel Agent Run");
         connectionStatusLabel.Text = DisplayLanguage.Text("未接続", "Not connected");
         tasksPage.Text = DisplayLanguage.Text("タスク", "Tasks");
         agentsPage.Text = DisplayLanguage.Text("エージェント", "Agents");
         sessionsPage.Text = DisplayLanguage.Text("会話／セッション", "Conversations / Sessions");
+        runsPage.Text = DisplayLanguage.Text("Agent実行", "Agent Runs");
         statusPage.Text = DisplayLanguage.Text("状態", "Status");
         queueNameLabel.Text = DisplayLanguage.Text("キュー件数", "Queue count");
     }

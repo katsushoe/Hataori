@@ -689,7 +689,7 @@ Commands: [`doctor`](#hataori-doctor), [`logs`](#hataori-logs), [`monitor`](#hat
 
 | Item | Specification |
 | :--- | :--- |
-| Purpose | Launch the read-only Hataori Monitor. |
+| Purpose | Launch Hataori Monitor for status display and Task / Agent Run cancellation. |
 | Syntax | `hataori monitor [--monitor <exe>] [--pipe <name>]` |
 | Arguments | Executable defaults to the standard installed Monitor path or `HATAORI_MONITOR_PATH`. |
 | Processing | Starts Monitor with shell execution and optionally passes the pipe name. |

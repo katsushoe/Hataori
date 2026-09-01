@@ -80,6 +80,6 @@ Obsidian「Hataori 全仕様書」143節の11項目に対する実装状況（20
 - [X] Session recovery強化（Agent Run作成前に孤立したactive Messageの失敗復旧とReply Retry待機中Messageの保護を実装）
 - [X] Project候補検索（MCP `list_projects`、未登録Project指定時の候補返却、Task登録前の選択案内を実装）
 - [X] Workspace管理v2（Task・Session・Message・Agent Runへ`workspace_id`を導入し、`list_workspaces`、Workspace単位のTask MCP、SQLite移行、Monitor・会話Hook・CLI filter、複数Activation root設定へ伝播）
-- [ ] Monitor管理操作（Monitorは引き続き読み取り専用）
+- [X] Monitor管理操作（選択したTaskとAgent Runのキャンセル）
 - [ ] Agent definitions DB化（Agent定義は設定fileのまま）
 - [ ] 詳細なMetrics

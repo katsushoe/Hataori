@@ -15,17 +15,19 @@ public sealed class ControlCommandHandler
     private readonly IHostApplicationLifetime _lifetime;
     private readonly TimeProvider _timeProvider;
     private readonly ITaskRepository _tasks;
+    private readonly TaskService _taskService;
     private readonly IConversationSessionRepository _sessions;
     private readonly IAgentRunRepository _runs;
     private readonly IMessageQueueRepository _queue;
     private readonly ItogurumaConnectionState _itogurumaState;
     private readonly ActivationManager _activation;
 
-    public ControlCommandHandler(IHostApplicationLifetime lifetime, TimeProvider timeProvider, ITaskRepository tasks, IConversationSessionRepository sessions, IAgentRunRepository runs, IMessageQueueRepository queue, ItogurumaConnectionState itogurumaState, ActivationManager activation)
+    public ControlCommandHandler(IHostApplicationLifetime lifetime, TimeProvider timeProvider, ITaskRepository tasks, TaskService taskService, IConversationSessionRepository sessions, IAgentRunRepository runs, IMessageQueueRepository queue, ItogurumaConnectionState itogurumaState, ActivationManager activation)
     {
         ArgumentNullException.ThrowIfNull(lifetime);
         ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(tasks);
+        ArgumentNullException.ThrowIfNull(taskService);
         ArgumentNullException.ThrowIfNull(sessions);
         ArgumentNullException.ThrowIfNull(runs);
         ArgumentNullException.ThrowIfNull(queue);
@@ -34,6 +36,7 @@ public sealed class ControlCommandHandler
         _lifetime = lifetime;
         _timeProvider = timeProvider;
         _tasks = tasks;
+        _taskService = taskService;
         _sessions = sessions;
         _runs = runs;
         _queue = queue;
@@ -70,7 +73,34 @@ public sealed class ControlCommandHandler
             return await HandleAgentCancelAsync(request.Argument, cancellationToken).ConfigureAwait(false);
         }
 
+        if (string.Equals(request.Command, "task-cancel", StringComparison.OrdinalIgnoreCase))
+        {
+            return await HandleTaskCancelAsync(request.Argument, cancellationToken).ConfigureAwait(false);
+        }
+
         return new ControlResponse(false, "unknown_command", _timeProvider.GetUtcNow());
+    }
+
+    private async Task<ControlResponse> HandleTaskCancelAsync(string? taskId, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(taskId))
+        {
+            return new ControlResponse(false, "missing_argument", _timeProvider.GetUtcNow());
+        }
+
+        try
+        {
+            await _taskService.CancelAsync(taskId, "Cancelled from Monitor.", cancellationToken).ConfigureAwait(false);
+            return new ControlResponse(true, "cancelled", _timeProvider.GetUtcNow());
+        }
+        catch (KeyNotFoundException)
+        {
+            return new ControlResponse(false, "not_found", _timeProvider.GetUtcNow());
+        }
+        catch (InvalidOperationException)
+        {
+            return new ControlResponse(false, "invalid_state", _timeProvider.GetUtcNow());
+        }
     }
 
     private async Task<ControlResponse> HandleAgentCancelAsync(string? runId, CancellationToken cancellationToken)
