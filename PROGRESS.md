@@ -3,6 +3,7 @@
 
 # 変更履歴
 
+- 2026.09.02: VirtualBox Windows 11隔離環境で3.1.21.0の新規Install／Uninstallを検証。製品登録・Service・`bin`・System `Path`削除と`config`・`data`・`logs`保持を確認。
 - 2026.09.02: 3.1.21.0をRelease。文書リンク自動検証、64文書、207テスト、MSI、実機`C:\Hataori`稼働を検証。
 - 2026.09.02: 3.1.21.0へVersion更新。文書リンク自動検証をMSI化し、64文書、207テスト、`C:\Hataori`実機Major Upgrade、CLI・Service・MCP・DB整合性を検証。
 - 2026.09.02: Git管理中Markdownの相対リンク切れとRepository外参照を検出するPowerShell検証とGitHub Actionsを追加。
@@ -61,8 +62,8 @@
 | CLI | 97% | 98% | 98% | 98% | 98% | 99% |
 | Windows Service | 100% | 100% | 100% | 100% | 100% | 100% |
 | Monitor | 95% | 95% | 95% | 95% | 96% | 98% |
-| 運用・復旧 | 97% | 99% | 100% | 100% | 100% | 98% |
-| 文書・配布 | 75% | 90% | 90% | 90% | 95% | 98% |
+| 運用・復旧 | 97% | 99% | 100% | 100% | 100% | 100% |
+| 文書・配布 | 75% | 90% | 90% | 90% | 95% | 100% |
 | テスト | 96% | 96% | 97% | 97% | 99% | 99% |
 
 ## 現在フェーズ
@@ -75,7 +76,7 @@ Phase 1（基盤・必須運用機能）: **99%**
 
 3.1.21.0でPhase 2のTODO 12項目をすべて完了しています。文書リンク64件、Release構成build警告0件・エラー0件、自動テスト207件合格、WiX MSI build成功、`C:\Hataori`へのMajor Upgrade成功、Windows Service Running / Automatic、MCP 28 tools、SQLite integrity `ok`を確認し、GitHubへ正式リリース済みです。
 
-機能TODOはありません。残作業は、隔離環境でのMSI Uninstall実機検証です。Claude CLIは実ユーザー権限で2.1.220の起動と`doctor` healthyを確認済みです。Codex sandbox SIDから実ユーザー専用WinGet packageを直接起動した場合のアクセス拒否は環境分離による想定動作です。
+機能TODOと配布検証の残作業はありません。VirtualBox Windows 11隔離環境で3.1.21.0の新規Install／Uninstallを実施し、製品登録・Windows Service・`bin`・System `Path`のHataori項目削除と、`config\hataori.json`・`data\hataori`・`logs`保持を確認しました。Claude CLIは実ユーザー権限で2.1.220の起動と`doctor` healthyを確認済みです。Codex sandbox SIDから実ユーザー専用WinGet packageを直接起動した場合のアクセス拒否は環境分離による想定動作です。
 
 ## 時系列の進捗・検証メモ
 
@@ -134,6 +135,7 @@ Phase 1（基盤・必須運用機能）: **99%**
 - [x] Itoguruma未連携でもHataori Serverが起動できる修正（`docs/adr/0015`、2026-08-19）
 - [x] `hataori doctor`の`itoguruma`チェックがライブなServer状態を参照するよう修正（2026-08-19）
 - [x] 3.0.4.0 MSI Major Upgrade実機検証（2026-08-19）
+- [x] 3.1.21.0 MSI新規Install／Uninstall隔離実機検証（VirtualBox Windows 11、2026-09-02）
 - [x] MCP Server Instructionsと`hataori_workflow` Prompt（3.1.9.0、2026-08-26）
 - [x] MCP `list_projects`、未登録Project候補返却、Task登録前Project選択案内（3.1.12.0、2026-08-31）
 - [x] Workspace単位のTask管理、MCP `list_workspaces`、SQLite移行、Monitor・会話Hook連携（3.1.13.0、2026-08-31）

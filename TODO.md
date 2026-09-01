@@ -3,6 +3,7 @@
 
 # 変更履歴
 
+- 2026.09.02: VirtualBox Windows 11隔離環境で3.1.21.0の新規Install／Uninstallを検証し、削除対象と保持対象を確認。
 - 2026.09.02: 3.1.21.0をRelease。文書リンク自動検証、64文書、207テスト、MSI、実機`C:\Hataori`稼働を検証。
 - 2026.09.02: 3.1.21.0へVersion更新。文書リンク自動検証をMSI化し、実機`C:\Hataori`へのMajor Upgradeと稼働確認を完了。
 - 2026.09.02: Git管理中Markdownの相対リンクを検証する自動チェックとGitHub Actionsを追加。
@@ -67,6 +68,7 @@
 ## P2
 
 - [X] 文書、配布、インストール手順を完成させる。
+- [X] VirtualBox Windows 11隔離環境でMSI Uninstallと設定・データ・ログ保持を実機検証する。
 
 # フェーズ計画
 
