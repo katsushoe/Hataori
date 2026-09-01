@@ -3,6 +3,7 @@
 
 # 変更履歴
 
+- 2026.09.01: 3.1.16.0をRelease。MonitorのTask／Agent Runキャンセル操作をMSI化し、実機`C:\Hataori`移設と稼働確認を完了。
 - 2026.09.01: 3.1.16.0実機環境を`C:\Hataori`へ統一し、インストール手順と検証記録を訂正。
 - 2026.09.01: Monitor管理操作を3.1.16.0へ反映し、MSI buildと実機Major Upgradeを完了。
 - 2026.09.01: 3.1.15.0をRelease。複数Activation root対応をMSI化し、実機Major Upgradeと2 root MCP検証を完了。
