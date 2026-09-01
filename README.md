@@ -42,6 +42,7 @@ Prerequisites are Windows x64, the .NET 9 SDK, and WiX Toolset 5.0.2 for MSI gen
 dotnet restore Hataori.sln
 dotnet build Hataori.sln --configuration Release --no-restore
 dotnet test Hataori.sln --configuration Release --no-build
+./scripts/Test-DocumentationLinks.ps1
 ./scripts/Build-Installer.ps1
 ```
 

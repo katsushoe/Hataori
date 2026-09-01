@@ -42,6 +42,7 @@ MSIはServer、CLI、Monitor、Windows Service登録、System `PATH`、Start Men
 dotnet restore Hataori.sln
 dotnet build Hataori.sln --configuration Release --no-restore
 dotnet test Hataori.sln --configuration Release --no-build
+./scripts/Test-DocumentationLinks.ps1
 ./scripts/Build-Installer.ps1
 ```
 

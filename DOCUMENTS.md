@@ -17,7 +17,7 @@ Public documentation, architecture decisions, progress, and plans are tracked in
 | `src/` | Yes | Core, Application, Infrastructure, Server, CLI, and Monitor implementations. |
 | `tests/` | Yes | Automated tests. |
 | `installer/` | Yes | WiX x64 MSI definition. |
-| `scripts/` | Yes | Publish and MSI build scripts. |
+| `scripts/` | Yes | Publish, MSI build, and documentation-link validation scripts. |
 | `docs/adr/` | Yes | Architecture decision records. |
 | `docs/validation/` | Yes | Sanitized real-machine validation records. |
 | `progress/` | Yes | Progress visualization. |

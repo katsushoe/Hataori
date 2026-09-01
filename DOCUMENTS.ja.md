@@ -17,7 +17,7 @@
 | `src/` | Yes | Core、Application、Infrastructure、Server、CLI、Monitorの実装。 |
 | `tests/` | Yes | 自動テスト。 |
 | `installer/` | Yes | WiX x64 MSI定義。 |
-| `scripts/` | Yes | publish・MSI生成スクリプト。 |
+| `scripts/` | Yes | publish・MSI生成・文書リンク検証スクリプト。 |
 | `docs/adr/` | Yes | アーキテクチャ判断の正本。 |
 | `docs/validation/` | Yes | 実環境検証結果。 |
 | `progress/` | Yes | 進捗グラフ。 |

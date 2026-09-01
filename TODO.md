@@ -3,6 +3,7 @@
 
 # 変更履歴
 
+- 2026.09.02: Git管理中Markdownの相対リンクを検証する自動チェックとGitHub Actionsを追加。
 - 2026.09.02: 3.1.20.0をRelease。`doctor`のService Account差異テスト、207テスト、MSI、実機`C:\Hataori`稼働を検証。
 - 2026.09.02: 3.1.20.0へVersion更新。`doctor`のService Account差異テストをMSI化し、実機`C:\Hataori`へのMajor Upgradeと稼働確認を完了。
 - 2026.09.02: 3.1.19.0へVersion更新。詳細MetricsをMSI化し、実機`C:\Hataori`へのMajor Upgradeと稼働確認を完了。
