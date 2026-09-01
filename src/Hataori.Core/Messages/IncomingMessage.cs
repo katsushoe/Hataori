@@ -10,4 +10,5 @@ public sealed record IncomingMessage(
     string MessageType,
     string Body,
     string? PayloadJson,
-    DateTimeOffset ReceivedAtUtc);
+    DateTimeOffset ReceivedAtUtc,
+    string WorkspaceId = Hataori.Core.Workspaces.WorkspaceId.Default);

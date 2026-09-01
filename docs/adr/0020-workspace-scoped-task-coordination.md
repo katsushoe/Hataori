@@ -14,10 +14,13 @@ Hataori previously treated every task as part of one implicit global workspace. 
 - The configured `activation.workingDirectory` is one workspace root. Its immediate child directories are registered projects.
 - `list_workspaces` exposes the configured workspace and its project IDs. `list_projects` remains available and returns an empty list when no root is configured.
 - Tasks persist `workspace_id`. Existing rows and legacy MCP tools use `default` for backward compatibility.
+- Conversation sessions, incoming messages, agent runs, and Monitor snapshots persist or expose the same workspace ID.
+- Session identity is `(workspace_id, conversation_id, agent_id)`. Conversation mutexes also include the workspace ID, so equal conversation IDs in different workspaces do not block each other.
+- CLI list/get operations for runs, sessions, and queued messages accept an optional `--workspace` filter.
 - New workspace-scoped MCP tools start, list, and check conflicts within one workspace.
 - Monitor task snapshots include the workspace ID.
 
-Conversation sessions, messages, and agent runs retain their existing identifiers in this version. They are linked to workspace-scoped tasks through existing task and conversation identifiers; propagating a workspace column to every runtime record is deferred until multiple activation roots can run concurrently.
+Run IDs and message IDs remain globally unique. The current configuration still exposes one activation root, while the data and execution paths preserve workspace isolation for messages supplied by future multi-root ingestion.
 
 ## Alternatives considered
 
@@ -27,8 +30,8 @@ Conversation sessions, messages, and agent runs retain their existing identifier
 
 ## Consequences
 
-Existing databases migrate in place by adding a non-null `workspace_id` with the `default` value. Workspace IDs are configuration data and must not contain paths or credentials. Operators can adopt scoped tools incrementally; legacy clients continue to operate in `default`.
+Existing databases migrate in place by assigning `default` to prior Task, Session, Message, and Agent Run rows. The Session table is rebuilt transactionally to extend its primary key without losing data. Workspace IDs are configuration data and must not contain paths or credentials. Operators can adopt scoped tools incrementally; legacy clients continue to operate in `default`.
 
 ## Verification
 
-Unit and integration tests cover ID validation, workspace discovery, scoped lists and conflicts, and migration of a pre-workspace SQLite schema.
+Unit and integration tests cover ID validation, workspace discovery, scoped lists and conflicts, runtime propagation, same-conversation isolation across workspaces, and migration of pre-workspace SQLite schemas.

@@ -1,12 +1,16 @@
 using Hataori.Core.Runs;
+using Hataori.Core.Workspaces;
 
 namespace Hataori.Application.Runs;
 
 public sealed class AgentRunService(IAgentRunRepository repository, TimeProvider timeProvider)
 {
     public async Task<AgentRun> QueueAsync(string runId, string messageId, string conversationId, string agentId, CancellationToken cancellationToken)
+        => await QueueAsync(WorkspaceId.Default, runId, messageId, conversationId, agentId, cancellationToken).ConfigureAwait(false);
+
+    public async Task<AgentRun> QueueAsync(string workspaceId, string runId, string messageId, string conversationId, string agentId, CancellationToken cancellationToken)
     {
-        var run = AgentRun.Queue(runId, messageId, conversationId, agentId, timeProvider.GetUtcNow());
+        var run = AgentRun.Queue(workspaceId, runId, messageId, conversationId, agentId, timeProvider.GetUtcNow());
         await repository.AddAsync(run, cancellationToken).ConfigureAwait(false);
         return run;
     }
@@ -15,6 +19,10 @@ public sealed class AgentRunService(IAgentRunRepository repository, TimeProvider
 
     public Task<IReadOnlyList<AgentRun>> ListAsync(AgentRunStatus? status, string? agentId, CancellationToken cancellationToken) =>
         repository.ListAsync(status, agentId, cancellationToken);
+
+    public async Task<IReadOnlyList<AgentRun>> ListAsync(string workspaceId, AgentRunStatus? status, string? agentId, CancellationToken cancellationToken) =>
+        (await repository.ListAsync(status, agentId, cancellationToken).ConfigureAwait(false))
+            .Where(run => run.WorkspaceId == WorkspaceId.Normalize(workspaceId)).ToArray();
 
     public async Task<AgentRun> MarkStartingAsync(string runId, CancellationToken cancellationToken)
     {

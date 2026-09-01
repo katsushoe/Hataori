@@ -364,7 +364,7 @@ Commands: [`list`](#hataori-agent-list), [`status`](#hataori-agent-status), [`ru
 | Item | Specification |
 | :--- | :--- |
 | Purpose | List persisted agent runs. |
-| Syntax | `hataori agent runs [--status <status>] [--agent <id>] --database <path>` |
+| Syntax | `hataori agent runs [--status <status>] [--agent <id>] [--workspace <id>] --database <path>` |
 | Arguments | Status values: `queued`, `starting`, `running`, `completed`, `failed`, `cancelled`. |
 | Processing | Queries SQLite using optional filters. |
 | Result | JSON run array whose membership varies with filters and persisted state. |
@@ -392,7 +392,7 @@ Commands: [`list`](#hataori-conversation-list), [`get`](#hataori-conversation-ge
 | Item | Specification |
 | :--- | :--- |
 | Purpose | List persisted conversation sessions. |
-| Syntax | `hataori conversation list [--status <status>] [--agent <id>] --database <path>` |
+| Syntax | `hataori conversation list [--status <status>] [--agent <id>] [--workspace <id>] --database <path>` |
 | Arguments | Status values: `idle`, `running`, `invalid`; database is required. |
 | Processing | Queries SQLite with optional filters. |
 | Result | JSON session array. |
@@ -404,9 +404,9 @@ Commands: [`list`](#hataori-conversation-list), [`get`](#hataori-conversation-ge
 | Item | Specification |
 | :--- | :--- |
 | Purpose | Read one conversation session. |
-| Syntax | `hataori conversation get <conversation-id> --agent <id> --database <path>` |
+| Syntax | `hataori conversation get <conversation-id> --agent <id> [--workspace <id>] --database <path>` |
 | Arguments | Conversation ID and agent ID are required. |
-| Processing | Reads the composite conversation/agent key. |
+| Processing | Reads the workspace/conversation/agent key. The legacy default is `default`. |
 | Result | JSON session; missing session exits `4`. |
 | Example | `hataori conversation get conv-1 --agent codex --database F:\Hataori\data\hataori.db` |
 | Safety | Read-only. |
@@ -416,7 +416,7 @@ Commands: [`list`](#hataori-conversation-list), [`get`](#hataori-conversation-ge
 | Item | Specification |
 | :--- | :--- |
 | Purpose | Invalidate one conversation session so later activation can recreate it. |
-| Syntax | `hataori conversation reset <conversation-id> --agent <id> --database <path>` |
+| Syntax | `hataori conversation reset <conversation-id> --agent <id> [--workspace <id>] --database <path>` |
 | Arguments | Conversation ID and agent ID are required. |
 | Processing | Changes the persisted session to `invalid`. |
 | Result | Updated JSON session. |
@@ -432,7 +432,7 @@ Commands: [`list`](#hataori-queue-list), [`get`](#hataori-queue-get), [`retry`](
 | Item | Specification |
 | :--- | :--- |
 | Purpose | List queued messages. |
-| Syntax | `hataori queue list [--agent <id>] --database <path>` |
+| Syntax | `hataori queue list [--agent <id>] [--workspace <id>] --database <path>` |
 | Arguments | Database is required; agent filter is optional. |
 | Processing | Reads persisted queued messages. |
 | Result | JSON message array. |
@@ -444,7 +444,7 @@ Commands: [`list`](#hataori-queue-list), [`get`](#hataori-queue-get), [`retry`](
 | Item | Specification |
 | :--- | :--- |
 | Purpose | Read one queued message. |
-| Syntax | `hataori queue get <message-id> --database <path>` |
+| Syntax | `hataori queue get <message-id> [--workspace <id>] --database <path>` |
 | Arguments | Message ID and database are required. |
 | Processing | Reads the persisted queue record. |
 | Result | JSON message; missing message exits `4`. |

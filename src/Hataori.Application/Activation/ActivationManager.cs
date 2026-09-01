@@ -67,11 +67,11 @@ public sealed class ActivationManager
             return new ActivationResult(message.MessageId, null, null, false, error);
         }
 
-        await using var mutex = await _conversationMutex.AcquireAsync(message.ConversationId, message.AgentId, cancellationToken).ConfigureAwait(false);
+        await using var mutex = await _conversationMutex.AcquireAsync($"{message.WorkspaceId}:{message.ConversationId}", message.AgentId, cancellationToken).ConfigureAwait(false);
         var runId = $"run-{Guid.NewGuid():N}";
-        await _runs.QueueAsync(runId, message.MessageId, message.ConversationId, message.AgentId, cancellationToken).ConfigureAwait(false);
+        await _runs.QueueAsync(message.WorkspaceId, runId, message.MessageId, message.ConversationId, message.AgentId, cancellationToken).ConfigureAwait(false);
         await _runs.MarkStartingAsync(runId, cancellationToken).ConfigureAwait(false);
-        var session = await _sessions.GetAsync(message.ConversationId, message.AgentId, cancellationToken).ConfigureAwait(false);
+        var session = await _sessions.GetAsync(message.WorkspaceId, message.ConversationId, message.AgentId, cancellationToken).ConfigureAwait(false);
         var canResume = session is { Status: ConversationSessionStatus.Idle };
 
         using var runCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -80,7 +80,7 @@ public sealed class ActivationManager
         {
             if (canResume)
             {
-                await _sessions.StartRunAsync(message.ConversationId, message.AgentId, cancellationToken).ConfigureAwait(false);
+                await _sessions.StartRunAsync(message.WorkspaceId, message.ConversationId, message.AgentId, cancellationToken).ConfigureAwait(false);
             }
 
             await _messageQueue.MarkRunningAsync(message.MessageId, cancellationToken).ConfigureAwait(false);
@@ -107,11 +107,11 @@ public sealed class ActivationManager
             await _runs.CompleteAsync(runId, result.NativeSessionId, result.ProcessResult.ExitCode, result.FinalMessage, cancellationToken).ConfigureAwait(false);
             if (canResume)
             {
-                await _sessions.CompleteRunAsync(message.ConversationId, message.AgentId, result.NativeSessionId, cancellationToken).ConfigureAwait(false);
+                await _sessions.CompleteRunAsync(message.WorkspaceId, message.ConversationId, message.AgentId, result.NativeSessionId, cancellationToken).ConfigureAwait(false);
             }
             else
             {
-                await _sessions.RegisterAsync(message.ConversationId, message.AgentId, result.NativeSessionId, cancellationToken).ConfigureAwait(false);
+                await _sessions.RegisterAsync(message.WorkspaceId, message.ConversationId, message.AgentId, result.NativeSessionId, cancellationToken).ConfigureAwait(false);
             }
 
             try
@@ -214,10 +214,10 @@ public sealed class ActivationManager
             return;
         }
 
-        var current = await _sessions.GetAsync(session.ConversationId, session.AgentId, CancellationToken.None).ConfigureAwait(false);
+        var current = await _sessions.GetAsync(session.WorkspaceId, session.ConversationId, session.AgentId, CancellationToken.None).ConfigureAwait(false);
         if (current?.Status == ConversationSessionStatus.Running)
         {
-            await _sessions.InvalidateAsync(current.ConversationId, current.AgentId, CancellationToken.None).ConfigureAwait(false);
+            await _sessions.InvalidateAsync(current.WorkspaceId, current.ConversationId, current.AgentId, CancellationToken.None).ConfigureAwait(false);
         }
     }
 

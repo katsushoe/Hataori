@@ -33,6 +33,7 @@ public sealed record MonitorTask(
 
 /// <summary>Monitorへ返す会話セッション表示情報です。</summary>
 public sealed record MonitorSession(
+    string WorkspaceId,
     string ConversationId,
     string AgentId,
     string NativeSessionId,
@@ -41,6 +42,7 @@ public sealed record MonitorSession(
 
 /// <summary>Monitorへ返すAgent実行表示情報です。</summary>
 public sealed record MonitorRun(
+    string WorkspaceId,
     string RunId,
     string MessageId,
     string ConversationId,

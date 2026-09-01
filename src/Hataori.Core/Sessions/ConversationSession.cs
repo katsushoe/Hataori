@@ -1,9 +1,12 @@
 namespace Hataori.Core.Sessions;
 
+using WorkspaceIdentifier = Hataori.Core.Workspaces.WorkspaceId;
+
 public sealed class ConversationSession
 {
-    private ConversationSession(string conversationId, string agentId, string nativeSessionId, DateTimeOffset createdAtUtc)
+    private ConversationSession(string workspaceId, string conversationId, string agentId, string nativeSessionId, DateTimeOffset createdAtUtc)
     {
+        WorkspaceId = WorkspaceIdentifier.Normalize(workspaceId);
         ConversationId = conversationId;
         AgentId = agentId;
         NativeSessionId = nativeSessionId;
@@ -12,6 +15,7 @@ public sealed class ConversationSession
         LastUsedAtUtc = CreatedAtUtc;
     }
 
+    public string WorkspaceId { get; }
     public string ConversationId { get; }
     public string AgentId { get; }
     public string NativeSessionId { get; private set; }
@@ -21,11 +25,15 @@ public sealed class ConversationSession
     public DateTimeOffset? InvalidatedAtUtc { get; private set; }
 
     public static ConversationSession Create(string conversationId, string agentId, string nativeSessionId, DateTimeOffset createdAtUtc)
+        => Create(WorkspaceIdentifier.Default, conversationId, agentId, nativeSessionId, createdAtUtc);
+
+    public static ConversationSession Create(string workspaceId, string conversationId, string agentId, string nativeSessionId, DateTimeOffset createdAtUtc)
     {
+        workspaceId = WorkspaceIdentifier.Normalize(workspaceId);
         ArgumentException.ThrowIfNullOrWhiteSpace(conversationId);
         ArgumentException.ThrowIfNullOrWhiteSpace(agentId);
         ArgumentException.ThrowIfNullOrWhiteSpace(nativeSessionId);
-        return new ConversationSession(conversationId, agentId, nativeSessionId, createdAtUtc);
+        return new ConversationSession(workspaceId, conversationId, agentId, nativeSessionId, createdAtUtc);
     }
 
     public static ConversationSession Restore(
@@ -36,8 +44,19 @@ public sealed class ConversationSession
         DateTimeOffset createdAtUtc,
         DateTimeOffset lastUsedAtUtc,
         DateTimeOffset? invalidatedAtUtc)
+        => Restore(WorkspaceIdentifier.Default, conversationId, agentId, nativeSessionId, status, createdAtUtc, lastUsedAtUtc, invalidatedAtUtc);
+
+    public static ConversationSession Restore(
+        string workspaceId,
+        string conversationId,
+        string agentId,
+        string nativeSessionId,
+        ConversationSessionStatus status,
+        DateTimeOffset createdAtUtc,
+        DateTimeOffset lastUsedAtUtc,
+        DateTimeOffset? invalidatedAtUtc)
     {
-        var session = Create(conversationId, agentId, nativeSessionId, createdAtUtc);
+        var session = Create(workspaceId, conversationId, agentId, nativeSessionId, createdAtUtc);
         session.Status = status;
         session.LastUsedAtUtc = lastUsedAtUtc.ToUniversalTime();
         session.InvalidatedAtUtc = invalidatedAtUtc?.ToUniversalTime();

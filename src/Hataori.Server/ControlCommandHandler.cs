@@ -108,10 +108,10 @@ public sealed class ControlCommandHandler
             task.WorkspaceId, task.TaskId, task.TaskName, task.AgentId, task.ConversationId, task.Status.ToString().ToLowerInvariant(),
             task.CurrentWork, task.ProgressPercent, task.LastActivityAtUtc)).ToArray();
         var monitorSessions = sessions.Select(session => new MonitorSession(
-            session.ConversationId, session.AgentId, session.NativeSessionId,
+            session.WorkspaceId, session.ConversationId, session.AgentId, session.NativeSessionId,
             session.Status.ToString().ToLowerInvariant(), session.LastUsedAtUtc)).ToArray();
         var monitorRuns = runs.Select(run => new MonitorRun(
-            run.RunId, run.MessageId, run.ConversationId, run.AgentId, run.Status.ToString().ToLowerInvariant(),
+            run.WorkspaceId, run.RunId, run.MessageId, run.ConversationId, run.AgentId, run.Status.ToString().ToLowerInvariant(),
             run.QueuedAtUtc, run.StartedAtUtc, run.EndedAtUtc, run.Error)).ToArray();
         var snapshot = new MonitorSnapshot(monitorTasks, agents, monitorSessions, monitorRuns, queued.Count, new MonitorSystemStatus("running", _itogurumaState.Value, "running", "connected"));
         return new ControlResponse(true, "running", _timeProvider.GetUtcNow(), snapshot);

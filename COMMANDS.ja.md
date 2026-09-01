@@ -287,7 +287,7 @@ Command: [`list`](#hataori-agent-list)、[`status`](#hataori-agent-status)、[`r
 #### `hataori agent runs`
 
 - 目的: 永続Agent Runを一覧化します。
-- 構文: `hataori agent runs [--status <status>] [--agent <id>] --database <path>`。
+- 構文: `hataori agent runs [--status <status>] [--agent <id>] [--workspace <id>] --database <path>`。
 - 引数: Statusは`queued/starting/running/completed/failed/cancelled`です。
 - 処理・戻り値: Filterと永続状態に応じたRun JSON arrayを返します。
 - 例: `hataori agent runs --status running --database F:\Hataori\data\hataori.db`。
@@ -309,7 +309,7 @@ Command: [`list`](#hataori-conversation-list)、[`get`](#hataori-conversation-ge
 #### `hataori conversation list`
 
 - 目的: 永続Conversation Sessionを一覧化します。
-- 構文: `hataori conversation list [--status <status>] [--agent <id>] --database <path>`。
+- 構文: `hataori conversation list [--status <status>] [--agent <id>] [--workspace <id>] --database <path>`。
 - 引数: Statusは`idle/running/invalid`、DB必須です。
 - 処理・戻り値: Filterに応じたSession JSON arrayを返します。
 - 例: `hataori conversation list --status running --database F:\Hataori\data\hataori.db`。
@@ -318,16 +318,16 @@ Command: [`list`](#hataori-conversation-list)、[`get`](#hataori-conversation-ge
 #### `hataori conversation get`
 
 - 目的: 1 Conversation Sessionを読みます。
-- 構文: `hataori conversation get <conversation-id> --agent <id> --database <path>`。
+- 構文: `hataori conversation get <conversation-id> --agent <id> [--workspace <id>] --database <path>`。
 - 引数: Conversation ID、Agent ID、DB必須です。
-- 処理・戻り値: Composite keyでSession JSONを返し、未存在は終了`4`です。
+- 処理・戻り値: Workspace／Conversation／Agentの複合キーでSession JSONを返し、未存在は終了`4`です。省略時Workspaceは`default`です。
 - 例: `hataori conversation get conv-1 --agent codex --database F:\Hataori\data\hataori.db`。
 - 安全: 読み取り専用です。
 
 #### `hataori conversation reset`
 
 - 目的: Sessionを無効化して次回Activationで再生成可能にします。
-- 構文: `hataori conversation reset <conversation-id> --agent <id> --database <path>`。
+- 構文: `hataori conversation reset <conversation-id> --agent <id> [--workspace <id>] --database <path>`。
 - 引数: Conversation ID、Agent ID、DB必須です。
 - 処理・戻り値: 状態を`invalid`へ変更し更新Session JSONを返します。
 - 例: `hataori conversation reset conv-1 --agent codex --database F:\Hataori\data\hataori.db`。
@@ -340,7 +340,7 @@ Command: [`list`](#hataori-queue-list)、[`get`](#hataori-queue-get)、[`retry`]
 #### `hataori queue list`
 
 - 目的: Queue Messageを一覧化します。
-- 構文: `hataori queue list [--agent <id>] --database <path>`。
+- 構文: `hataori queue list [--agent <id>] [--workspace <id>] --database <path>`。
 - 引数: DB必須、Agent filter任意です。
 - 処理・戻り値: 永続Queue Message JSON arrayを返します。
 - 例: `hataori queue list --agent codex --database F:\Hataori\data\hataori.db`。
@@ -349,7 +349,7 @@ Command: [`list`](#hataori-queue-list)、[`get`](#hataori-queue-get)、[`retry`]
 #### `hataori queue get`
 
 - 目的: 1 Queue Messageを読みます。
-- 構文: `hataori queue get <message-id> --database <path>`。
+- 構文: `hataori queue get <message-id> [--workspace <id>] --database <path>`。
 - 引数: Message IDとDB必須です。
 - 処理・戻り値: 永続Message JSONを返し、未存在は終了`4`です。
 - 例: `hataori queue get msg-1 --database F:\Hataori\data\hataori.db`。

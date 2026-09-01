@@ -10,6 +10,7 @@ using Hataori.Application.Codex;
 using Hataori.Core.Runs;
 using Hataori.Core.Sessions;
 using Hataori.Core.Tasks;
+using Hataori.Core.Workspaces;
 using Hataori.Infrastructure.Agents.ClaudeCode;
 using Hataori.Infrastructure.Agents.Codex;
 using Hataori.Infrastructure.Messages;
@@ -605,7 +606,8 @@ public static class CliApplication
         await repository.InitializeAsync(cancellationToken).ConfigureAwait(false);
         if (command.Equals("runs", StringComparison.OrdinalIgnoreCase))
         {
-            return await repository.ListAsync(ParseRunStatus(Optional(options, "status")), Optional(options, "agent"), cancellationToken).ConfigureAwait(false);
+            var runs = await repository.ListAsync(ParseRunStatus(Optional(options, "status")), Optional(options, "agent"), cancellationToken).ConfigureAwait(false);
+            return FilterByWorkspace(runs, Optional(options, "workspace"), run => run.WorkspaceId);
         }
 
         if (!command.Equals("list", StringComparison.OrdinalIgnoreCase) && !command.Equals("status", StringComparison.OrdinalIgnoreCase))
@@ -616,6 +618,7 @@ public static class CliApplication
         var configuration = LoadConfiguration(options);
         var activation = configuration.GetRequiredSection(ActivationOptions.SectionName).Get<ActivationOptions>() ?? new ActivationOptions();
         var running = await repository.ListAsync(AgentRunStatus.Running, null, cancellationToken).ConfigureAwait(false);
+        running = FilterByWorkspace(running, Optional(options, "workspace"), run => run.WorkspaceId);
         var summaries = new[]
         {
             CreateAgentSummary("codex", configuration.GetSection(CodexDriverOptions.SectionName).Exists(), activation, running),
@@ -640,21 +643,27 @@ public static class CliApplication
         await repository.InitializeAsync(cancellationToken).ConfigureAwait(false);
         if (command.Equals("list", StringComparison.OrdinalIgnoreCase))
         {
-            return await repository.ListAsync(ParseSessionStatus(Optional(options, "status")), Optional(options, "agent"), cancellationToken).ConfigureAwait(false);
+            var sessions = await repository.ListAsync(ParseSessionStatus(Optional(options, "status")), Optional(options, "agent"), cancellationToken).ConfigureAwait(false);
+            return FilterByWorkspace(sessions, Optional(options, "workspace"), session => session.WorkspaceId);
         }
 
         var conversationId = positional ?? Required(options, "conversation");
         var agentId = Required(options, "agent");
         var service = new ConversationSessionService(repository, TimeProvider.System);
+        var workspaceId = Optional(options, "workspace");
         if (command.Equals("get", StringComparison.OrdinalIgnoreCase))
         {
-            return await service.GetAsync(conversationId, agentId, cancellationToken).ConfigureAwait(false)
+            return await (workspaceId is null
+                ? service.GetAsync(conversationId, agentId, cancellationToken)
+                : service.GetAsync(workspaceId, conversationId, agentId, cancellationToken)).ConfigureAwait(false)
                 ?? throw new KeyNotFoundException(DisplayLanguage.Text($"Conversation '{conversationId}/{agentId}'が見つかりません。", $"Conversation '{conversationId}/{agentId}' was not found."));
         }
 
         if (command.Equals("reset", StringComparison.OrdinalIgnoreCase))
         {
-            return await service.InvalidateAsync(conversationId, agentId, cancellationToken).ConfigureAwait(false);
+            return workspaceId is null
+                ? await service.InvalidateAsync(conversationId, agentId, cancellationToken).ConfigureAwait(false)
+                : await service.InvalidateAsync(workspaceId, conversationId, agentId, cancellationToken).ConfigureAwait(false);
         }
 
         throw new ArgumentException(DisplayLanguage.Text($"不明なconversationコマンドです: '{command}'。", $"Unknown conversation command '{command}'."));
@@ -666,14 +675,18 @@ public static class CliApplication
         await repository.InitializeAsync(cancellationToken).ConfigureAwait(false);
         if (command.Equals("list", StringComparison.OrdinalIgnoreCase))
         {
-            return await repository.ListAsync(Optional(options, "agent"), cancellationToken).ConfigureAwait(false);
+            var messages = await repository.ListAsync(Optional(options, "agent"), cancellationToken).ConfigureAwait(false);
+            return FilterByWorkspace(messages, Optional(options, "workspace"), message => message.Message.WorkspaceId);
         }
 
         var messageId = positional ?? Required(options, "message");
         if (command.Equals("get", StringComparison.OrdinalIgnoreCase))
         {
-            return await repository.GetQueuedAsync(messageId, cancellationToken).ConfigureAwait(false)
-                ?? throw new KeyNotFoundException(DisplayLanguage.Text($"Queue message '{messageId}'が見つかりません。", $"Queued message '{messageId}' was not found."));
+            var message = await repository.GetQueuedAsync(messageId, cancellationToken).ConfigureAwait(false);
+            var workspaceId = Optional(options, "workspace");
+            return message is not null && (workspaceId is null || message.Message.WorkspaceId == WorkspaceId.Normalize(workspaceId))
+                ? message
+                : throw new KeyNotFoundException(DisplayLanguage.Text($"Queue message '{messageId}'が見つかりません。", $"Queued message '{messageId}' was not found."));
         }
 
         if (command.Equals("retry", StringComparison.OrdinalIgnoreCase))
@@ -688,6 +701,17 @@ public static class CliApplication
         }
 
         throw new ArgumentException(DisplayLanguage.Text($"不明なqueueコマンドです: '{command}'。", $"Unknown queue command '{command}'."));
+    }
+
+    private static IReadOnlyList<T> FilterByWorkspace<T>(IReadOnlyList<T> values, string? workspaceId, Func<T, string> selector)
+    {
+        if (workspaceId is null)
+        {
+            return values;
+        }
+
+        var normalized = WorkspaceId.Normalize(workspaceId);
+        return values.Where(value => selector(value) == normalized).ToArray();
     }
 
     private static async Task<object> ExecuteCodexAsync(string command, string? positional, IReadOnlyDictionary<string, string> options, string connectionString, CancellationToken cancellationToken)
