@@ -25,7 +25,7 @@ hataori mcp status
 標準成果物は自己完結型Windows x64 MSIです。ダブルクリックしてUACを承認するか、管理者ターミナルから任意のインストール先を指定します。
 
 ```powershell
-msiexec.exe /i Hataori-3.0.5.0-x64.msi INSTALL_ROOT="F:\Hataori"
+msiexec.exe /i Hataori-3.1.16.0-x64.msi INSTALL_ROOT="C:\Hataori"
 ```
 
 MSIはServer、CLI、Monitor、Windows Service登録、System `PATH`、Start Menu Shortcutを導入します。Install、Upgrade、Uninstallの動作は[インストール](docs/installation.ja.md)を参照してください。
@@ -57,7 +57,7 @@ dotnet test Hataori.sln --configuration Release --no-build
 
 ```powershell
 hataori doctor
-hataori task list --database F:\Hataori\data\hataori.db
+hataori task list --database C:\Hataori\data\hataori.db
 hataori logs --lines 100
 hataori monitor
 ```
