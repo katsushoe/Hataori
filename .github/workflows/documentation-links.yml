@@ -1,0 +1,25 @@
+name: Documentation links
+
+on:
+  push:
+    paths:
+      - "**/*.md"
+      - "scripts/Test-DocumentationLinks.ps1"
+      - ".github/workflows/documentation-links.yml"
+  pull_request:
+    paths:
+      - "**/*.md"
+      - "scripts/Test-DocumentationLinks.ps1"
+      - ".github/workflows/documentation-links.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate tracked Markdown links
+        shell: pwsh
+        run: ./scripts/Test-DocumentationLinks.ps1
