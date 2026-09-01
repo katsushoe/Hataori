@@ -3,6 +3,7 @@
 
 # 変更履歴
 
+- 2026.09.01: Monitor管理操作を3.1.16.0へ反映し、200テスト、MSI build、実機Major Upgradeを検証。
 - 2026.09.01: 3.1.15.0をRelease。複数Activation root対応をMSI化し、198テスト、実機Major Upgrade、2 root MCP列挙を検証。
 - 2026.09.01: 3.1.14.0をRelease。Workspace管理v2をMSI化し、193テスト、実機Major Upgrade、Service・MCP・doctorを検証。
 - 2026.09.01: 複数Activation root設定とWorkspace別Itoguruma取り込みを実装し、198テストを検証。
