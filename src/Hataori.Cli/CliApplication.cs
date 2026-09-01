@@ -463,21 +463,7 @@ public static class CliApplication
 
     private static async Task AddDoctorCheckAsync(List<DoctorCheck> checks, string name, Func<Task> action, Func<Exception, bool>? skipPredicate = null)
     {
-        try
-        {
-            await action().ConfigureAwait(false);
-            checks.Add(new DoctorCheck(name, true, null));
-        }
-        catch (Exception exception) when (exception is not OperationCanceledException)
-        {
-            if (skipPredicate is not null && skipPredicate(exception))
-            {
-                checks.Add(new DoctorCheck(name, false, $"Skipped: this check requires the same account as the Hataori Service (e.g. SYSTEM). {exception.Message}", Skipped: true));
-                return;
-            }
-
-            checks.Add(new DoctorCheck(name, false, exception.Message));
-        }
+        checks.Add(await DoctorCheckRunner.RunAsync(name, action, skipPredicate).ConfigureAwait(false));
     }
 
     private static IConfigurationRoot LoadConfiguration(IReadOnlyDictionary<string, string> options) =>
@@ -935,6 +921,5 @@ public static class CliApplication
         "Usage: hataori <start|stop|restart|status|service|task|agent|conversation|queue|codex|metrics|db|config|provider|setup|itoguruma|mcp|doctor|logs|monitor|hook|version|help> [command] [options]");
     private static string GetSubcommandHelp(string command) => DisplayLanguage.Text($"使い方: hataori {command} <コマンド> [引数] [オプション]", $"Usage: hataori {command} <command> [arguments] [options]");
 
-    private sealed record DoctorCheck(string Name, bool Ok, string? Error, bool Skipped = false);
     private sealed record AgentSummary(string WorkspaceId, string AgentId, bool Enabled, int Running, int MaxRuns);
 }
