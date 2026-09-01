@@ -3,6 +3,7 @@
 
 # 変更履歴
 
+- 2026.09.02: Claude CLIアクセス拒否はCodex sandbox SIDによる診断環境差と確定。実ユーザーではClaude Code 2.1.220起動成功、`doctor` healthyを確認し、未解決項目から除外。
 - 2026.09.02: 3.1.19.0時点の実態へ進捗率、Phase 1、グラフ、完了機能、残作業を同期。全体99%、Phase 1 99%。
 - 2026.09.02: 3.1.19.0へVersion更新。詳細MetricsをMSI化し、204テスト、`C:\Hataori`実機Major Upgrade、CLI・Service・MCP・DB整合性を検証。
 - 2026.09.02: Workspace単位の詳細Metricsを実装。Task／Message／Agent Runの状態件数、成功率、再試行、平均時間、Agent別内訳をCLI／MCPへ追加し、204テストを検証。
@@ -68,7 +69,7 @@ Phase 1（基盤・必須運用機能）: **99%**
 
 3.1.19.0でPhase 2のTODO 12項目をすべて完了しました。Release構成buildは警告0件・エラー0件、自動テスト204件合格、WiX MSI build成功、`C:\Hataori`へのMajor Upgrade成功、Windows Service Running / Automatic、MCP 28 tools、詳細Metrics実データ集計、SQLite integrity `ok`を確認し、GitHubへ正式リリース済みです。
 
-機能TODOはありません。残作業は、実機のClaude CLI実行fileアクセス拒否の解消、`doctor`のService Account差異に対する専用自動テスト、文書リンク自動整合チェック、隔離環境でのMSI Uninstall実機検証です。
+機能TODOはありません。残作業は、`doctor`のService Account差異に対する専用自動テスト、文書リンク自動整合チェック、隔離環境でのMSI Uninstall実機検証です。Claude CLIは実ユーザー権限で2.1.220の起動と`doctor` healthyを確認済みです。Codex sandbox SIDから実ユーザー専用WinGet packageを直接起動した場合のアクセス拒否は環境分離による想定動作です。
 
 ## 時系列の進捗・検証メモ
 
