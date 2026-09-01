@@ -106,7 +106,7 @@ Hataoriには名前付きprofile fileがありません。通常file path、環�
 
 - 型/必須: 空でないstring、必須。
 - 既定値: `hataori`。省略時は検証に失敗します。
-- 動作: Hataori Service自身が返信を送信するときの送信元IDです。監視対象プロジェクトを限定しません。監視対象は`activation.workingDirectory`直下から自動検出されます。
+- 動作: Hataori Service自身が返信を送信するときの送信元IDです。監視対象プロジェクトを限定しません。監視対象は`activation.workspaces`の各root直下から自動検出されます。
 - 例: `"agentId": "hataori"`。
 
 #### `itoguruma.agentType`
@@ -221,7 +221,7 @@ Hataoriには名前付きprofile fileがありません。通常file path、環�
 
 ### `activation`
 
-子項目: [`enabled`](#activationenabled)、[`workspaceId`](#activationworkspaceid)、[`workingDirectory`](#activationworkingdirectory)、[`pollIntervalMilliseconds`](#activationpollintervalmilliseconds)、[`providerPriority`](#activationproviderpriority)、[`maxConcurrentRuns`](#activationmaxconcurrentruns)。
+子項目: [`enabled`](#activationenabled)、[`workspaces`](#activationworkspaces)、後方互換用の[`workspaceId`](#activationworkspaceid)と[`workingDirectory`](#activationworkingdirectory)、[`pollIntervalMilliseconds`](#activationpollintervalmilliseconds)、[`providerPriority`](#activationproviderpriority)、[`maxConcurrentRuns`](#activationmaxconcurrentruns)。
 
 #### `activation.enabled`
 
@@ -235,7 +235,7 @@ Hataoriには名前付きprofile fileがありません。通常file path、環�
 - 型/必須: string、条件付き必須。
 - 既定値: 空string。
 - 制約: Activation有効時は存在する絶対directoryが必要です。
-- 動作: 直下の全directoryをプロジェクトとしてItogurumaへ自動登録・監視するProjects rootです。directory名を宛先プロジェクトIDとして使用します。
+- 動作: `workspaces`未設定時だけ使用する後方互換用の単一Projects rootです。
 - 例: `"workingDirectory": "F:\\Workspace\\Projects"`。
 
 #### `activation.workspaceId`
@@ -243,8 +243,16 @@ Hataoriには名前付きprofile fileがありません。通常file path、環�
 - 型/必須: string、任意。
 - 既定値: `"default"`。
 - 制約: `^[a-z][a-z0-9]*$`。入力値は小文字へ正規化されます。
-- 動作: `workingDirectory`で構成したWorkspaceをTask、MCP、Monitorで識別します。
+- 動作: `workspaces`未設定時だけ、`workingDirectory`で構成したWorkspaceを識別します。
 - 例: `"workspaceId": "default"`。
+
+#### `activation.workspaces`
+
+- 型/必須: `workspaceId`と`workingDirectory`を持つobject array、Activation有効時は条件付き必須。
+- 既定値: 生成fileでは`default` Workspace 1件。
+- 制約: Workspace ID、絶対directory、直下から算出されるProject IDは全Workspace間で重複不可です。`workingDirectory`とは併用できません。
+- 動作: 各root直下の全directoryをプロジェクトとしてItogurumaへ登録・監視し、受信Messageへ対応するWorkspace IDを保存します。
+- 例: `"workspaces": [{"workspaceId": "main", "workingDirectory": "F:\\Workspace\\Projects"}, {"workspaceId": "labs", "workingDirectory": "F:\\Workspace\\Labs"}]`。
 
 #### `activation.pollIntervalMilliseconds`
 

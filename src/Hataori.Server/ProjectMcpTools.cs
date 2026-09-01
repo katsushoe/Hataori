@@ -26,8 +26,11 @@ public sealed class ProjectMcpTools
     [Description("Lists registered project IDs. Call this before task registration to resolve the intended project name. An optional query filters IDs by case-insensitive substring match.")]
     public IReadOnlyList<string> List(string? query)
     {
-        var projects = DiscoverProjects()
-            .Select(project => project.ProjectId);
+        var projects = DiscoverWorkspaces()
+            .SelectMany(workspace => workspace.ProjectIds)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(project => project, StringComparer.OrdinalIgnoreCase)
+            .AsEnumerable();
         if (!string.IsNullOrWhiteSpace(query))
         {
             projects = projects.Where(project => project.Contains(query, StringComparison.OrdinalIgnoreCase));
@@ -40,16 +43,21 @@ public sealed class ProjectMcpTools
     [McpServerTool(Name = "list_workspaces", ReadOnly = true, OpenWorld = false, UseStructuredContent = true)]
     [Description("Lists configured workspaces and their registered project IDs. A workspace is the configured projects root; projects are its immediate child directories.")]
     public IReadOnlyList<WorkspaceDescriptor> ListWorkspaces()
-    {
-        var projects = DiscoverProjects().Select(project => project.ProjectId).ToArray();
-        var path = string.IsNullOrWhiteSpace(_options.WorkingDirectory) ? null : Path.GetFullPath(_options.WorkingDirectory);
-        return [new WorkspaceDescriptor(WorkspaceId.Normalize(_options.WorkspaceId), path, projects)];
-    }
+        => DiscoverWorkspaces();
 
-    private IReadOnlyList<ActivationProject> DiscoverProjects() =>
-        string.IsNullOrWhiteSpace(_options.WorkingDirectory) || !Directory.Exists(_options.WorkingDirectory)
-            ? []
-            : _selector.DiscoverProjects(_options.WorkingDirectory);
+    private IReadOnlyList<WorkspaceDescriptor> DiscoverWorkspaces() =>
+        ActivationWorkspaceResolver.Resolve(_options)
+            .Select(workspace =>
+            {
+                var path = string.IsNullOrWhiteSpace(workspace.WorkingDirectory)
+                    ? null
+                    : Path.GetFullPath(workspace.WorkingDirectory);
+                var projects = path is null || !Directory.Exists(path)
+                    ? []
+                    : _selector.DiscoverProjects(path).Select(project => project.ProjectId).ToArray();
+                return new WorkspaceDescriptor(workspace.WorkspaceId, path, projects);
+            })
+            .ToArray();
 }
 
 /// <summary>設定済みWorkspaceとProject IDの読み取り専用表現です。</summary>

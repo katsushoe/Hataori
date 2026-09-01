@@ -34,4 +34,24 @@ public sealed class ActivationOptionsBindingTests
 
         options.ProviderPriority.Should().BeEmpty();
     }
+
+    [Fact]
+    public void Bind_MultipleWorkspaces_PreservesEveryRoot()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["activation:workspaces:0:workspaceId"] = "alpha",
+                ["activation:workspaces:0:workingDirectory"] = @"C:\ProjectsA",
+                ["activation:workspaces:1:workspaceId"] = "beta",
+                ["activation:workspaces:1:workingDirectory"] = @"C:\ProjectsB",
+            })
+            .Build();
+
+        var options = new ActivationOptions();
+        configuration.GetSection(ActivationOptions.SectionName).Bind(options);
+
+        options.Workspaces.Should().HaveCount(2);
+        options.Workspaces.Select(workspace => workspace.WorkspaceId).Should().Equal("alpha", "beta");
+    }
 }

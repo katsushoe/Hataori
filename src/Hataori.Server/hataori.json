@@ -35,8 +35,12 @@
   },
   "activation": {
     "enabled": false,
-    "workspaceId": "default",
-    "workingDirectory": "",
+    "workspaces": [
+      {
+        "workspaceId": "default",
+        "workingDirectory": ""
+      }
+    ],
     "pollIntervalMilliseconds": 1000,
     "providerPriority": [ "codex", "claude-code" ],
     "maxConcurrentRuns": {
