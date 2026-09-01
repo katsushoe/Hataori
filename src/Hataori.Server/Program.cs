@@ -9,6 +9,7 @@ using Hataori.Application.Agents;
 using Hataori.Application.Activation;
 using Hataori.Application.Tasks;
 using Hataori.Application.Codex;
+using Hataori.Application.Metrics;
 using Hataori.Infrastructure.Itoguruma;
 using Hataori.Infrastructure.Messages;
 using Hataori.Infrastructure.Sessions;
@@ -19,6 +20,7 @@ using Hataori.Infrastructure.Agents;
 using Hataori.Infrastructure.Tasks;
 using Hataori.Infrastructure.Maintenance;
 using Hataori.Infrastructure.Codex;
+using Hataori.Infrastructure.Metrics;
 using Hataori.Server;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Options;
@@ -152,6 +154,13 @@ try
         var connectionString = new SqliteConnectionStringBuilder { DataSource = path, ForeignKeys = true }.ToString();
         return new SqliteAgentDefinitionRepository(connectionString);
     });
+    builder.Services.AddSingleton<IOperationalMetricsRepository>(services =>
+    {
+        var options = services.GetRequiredService<IOptions<ServerOptions>>().Value;
+        var path = ServerPaths.ResolveDatabasePath(options.DatabasePath, layout.RootPath);
+        var connectionString = new SqliteConnectionStringBuilder { DataSource = path, ForeignKeys = true }.ToString();
+        return new SqliteOperationalMetricsRepository(connectionString, services.GetRequiredService<TimeProvider>());
+    });
     builder.Services.AddSingleton<IConversationMutex, ConversationMutex>();
     builder.Services.AddSingleton<IAgentProcessManager, SystemAgentProcessManager>();
     builder.Services.AddSingleton<IAgentProcessProbe, SystemAgentProcessProbe>();
@@ -167,6 +176,7 @@ try
     builder.Services.AddSingleton<ConversationSessionService>();
     builder.Services.AddSingleton<AgentRunService>();
     builder.Services.AddSingleton<AgentDefinitionService>();
+    builder.Services.AddSingleton<OperationalMetricsService>();
     builder.Services.AddSingleton<ActivationManager>();
     builder.Services.AddSingleton<AgentProviderSelector>();
     builder.Services.AddSingleton(new ProviderPriorityService(configurationPath));
@@ -205,6 +215,7 @@ try
         .WithTools<TaskMcpTools>()
         .WithTools<AgentRunMcpTools>()
         .WithTools<AgentDefinitionMcpTools>()
+        .WithTools<MetricsMcpTools>()
         .WithTools<ProviderMcpTools>()
         .WithTools<CodexTaskMcpTools>()
         .WithTools<SystemMcpTools>();

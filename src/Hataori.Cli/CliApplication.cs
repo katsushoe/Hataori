@@ -8,6 +8,7 @@ using Hataori.Application.Sessions;
 using Hataori.Application.Tasks;
 using Hataori.Application.Codex;
 using Hataori.Application.Agents;
+using Hataori.Application.Metrics;
 using Hataori.Core.Runs;
 using Hataori.Core.Sessions;
 using Hataori.Core.Tasks;
@@ -15,6 +16,7 @@ using Hataori.Core.Workspaces;
 using Hataori.Infrastructure.Agents.ClaudeCode;
 using Hataori.Infrastructure.Agents.Codex;
 using Hataori.Infrastructure.Agents;
+using Hataori.Infrastructure.Metrics;
 using Hataori.Infrastructure.Messages;
 using Hataori.Infrastructure.Runs;
 using Hataori.Infrastructure.Sessions;
@@ -563,6 +565,7 @@ public static class CliApplication
         command.Equals("conversation", StringComparison.OrdinalIgnoreCase) ||
         command.Equals("queue", StringComparison.OrdinalIgnoreCase) ||
         command.Equals("codex", StringComparison.OrdinalIgnoreCase) ||
+        command.Equals("metrics", StringComparison.OrdinalIgnoreCase) ||
         command.Equals("db", StringComparison.OrdinalIgnoreCase);
 
     private static async Task<object> ExecuteDatabaseCommandAsync(string[] args, CancellationToken cancellationToken)
@@ -588,9 +591,24 @@ public static class CliApplication
             "conversation" => await ExecuteConversationAsync(args[1], positional, options, connectionString, cancellationToken).ConfigureAwait(false),
             "queue" => await ExecuteQueueAsync(args[1], positional, options, connectionString, cancellationToken).ConfigureAwait(false),
             "codex" => await ExecuteCodexAsync(args[1], positional, options, connectionString, cancellationToken).ConfigureAwait(false),
+            "metrics" => await ExecuteMetricsAsync(args[1], options, connectionString, cancellationToken).ConfigureAwait(false),
             "db" => await CliDatabaseDiagnostics.ExecuteAsync(args[1], databasePath, cancellationToken).ConfigureAwait(false),
             _ => throw new ArgumentException(DisplayLanguage.Text($"不明なコマンドです: '{args[0]}'。", $"Unknown command '{args[0]}'.")),
         };
+    }
+
+    private static async Task<object> ExecuteMetricsAsync(string command, IReadOnlyDictionary<string, string> options, string connectionString, CancellationToken cancellationToken)
+    {
+        if (!command.Equals("show", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException(DisplayLanguage.Text($"不明なmetricsコマンドです: '{command}'。", $"Unknown metrics command '{command}'."));
+        }
+
+        await new SqliteTaskRepository(connectionString).InitializeAsync(cancellationToken).ConfigureAwait(false);
+        await new SqliteMessageQueueRepository(connectionString).InitializeAsync(cancellationToken).ConfigureAwait(false);
+        await new SqliteAgentRunRepository(connectionString).InitializeAsync(cancellationToken).ConfigureAwait(false);
+        var service = new OperationalMetricsService(new SqliteOperationalMetricsRepository(connectionString, TimeProvider.System));
+        return await service.GetAsync(Optional(options, "workspace") ?? "default", cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<object> ExecuteAgentCancelAsync(string? positional, IReadOnlyDictionary<string, string> options, CancellationToken cancellationToken)
@@ -913,8 +931,8 @@ public static class CliApplication
     private static bool IsSubcommandHelp(IReadOnlyList<string> args) => args.Count > 1 && (args[1].Equals("help", StringComparison.OrdinalIgnoreCase) || args[1].Equals("--help", StringComparison.OrdinalIgnoreCase));
     private static string GetVersion() => typeof(CliApplication).Assembly.GetName().Version?.ToString() ?? "unknown";
     private static string GetHelpText() => DisplayLanguage.Text(
-        "使い方: hataori <start|stop|restart|status|service|task|agent|conversation|queue|codex|db|config|provider|setup|itoguruma|mcp|doctor|logs|monitor|hook|version|help> [コマンド] [オプション]",
-        "Usage: hataori <start|stop|restart|status|service|task|agent|conversation|queue|codex|db|config|provider|setup|itoguruma|mcp|doctor|logs|monitor|hook|version|help> [command] [options]");
+        "使い方: hataori <start|stop|restart|status|service|task|agent|conversation|queue|codex|metrics|db|config|provider|setup|itoguruma|mcp|doctor|logs|monitor|hook|version|help> [コマンド] [オプション]",
+        "Usage: hataori <start|stop|restart|status|service|task|agent|conversation|queue|codex|metrics|db|config|provider|setup|itoguruma|mcp|doctor|logs|monitor|hook|version|help> [command] [options]");
     private static string GetSubcommandHelp(string command) => DisplayLanguage.Text($"使い方: hataori {command} <コマンド> [引数] [オプション]", $"Usage: hataori {command} <command> [arguments] [options]");
 
     private sealed record DoctorCheck(string Name, bool Ok, string? Error, bool Skipped = false);

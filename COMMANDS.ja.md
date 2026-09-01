@@ -15,6 +15,7 @@
 | [Conversation](#conversation-commands) | `conversation list/get/reset` | Conversation Session参照と無効化。 |
 | [Queue](#queue-commands) | `queue list/get/retry/cancel` | Queue Message参照と操作。 |
 | [Database](#database-commands) | `db status/integrity` | 読み取り専用SQLite診断。 |
+| [Metrics](#metrics-commands) | `metrics show` | Workspace単位の運用Metrics参照。 |
 | [Configuration](#configuration-commands) | `config init/show/path/check/reload` | 設定生成、参照、検証、reload。 |
 | [Integration](#integration-commands) | `setup itoguruma`、`itoguruma status/test`、`mcp status/compatibility` | 外部接続設定と確認。 |
 | [Diagnostics and UI](#diagnostics-and-ui-commands) | `doctor`、`logs`、`monitor`、`hook` | 診断、log参照、Monitor起動、Hook処理。 |
@@ -394,6 +395,16 @@ MCP Tools `codex_task_claim`／`codex_task_started`／`codex_task_release`と、
 - `hataori codex release <message-id> --claim-token <token> --error <message> --database <path>`: 起動失敗したclaimを解放し、元Messageを直ちに再取得可能にします。
 
 Codex Desktop内の固定受信Taskは、claim結果の`project_name`を保存済みProjectから解決し、`prompt`でTaskを作成します。完了応答の同期はこのコマンド群の対象外です。
+
+### Metrics Commands
+
+#### `hataori metrics show`
+
+- 目的: SQLiteに保持中のlifecycle recordからWorkspace単位の運用snapshotを返します。
+- 構文: `hataori metrics show [--workspace <id>] --database <path>`。
+- 戻り値: Task、Message、再試行、Agent Run、処理時間、成功率、Agent別Metricsです。時間の単位は秒、率の単位は%です。
+- 例: `hataori metrics show --workspace default --database C:\Hataori\data\hataori.db`。
+- 安全: 読み取り専用です。Retention設定が集計対象期間を決めます。
 
 ### Database Commands
 

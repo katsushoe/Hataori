@@ -3,6 +3,7 @@
 
 # 変更履歴
 
+- 2026.09.02: Workspace単位の詳細Metricsを実装。Task／Message／Agent Runの状態件数、成功率、再試行、平均時間、Agent別内訳をCLI／MCPへ追加し、204テストを検証。
 - 2026.09.02: 3.1.18.0へVersion更新。203テスト、WiX MSI、`C:\Hataori`実機Major Upgrade、Service・MCP・Agent定義・DB整合性を検証。
 - 2026.09.01: 3.1.17.0へVersion更新。Agent定義SQLite永続化をMSI化し、203テスト、`C:\Hataori`実機Major Upgrade、Service・MCP・DB整合性を検証。
 
@@ -94,6 +95,7 @@ Phase 1（基盤・必須運用機能）: **96%**
 - [x] Server基盤、Control Pipe、MCP Server
 - [x] SQLite Task・Session・Message Queue・Agent Run永続化
 - [x] Workspace単位のAgent定義・監査履歴SQLite永続化
+- [x] Workspace単位の詳細運用Metrics（CLI／MCP）
 - [x] Task lifecycleとMCP Tools
 - [x] Itoguruma受信、Queue、Reply、永続Reply Retry
 - [x] Codex / Claude Codeのstart・resume Driver
@@ -119,7 +121,7 @@ Phase 1（基盤・必須運用機能）: **96%**
 - [x] MCP `list_projects`、未登録Project候補返却、Task登録前Project選択案内（3.1.12.0、2026-08-31）
 - [x] Workspace単位のTask管理、MCP `list_workspaces`、SQLite移行、Monitor・会話Hook連携（3.1.13.0、2026-08-31）
 - [x] Workspace管理v2（Session・Message・Agent Run、SQLite移行、Monitor、CLI filter、2026-08-31）
-- [x] 自動テスト200件
+- [x] 自動テスト204件
 
 ## 部分実装
 

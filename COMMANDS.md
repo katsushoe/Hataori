@@ -15,6 +15,7 @@ This document is the source of truth for the Hataori CLI, service controls, inte
 | [Conversation](#conversation-commands) | `conversation list/get/reset` | Inspect or invalidate conversation sessions. |
 | [Queue](#queue-commands) | `queue list/get/retry/cancel` | Inspect and operate on queued messages. |
 | [Database](#database-commands) | `db status/integrity` | Run read-only SQLite diagnostics. |
+| [Metrics](#metrics-commands) | `metrics show` | Read workspace-scoped operational metrics. |
 | [Configuration](#configuration-commands) | `config init/show/path/check/reload` | Generate, inspect, validate, and reload settings. |
 | [Integration](#integration-commands) | `setup itoguruma`, `itoguruma status/test`, `mcp status/compatibility` | Configure and verify external connections. |
 | [Diagnostics and UI](#diagnostics-and-ui-commands) | `doctor`, `logs`, `monitor`, `hook` | Diagnose the installation, read logs, launch Monitor, and process hooks. |
@@ -500,6 +501,18 @@ The `codex_task_claim`, `codex_task_started`, and `codex_task_release` MCP tools
 - `hataori codex release <message-id> --claim-token <token> --error <message> --database <path>`: releases a failed claim so the source message can be claimed again immediately.
 
 The fixed receiver task inside Codex Desktop resolves `project_name` against saved projects and creates a task with `prompt`. Completion and reply synchronization are outside these commands.
+
+### Metrics Commands
+
+#### `hataori metrics show`
+
+| Item | Specification |
+| :--- | :--- |
+| Purpose | Return a workspace-scoped operational snapshot from retained SQLite lifecycle records. |
+| Syntax | `hataori metrics show [--workspace <id>] --database <path>` |
+| Result | Task, Message, retry, Agent Run, timing, success-rate, and per-Agent metrics. Durations are seconds and rates are percentages. |
+| Example | `hataori metrics show --workspace default --database C:\Hataori\data\hataori.db` |
+| Safety | Read-only. Retention settings define the observation window. |
 
 ### Database Commands
 
