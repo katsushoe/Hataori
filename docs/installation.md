@@ -13,11 +13,13 @@ The supported Windows artifact is the x64 MSI. It manages the Server, CLI, Monit
 | `%INSTALL_ROOT%\logs` | Logs | Preserved |
 | `%INSTALL_ROOT%\data` | SQLite and application data | Preserved |
 
-The default `%INSTALL_ROOT%` is `Hataori` under 64-bit Program Files. To use another location, run this from an elevated terminal:
+The default `%INSTALL_ROOT%` is `Hataori` under 64-bit Program Files. This project's real-machine installation uses `C:\Hataori`. To use that location in an unattended installation, run this from an elevated terminal and use the exact MSI property name `INSTALL_ROOT`:
 
 ```powershell
-msiexec.exe /i Hataori-3.1.7.0-x64.msi INSTALL_ROOT="F:\Hataori"
+msiexec.exe /i Hataori-3.1.16.0-x64.msi INSTALL_ROOT="C:\Hataori" /qn /norestart
 ```
+
+`INSTALLFOLDER` is not a supported property. If `INSTALL_ROOT` is omitted or misspelled, Windows Installer uses the default Program Files location. Always pass the same `INSTALL_ROOT` on upgrades.
 
 ## Initial Configuration
 
@@ -29,11 +31,11 @@ hataori service setup
 Start-Service Hataori
 ```
 
-`service setup` copies the Itoguruma authentication token without displaying it and restricts `config\hataori.service.json` to `SYSTEM` and `Administrators`. To prevent an unauthenticated first start, the MSI registers the Service as Automatic but does not start it. If started manually without this file, the Server runs in a degraded, unlinked state while task management, MCP, and CLI remain available.
+`service setup` copies the Itoguruma authentication token without displaying it and restricts `config\hataori.service.json` to `SYSTEM` and `Administrators`. The MSI registers the Service as Automatic and starts it. Without this file, the Server runs in a degraded, unlinked state while task management, MCP, and CLI remain available.
 
 ## Upgrade
 
-Run the newer MSI with the same `INSTALL_ROOT`. It replaces binaries and service registration while preserving `config`, `logs`, and `data`. Start the Service after the upgrade.
+Run the newer MSI with the same `INSTALL_ROOT`. It replaces binaries and service registration while preserving `config`, `logs`, and `data`, then starts the Service.
 
 The installer treats a change to any part of Hataori's four-part version as an upgrade. Windows Installer compares only the first three parts, so the MSI explicitly enables same-version major upgrades to replace an installation when only the fourth part changes. This also means Windows Installer cannot block a downgrade that differs only in the fourth part; always run the newer MSI.
 

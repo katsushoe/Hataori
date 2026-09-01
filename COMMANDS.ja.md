@@ -540,7 +540,7 @@ Command: [`doctor`](#hataori-doctor)、[`logs`](#hataori-logs)、[`monitor`](#ha
 
 #### `hataori monitor`
 
-- 目的: 読み取り専用Hataori Monitorを起動します。
+- 目的: 状態表示とTask／Agent Runキャンセル操作を備えたHataori Monitorを起動します。
 - 構文: `hataori monitor [--monitor <exe>] [--pipe <name>]`。
 - 引数: 実行fileは標準配置または`HATAORI_MONITOR_PATH`です。
 - 処理・戻り値: ShellでMonitorを起動し`status: "started"`とresolved `path`を返します。

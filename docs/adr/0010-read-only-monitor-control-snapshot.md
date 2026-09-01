@@ -1,4 +1,4 @@
-# ADR 0010: 読み取り専用Monitorスナップショット
+# ADR 0010: Monitorスナップショットと限定管理操作
 
 ## Status
 
@@ -10,7 +10,7 @@ Phase 1のWindows Forms MonitorはTask、Agent、Conversation / Session、Queue�
 
 ## Decision
 
-Control Pipeへ`monitor`要求を追加し、Serverが各Repositoryから読み取り専用スナップショットを生成する。Monitorは3秒周期または利用者操作で取得し、編集機能を持たない。CLIの`hataori monitor`は同一配置先の`Hataori.Monitor.exe`を起動する。
+Control Pipeへ`monitor`要求を追加し、Serverが各Repositoryから読み取り専用スナップショットを生成する。Monitorは3秒周期または利用者操作で取得する。Phase 2では、選択したactive Taskとqueued／starting／running Agent Runに限り、確認ダイアログを経て既存のServerユースケースへキャンセルを要求できる。CLIの`hataori monitor`は同一配置先の`Hataori.Monitor.exe`を起動する。
 
 ## Alternatives
 
@@ -23,7 +23,7 @@ Control応答にMonitorデータが任意追加される。既存のstatus、sto
 
 ## Security
 
-Named Pipeは現在ユーザー限定とし、Monitorは読み取り要求だけを送る。任意SQL、Task編集、Agent操作、Message本文変更は提供しない。
+Named Pipeは現在ユーザー限定とし、Monitorの変更操作はTaskキャンセルとAgent Runキャンセルだけに限定する。任意SQL、その他のTask編集、Message本文変更は提供しない。操作対象IDはServerが検証し、Monitorは成功・失敗後にスナップショットを再取得する。
 
 ## Operations
 

@@ -2,7 +2,7 @@
 
 [English](README.md) | [日本語](README.ja.md)
 
-Hataori is a local Windows orchestration service for Codex Desktop, Codex CLI, and Claude Code. It persists tasks, conversation sessions, messages, and agent runs in SQLite, integrates with Itoguruma, and exposes a Streamable HTTP MCP server, a management CLI, and a read-only monitor. Codex-addressed messages are leased to a fixed receiver inside Codex Desktop so it can create visible tasks under saved projects.
+Hataori is a local Windows orchestration service for Codex Desktop, Codex CLI, and Claude Code. It persists tasks, conversation sessions, messages, and agent runs in SQLite, integrates with Itoguruma, and exposes a Streamable HTTP MCP server, a management CLI, and a monitor with status display and cancellation controls. Codex-addressed messages are leased to a fixed receiver inside Codex Desktop so it can create visible tasks under saved projects.
 
 ## Getting Started
 
@@ -25,7 +25,7 @@ Pass conditions are a running `Hataori` service and an MCP status response conta
 The standard artifact is the self-contained Windows x64 MSI. Double-click it and approve UAC, or specify a custom installation root from an elevated terminal:
 
 ```powershell
-msiexec.exe /i Hataori-3.1.7.0-x64.msi INSTALL_ROOT="F:\Hataori"
+msiexec.exe /i Hataori-3.1.16.0-x64.msi INSTALL_ROOT="C:\Hataori"
 ```
 
 The MSI installs Server, CLI, Monitor, the Windows Service registration, the system `PATH` entry, and a Start menu shortcut. See [Installation](docs/installation.md) for Install, Upgrade, and Uninstall behavior.
@@ -57,7 +57,7 @@ See [Configuration](CONFIG.md) for every setting, precedence rule, constraint, a
 
 ```powershell
 hataori doctor
-hataori task list --database F:\Hataori\data\hataori.db
+hataori task list --database C:\Hataori\data\hataori.db
 hataori logs --lines 100
 hataori monitor
 ```

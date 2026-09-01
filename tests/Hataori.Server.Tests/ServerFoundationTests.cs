@@ -82,6 +82,35 @@ public sealed class ServerFoundationTests
     }
 
     [Fact]
+    public async Task Handle_TaskCancel_CancelsActiveTask()
+    {
+        var tasks = Substitute.For<ITaskRepository>();
+        var now = DateTimeOffset.UtcNow;
+        var task = HataoriTask.Start("task-1", "Monitor operation", "codex", null, null, "Monitor", "Running", now);
+        tasks.GetAsync("task-1", Arg.Any<CancellationToken>()).Returns(task);
+        var handler = new ControlCommandHandler(
+            new TestLifetime(), TimeProvider.System, tasks, new TaskService(tasks, TimeProvider.System),
+            Substitute.For<IConversationSessionRepository>(), Substitute.For<IAgentRunRepository>(),
+            Substitute.For<IMessageQueueRepository>(), new ItogurumaConnectionState(), CreateActivationManager());
+
+        var response = await handler.HandleAsync(new ControlRequest("task-cancel", "task-1"), CancellationToken.None);
+
+        response.Success.Should().BeTrue();
+        response.Status.Should().Be("cancelled");
+        task.Status.Should().Be(HataoriTaskStatus.Cancelled);
+        await tasks.Received(1).UpdateAsync(task, "cancelled", Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_TaskCancel_WithoutArgument_ReturnsFailure()
+    {
+        var response = await CreateHandler(new TestLifetime()).HandleAsync(new ControlRequest("task-cancel"), CancellationToken.None);
+
+        response.Success.Should().BeFalse();
+        response.Status.Should().Be("missing_argument");
+    }
+
+    [Fact]
     public async Task StartupRecoveryGate_Complete_ReleasesDependentsAsReady()
     {
         var gate = new StartupRecoveryGate();
@@ -133,7 +162,7 @@ public sealed class ServerFoundationTests
         queue.ListAsync(null, Arg.Any<CancellationToken>()).Returns(new[] { queued });
         var itogurumaState = new ItogurumaConnectionState();
         itogurumaState.Set("degraded");
-        var handler = new ControlCommandHandler(lifetime, TimeProvider.System, tasks, sessions, runs, queue, itogurumaState, CreateActivationManager());
+        var handler = new ControlCommandHandler(lifetime, TimeProvider.System, tasks, new TaskService(tasks, TimeProvider.System), sessions, runs, queue, itogurumaState, CreateActivationManager());
 
         var response = await handler.HandleAsync(new ControlRequest("monitor"), CancellationToken.None);
 
@@ -159,7 +188,7 @@ public sealed class ServerFoundationTests
         sessions.ListAsync(null, null, Arg.Any<CancellationToken>()).Returns(new[] { ConversationSession.Create("conversation-1", "codex", "native-1", now) });
         runs.ListAsync(null, null, Arg.Any<CancellationToken>()).Returns(new[] { AgentRun.Queue("run-1", "message-1", "conversation-1", "codex", now) });
         queue.ListAsync(null, Arg.Any<CancellationToken>()).Returns(Array.Empty<QueuedMessage>());
-        var handler = new ControlCommandHandler(lifetime, TimeProvider.System, tasks, sessions, runs, queue, new ItogurumaConnectionState(), CreateActivationManager());
+        var handler = new ControlCommandHandler(lifetime, TimeProvider.System, tasks, new TaskService(tasks, TimeProvider.System), sessions, runs, queue, new ItogurumaConnectionState(), CreateActivationManager());
         var options = new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
@@ -178,10 +207,12 @@ public sealed class ServerFoundationTests
 
     private static ControlCommandHandler CreateHandler(IHostApplicationLifetime lifetime)
     {
+        var tasks = Substitute.For<ITaskRepository>();
         return new ControlCommandHandler(
             lifetime,
             TimeProvider.System,
-            Substitute.For<ITaskRepository>(),
+            tasks,
+            new TaskService(tasks, TimeProvider.System),
             Substitute.For<IConversationSessionRepository>(),
             Substitute.For<IAgentRunRepository>(),
             Substitute.For<IMessageQueueRepository>(),

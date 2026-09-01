@@ -3,7 +3,9 @@
 
 # 変更履歴
 
-- 2026.09.01: 複数Activation root対応を3.1.15.0としてMSI化し、実機Major Upgradeと2 root MCP検証を完了。
+- 2026.09.01: 3.1.16.0実機環境を`C:\Hataori`へ統一し、インストール手順と検証記録を訂正。
+- 2026.09.01: Monitor管理操作を3.1.16.0へ反映し、MSI buildと実機Major Upgradeを完了。
+- 2026.09.01: 3.1.15.0をRelease。複数Activation root対応をMSI化し、実機Major Upgradeと2 root MCP検証を完了。
 - 2026.09.01: 3.1.14.0をRelease。Workspace管理v2をMSI化し、実機Major Upgradeと稼働確認を完了。
 - 2026.09.01: 複数Activation root設定、重複検証、Workspace別Itoguruma取り込みを実装。
 - 2026.08.31: Workspace管理v2としてSession・Message・Agent Runへ`workspace_id`を伝播し、既存SQLiteデータ移行とCLI Workspace filterを実装。
@@ -80,6 +82,6 @@ Obsidian「Hataori 全仕様書」143節の11項目に対する実装状況（20
 - [X] Session recovery強化（Agent Run作成前に孤立したactive Messageの失敗復旧とReply Retry待機中Messageの保護を実装）
 - [X] Project候補検索（MCP `list_projects`、未登録Project指定時の候補返却、Task登録前の選択案内を実装）
 - [X] Workspace管理v2（Task・Session・Message・Agent Runへ`workspace_id`を導入し、`list_workspaces`、Workspace単位のTask MCP、SQLite移行、Monitor・会話Hook・CLI filter、複数Activation root設定へ伝播）
-- [ ] Monitor管理操作（Monitorは引き続き読み取り専用）
+- [X] Monitor管理操作（選択したTaskとAgent Runのキャンセル）
 - [ ] Agent definitions DB化（Agent定義は設定fileのまま）
 - [ ] 詳細なMetrics
