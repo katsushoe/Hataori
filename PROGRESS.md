@@ -3,6 +3,8 @@
 
 # 変更履歴
 
+- 2026.09.01: 3.1.17.0へVersion更新。Agent定義SQLite永続化をMSI化し、203テスト、`C:\Hataori`実機Major Upgrade、Service・MCP・DB整合性を検証。
+
 - 2026.09.01: 3.1.16.0をRelease。Monitor管理操作、200テスト、MSI、実機`C:\Hataori`稼働を検証。
 - 2026.09.01: 3.1.16.0実機環境を`C:\Hataori`へ統一し、Service・Registry・設定・DB・ログ移設を検証。
 - 2026.09.01: Monitor管理操作を3.1.16.0へ反映し、200テスト、MSI build、実機Major Upgradeを検証。

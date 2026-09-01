@@ -3,6 +3,8 @@
 
 # 変更履歴
 
+- 2026.09.01: 3.1.17.0へVersion更新。Agent定義SQLite永続化をMSI化し、実機`C:\Hataori`へのMajor Upgradeと稼働確認を完了。
+
 - 2026.09.01: 3.1.16.0をRelease。MonitorのTask／Agent Runキャンセル操作をMSI化し、実機`C:\Hataori`移設と稼働確認を完了。
 - 2026.09.01: 3.1.16.0実機環境を`C:\Hataori`へ統一し、インストール手順と検証記録を訂正。
 - 2026.09.01: Monitor管理操作を3.1.16.0へ反映し、MSI buildと実機Major Upgradeを完了。
