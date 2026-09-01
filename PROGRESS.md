@@ -1,8 +1,9 @@
 # PROGRESS.md Version
-2026.08.31
+2026.09.02
 
 # 変更履歴
 
+- 2026.09.02: 3.1.19.0時点の実態へ進捗率、Phase 1、グラフ、完了機能、残作業を同期。全体99%、Phase 1 99%。
 - 2026.09.02: 3.1.19.0へVersion更新。詳細MetricsをMSI化し、204テスト、`C:\Hataori`実機Major Upgrade、CLI・Service・MCP・DB整合性を検証。
 - 2026.09.02: Workspace単位の詳細Metricsを実装。Task／Message／Agent Runの状態件数、成功率、再試行、平均時間、Agent別内訳をCLI／MCPへ追加し、204テストを検証。
 - 2026.09.02: 3.1.18.0へVersion更新。203テスト、WiX MSI、`C:\Hataori`実機Major Upgrade、Service・MCP・Agent定義・DB整合性を検証。
@@ -43,27 +44,35 @@
 
 ### ≪Hataori≫
 
-| 機能 | 2026.08.16 | 2026.08.18 | 2026.08.25 | 2026.08.26 | 2026.08.31 |
-| :--- | ---: | ---: | ---: | ---: | ---: |
-| **グループ全体** | **94%** | **96%** | **96%** | **96%** | **97%** |
-| Server / Core / SQLite | 88% | 88% | 88% | 88% | 88% |
-| Itoguruma連携 | 98% | 98% | 98% | 98% | 98% |
-| Session / Activation | 100% | 100% | 100% | 100% | 100% |
-| Task管理 | 95% | 95% | 95% | 95% | 97% |
-| CLI | 97% | 98% | 98% | 98% | 98% |
-| Windows Service | 100% | 100% | 100% | 100% | 100% |
-| Monitor | 95% | 95% | 95% | 95% | 96% |
-| 運用・復旧 | 97% | 99% | 100% | 100% | 100% |
-| 文書・配布 | 75% | 90% | 90% | 90% | 95% |
-| テスト | 96% | 96% | 97% | 97% | 99% |
+| 機能 | 2026.08.16 | 2026.08.18 | 2026.08.25 | 2026.08.26 | 2026.08.31 | 2026.09.02 |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: |
+| **グループ全体** | **94%** | **96%** | **96%** | **96%** | **97%** | **99%** |
+| Server / Core / SQLite | 88% | 88% | 88% | 88% | 88% | 100% |
+| Itoguruma連携 | 98% | 98% | 98% | 98% | 98% | 98% |
+| Session / Activation | 100% | 100% | 100% | 100% | 100% | 100% |
+| Task管理 | 95% | 95% | 95% | 95% | 97% | 100% |
+| CLI | 97% | 98% | 98% | 98% | 98% | 99% |
+| Windows Service | 100% | 100% | 100% | 100% | 100% | 100% |
+| Monitor | 95% | 95% | 95% | 95% | 96% | 98% |
+| 運用・復旧 | 97% | 99% | 100% | 100% | 100% | 98% |
+| 文書・配布 | 75% | 90% | 90% | 90% | 95% | 98% |
+| テスト | 96% | 96% | 97% | 97% | 99% | 99% |
 
 ## 現在フェーズ
 
-Phase 1（基盤・必須運用機能）: **96%**
+Phase 1（基盤・必須運用機能）: **99%**
 
-算定: Core 88%、Itoguruma 98%、Session / Activation 100%、Task 97%、Monitor 96%の単純平均（95.8%）です。
+算定: Core 100%、Itoguruma 98%、Session / Activation 100%、Task 100%、Monitor 98%の単純平均（99.2%）です。
 
-## 進捗予測メモ
+## 現在の完了状態と残作業
+
+3.1.19.0でPhase 2のTODO 12項目をすべて完了しました。Release構成buildは警告0件・エラー0件、自動テスト204件合格、WiX MSI build成功、`C:\Hataori`へのMajor Upgrade成功、Windows Service Running / Automatic、MCP 28 tools、詳細Metrics実データ集計、SQLite integrity `ok`を確認し、GitHubへ正式リリース済みです。
+
+機能TODOはありません。残作業は、実機のClaude CLI実行fileアクセス拒否の解消、`doctor`のService Account差異に対する専用自動テスト、文書リンク自動整合チェック、隔離環境でのMSI Uninstall実機検証です。
+
+## 時系列の進捗・検証メモ
+
+以下は各時点の履歴です。「未導入」「未実施」等は記載時点の状態であり、現在状態は直前の「現在の完了状態と残作業」を正本とします。
 
 2026.09.01にMonitor管理操作を実装しました。Task一覧とAgent Run一覧でキャンセル可能な状態だけ操作を有効化し、確認後にControl Pipe経由でServerの既存ユースケースを実行します。操作後はスナップショットを再取得します。Release構成buildは警告0件・エラー0件、自動テスト200件が合格しました。
 
@@ -79,7 +88,7 @@ Phase 1（基盤・必須運用機能）: **96%**
 
 2026.08.31に3.1.12.0をリリースしました。登録済みProject IDを検索するMCP `list_projects`、未登録Project指定時の候補返却、Server Instructions・MCP Prompt・会話HookによるTask登録前Project選択案内を追加しました。Release構成buildは警告0件・エラー0件、自動テスト179件合格、MSI buildと3.1.11.0からの実機Major Upgradeは成功し、Codex／Claude CodeのMCP互換性と20ツール配信を確認済みです。検証記録は`docs/validation/2026-08-30-installer-3.1.12.0.md`です。
 
-設定・コマンド・運用文書の拡充が主要な残量です。GitHubと利用者向けREADME、MSIインストールガイド、英語・日本語MCPセットアップは整備済みです。Windows Serviceは標準`bin/config/logs/data`構成、SYSTEM・Administrators限定認証設定、x64 MSIのInstall・Major Upgrade・Uninstall保持、Automatic起動、Running、Itoguruma接続を実機確認済みです。Monitorはデータ入り表示、手動更新、異常時の案内・ログ、Itoguruma MCPの実接続状態表示を確認済みです。Codex CLI 0.147.0とClaude Code 2.1.220はstart・resume・Reply・ACKを実機確認し、自動テスト125件、Server、MCP、Hook、Graceful Shutdown、起動異常時の安全停止は確認済みです。
+当時は設定・コマンド・運用文書の拡充を主要な残量としていました。GitHubと利用者向けREADME、MSIインストールガイド、英語・日本語MCPセットアップは整備済みです。Windows Serviceは標準`bin/config/logs/data`構成、SYSTEM・Administrators限定認証設定、x64 MSIのInstall・Major Upgrade・Uninstall保持、Automatic起動、Running、Itoguruma接続を実機確認済みです。Monitorはデータ入り表示、手動更新、異常時の案内・ログ、Itoguruma MCPの実接続状態表示を確認済みです。Codex CLI 0.147.0とClaude Code 2.1.220はstart・resume・Reply・ACKを実機確認し、自動テスト125件、Server、MCP、Hook、Graceful Shutdown、起動異常時の安全停止は確認済みです。
 
 2026.08.17に3.0.3.0（MCP読み取り専用ツール`get_version`追加、`tool_count` 11→12）をWiX MSIでMajor Upgrade実機検証済みです（`docs/validation/2026-08-17-installer-3.0.3.0.md`）。同検証でUninstall実機検証のみ本番環境保護のため未実施のまま残っています。2026.08.18に`hataori doctor`の`server`チェックがSYSTEM以外の実行では原理的に必ず失敗する誤検知を修正し（`Skipped`判定を追加、commit `044f69a`）、ビルド・自動テスト125件・実機確認で反映を確認しました。専用の自動テストは未追加のため、運用・復旧の進捗は満点にしていません。
 
