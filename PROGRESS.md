@@ -3,6 +3,7 @@
 
 # 変更履歴
 
+- 2026.09.02: 3.1.18.0へVersion更新。203テスト、WiX MSI、`C:\Hataori`実機Major Upgrade、Service・MCP・Agent定義・DB整合性を検証。
 - 2026.09.01: 3.1.17.0へVersion更新。Agent定義SQLite永続化をMSI化し、203テスト、`C:\Hataori`実機Major Upgrade、Service・MCP・DB整合性を検証。
 
 - 2026.09.01: 3.1.16.0をRelease。Monitor管理操作、200テスト、MSI、実機`C:\Hataori`稼働を検証。

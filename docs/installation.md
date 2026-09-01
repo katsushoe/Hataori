@@ -16,7 +16,7 @@ The supported Windows artifact is the x64 MSI. It manages the Server, CLI, Monit
 The default `%INSTALL_ROOT%` is `Hataori` under 64-bit Program Files. This project's real-machine installation uses `C:\Hataori`. To use that location in an unattended installation, run this from an elevated terminal and use the exact MSI property name `INSTALL_ROOT`:
 
 ```powershell
-msiexec.exe /i Hataori-3.1.17.0-x64.msi INSTALL_ROOT="C:\Hataori" /qn /norestart
+msiexec.exe /i Hataori-3.1.18.0-x64.msi INSTALL_ROOT="C:\Hataori" /qn /norestart
 ```
 
 `INSTALLFOLDER` is not a supported property. If `INSTALL_ROOT` is omitted or misspelled, Windows Installer uses the default Program Files location. Always pass the same `INSTALL_ROOT` on upgrades.
