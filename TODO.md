@@ -3,6 +3,7 @@
 
 # 変更履歴
 
+- 2026.09.01: Workspace管理v2を3.1.14.0としてMSI化し、実機Major Upgradeと稼働確認を完了。
 - 2026.08.31: Workspace管理v2としてSession・Message・Agent Runへ`workspace_id`を伝播し、既存SQLiteデータ移行とCLI Workspace filterを実装。
 - 2026.08.31: 3.1.13.0をRelease。Workspace単位のTask管理、`list_workspaces`、SQLite移行、Monitor・会話Hook連携を実装し、189テストと実機Major Upgradeを検証。
 - 2026.08.31: 3.1.12.0をRelease。MCP `list_projects`、未登録Project候補返却、Task登録前Project選択案内を実装し、179テストと実機Major Upgradeを検証。
