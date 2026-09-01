@@ -3,6 +3,7 @@
 
 # 変更履歴
 
+- 2026.09.02: 3.1.19.0へVersion更新。詳細MetricsをMSI化し、204テスト、`C:\Hataori`実機Major Upgrade、CLI・Service・MCP・DB整合性を検証。
 - 2026.09.02: Workspace単位の詳細Metricsを実装。Task／Message／Agent Runの状態件数、成功率、再試行、平均時間、Agent別内訳をCLI／MCPへ追加し、204テストを検証。
 - 2026.09.02: 3.1.18.0へVersion更新。203テスト、WiX MSI、`C:\Hataori`実機Major Upgrade、Service・MCP・Agent定義・DB整合性を検証。
 - 2026.09.01: 3.1.17.0へVersion更新。Agent定義SQLite永続化をMSI化し、203テスト、`C:\Hataori`実機Major Upgrade、Service・MCP・DB整合性を検証。
