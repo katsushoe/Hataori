@@ -1,8 +1,9 @@
 # PROGRESS.md Version
-2026.09.02
+2026.09.04
 
 # 変更履歴
 
+- 2026.09.04: 3.1.21.0の完了範囲と、契約／実装レイヤー混同防止プラグインの将来対応を区別し、TODO.mdと残作業の記載を整合。
 - 2026.09.02: VirtualBox Windows 11隔離環境で3.1.21.0の新規Install／Uninstallを検証。製品登録・Service・`bin`・System `Path`削除と`config`・`data`・`logs`保持を確認。
 - 2026.09.02: 3.1.21.0をRelease。文書リンク自動検証、64文書、207テスト、MSI、実機`C:\Hataori`稼働を検証。
 - 2026.09.02: 3.1.21.0へVersion更新。文書リンク自動検証をMSI化し、64文書、207テスト、`C:\Hataori`実機Major Upgrade、CLI・Service・MCP・DB整合性を検証。
@@ -76,7 +77,9 @@ Phase 1（基盤・必須運用機能）: **99%**
 
 3.1.21.0でPhase 2のTODO 12項目をすべて完了しています。文書リンク64件、Release構成build警告0件・エラー0件、自動テスト207件合格、WiX MSI build成功、`C:\Hataori`へのMajor Upgrade成功、Windows Service Running / Automatic、MCP 28 tools、SQLite integrity `ok`を確認し、GitHubへ正式リリース済みです。
 
-機能TODOと配布検証の残作業はありません。VirtualBox Windows 11隔離環境で3.1.21.0の新規Install／Uninstallを実施し、製品登録・Windows Service・`bin`・System `Path`のHataori項目削除と、`config\hataori.json`・`data\hataori`・`logs`保持を確認しました。Claude CLIは実ユーザー権限で2.1.220の起動と`doctor` healthyを確認済みです。Codex sandbox SIDから実ユーザー専用WinGet packageを直接起動した場合のアクセス拒否は環境分離による想定動作です。
+3.1.21.0の対象範囲では、機能TODOと配布検証の残作業はありません。VirtualBox Windows 11隔離環境で3.1.21.0の新規Install／Uninstallを実施し、製品登録・Windows Service・`bin`・System `Path`のHataori項目削除と、`config\hataori.json`・`data\hataori`・`logs`保持を確認しました。Claude CLIは実ユーザー権限で2.1.220の起動と`doctor` healthyを確認済みです。Codex sandbox SIDから実ユーザー専用WinGet packageを直接起動した場合のアクセス拒否は環境分離による想定動作です。
+
+将来対応として、契約（What）／実装（How）の混同防止を正式なClaude Codeプラグイン（仮称 `kotodama-spec-guard`）として実装する未着手項目が1件あります。即時着手せず、後日優先順位を決めて将来バージョンで対応します。時期・対象バージョンは未定です。Hataoriの責務は対象プロジェクトでのプラグイン有効化確認に限定し、対象ディレクトリへの設定自動書き込みは行わない方針です。詳細は[TODO.md](TODO.md)の「後でやる」を参照してください。既存機能の進捗率と過去の検証結果は変更しません。
 
 ## 時系列の進捗・検証メモ
 
