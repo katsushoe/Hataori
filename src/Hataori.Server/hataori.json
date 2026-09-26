@@ -74,7 +74,9 @@
   "hooks": {
     "enabled": true,
     "codexConfigPath": "bin/cli/hooks/codex-hooks.json",
-    "claudeConfigPath": "bin/cli/hooks/claude-settings.json"
+    "claudeConfigPath": "bin/cli/hooks/claude-settings.json",
+    "claudePluginSettingsPath": "",
+    "requiredClaudePlugin": "kotodama-spec-guard@katsushoe-private"
   },
   "allowedHosts": "127.0.0.1;localhost"
 }

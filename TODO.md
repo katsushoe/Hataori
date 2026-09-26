@@ -1,8 +1,14 @@
 # TODO.md Version
-2026.08.31
+2026.09.26
 
 # 変更履歴
 
+- 2026.09.26: Hataori 3.1.22.0としてClaude Codeプラグイン有効化診断をMSI化し、実機Major Upgradeを検証。
+- 2026.09.25: `doctor`へClaude Codeプラグイン有効化診断を追加し、Hataori側の実装項目を完了。
+- 2026.09.24: `kotodama-spec-guard` 0.1.0の本体を別リポジトリ`KotodamaSpecGuard`へ実装（仕様書Markdown書込時のPostToolUse hook、`layer-reviewer`、手動スキル、テスト6件）。GitHub公開・実行時検証・Hataori側有効化確認は未完了。
+- 2026.09.04: 契約／実装レイヤー混同防止のClaude Codeプラグイン化を、優先順位・対象バージョン未定の将来対応として追加。
+- 2026.09.02: VirtualBox Windows 11隔離環境で3.1.21.0の新規Install／Uninstallを検証し、削除対象と保持対象を確認。
+- 2026.09.02: 3.1.21.0をRelease。文書リンク自動検証、64文書、207テスト、MSI、実機`C:\Hataori`稼働を検証。
 - 2026.09.02: 3.1.21.0へVersion更新。文書リンク自動検証をMSI化し、実機`C:\Hataori`へのMajor Upgradeと稼働確認を完了。
 - 2026.09.02: Git管理中Markdownの相対リンクを検証する自動チェックとGitHub Actionsを追加。
 - 2026.09.02: 3.1.20.0をRelease。`doctor`のService Account差異テスト、207テスト、MSI、実機`C:\Hataori`稼働を検証。
@@ -49,6 +55,18 @@
 
 ## 後でやる
 
+- [ ] 契約（What）／実装（How）の混同を防ぐ正式なClaude Codeプラグイン（仮称 `kotodama-spec-guard`）を実装する。即時着手せず、後日優先順位を決めて将来バージョンで対応する（時期・対象バージョンは未定）。
+  - 2026.09.24状況: プラグイン本体0.1.0を別リポジトリ`F:\Workspace\Projects\KotodamaSpecGuard`へ実装済み。発火条件は「仕様書Markdown（ファイル名に『仕様』／単語`spec`、または`spec`・`仕様書`ディレクトリ配下の`.md`）へのWrite／Edit／MultiEdit」に決定。
+  - [ ] `KotodamaSpecGuard`をGitHubプライベートリポジトリとして作成し、Githubie／Moyaiへ登録してコミット・pushする。
+    - 2026.09.24: Githubie／Moyaiにリポジトリ作成機能がないため、両プロジェクトへ機能追加CR（`CRs\inbox\Githubie\CR-2026-09-24-repository-create.md`、`CRs\inbox\Moyai\CR-2026-09-24-repository-create.md`）をItogurumaで送信済み。対応待ち。
+  - [ ] Claude Code実行時にhook発火から`layer-reviewer`起動までを実機確認する（2026.09.24はCLIのOAuth期限切れで未確認。プラグイン読込とAgent／Skill登録は確認済み）。
+  - [X] Hataori側でClaude Code設定の`enabledPlugins`を読み取り、対象プラグインの有効化を確認する`doctor`チェックを実装する（設定は書き換えない）。
+  - 背景: Kotodama仕様書の契約セクションにサーバ処理フロー、アルゴリズム選定、ヘルパーツール提案が混在した。追記時のレビューをHataori配下の全プロジェクトへ一貫して適用する。
+  - 責務分離: プラグイン側がレビュー内容、hook／subagent定義、配布・バージョン管理を担い、Hataori側は対象プロジェクトでの有効化確認に限定する。
+  - 不採用: Hataoriが起動前に対象ディレクトリの `settings.json` やagent定義を自動書き込みする方式。オーケストレーション層と拡張構成層の責務が混在するため。
+  - 検討事項: `layer-reviewer` のチェック内容・プロンプト、`PostToolUse`（Write想定）の条件・対象ファイル、バージョニング、全管理プロジェクトへの一括有効化方法。
+  - 配布方針: 公開マーケットプレイスを必須とせず、katsushoe個人のプライベートリポジトリを利用する構成を想定する。
+  - 参照: Kotodama `namespace=Hataori`、`claimId=53`（方針）、`claimId=55`（即時実装せず将来対応）。
 - [X] 利用者向け文書とRelease配布手順を整備する。
 - [X] Itoguruma、MCP、Agent resume、Windows Serviceを実環境で受入試験する。
 
@@ -66,6 +84,7 @@
 ## P2
 
 - [X] 文書、配布、インストール手順を完成させる。
+- [X] VirtualBox Windows 11隔離環境でMSI Uninstallと設定・データ・ログ保持を実機検証する。
 
 # フェーズ計画
 

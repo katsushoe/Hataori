@@ -1,8 +1,14 @@
 # PROGRESS.md Version
-2026.09.02
+2026.09.26
 
 # 変更履歴
 
+- 2026.09.26: 3.1.22.0をRelease対象として検証。`doctor`のClaude Codeプラグイン有効化診断、Release build、212テスト、WiX MSI、`C:\Hataori`実機Major Upgrade、Service・CLI・MCP・DB整合性を確認。
+- 2026.09.25: `doctor`へ読み取り専用の`claude_plugins`診断を追加。対象プラグインIDとClaude Code設定pathを構成可能にし、Releaseテスト212件と文書リンク65件を検証。
+- 2026.09.24: `kotodama-spec-guard` 0.1.0の本体を別リポジトリへ実装した状況を残作業へ反映。
+- 2026.09.04: 3.1.21.0の完了範囲と、契約／実装レイヤー混同防止プラグインの将来対応を区別し、TODO.mdと残作業の記載を整合。
+- 2026.09.02: VirtualBox Windows 11隔離環境で3.1.21.0の新規Install／Uninstallを検証。製品登録・Service・`bin`・System `Path`削除と`config`・`data`・`logs`保持を確認。
+- 2026.09.02: 3.1.21.0をRelease。文書リンク自動検証、64文書、207テスト、MSI、実機`C:\Hataori`稼働を検証。
 - 2026.09.02: 3.1.21.0へVersion更新。文書リンク自動検証をMSI化し、64文書、207テスト、`C:\Hataori`実機Major Upgrade、CLI・Service・MCP・DB整合性を検証。
 - 2026.09.02: Git管理中Markdownの相対リンク切れとRepository外参照を検出するPowerShell検証とGitHub Actionsを追加。
 - 2026.09.02: 3.1.20.0をRelease。`doctor`のService Account差異テスト、207テスト、MSI、実機`C:\Hataori`稼働を検証。
@@ -60,8 +66,8 @@
 | CLI | 97% | 98% | 98% | 98% | 98% | 99% |
 | Windows Service | 100% | 100% | 100% | 100% | 100% | 100% |
 | Monitor | 95% | 95% | 95% | 95% | 96% | 98% |
-| 運用・復旧 | 97% | 99% | 100% | 100% | 100% | 98% |
-| 文書・配布 | 75% | 90% | 90% | 90% | 95% | 98% |
+| 運用・復旧 | 97% | 99% | 100% | 100% | 100% | 100% |
+| 文書・配布 | 75% | 90% | 90% | 90% | 95% | 100% |
 | テスト | 96% | 96% | 97% | 97% | 99% | 99% |
 
 ## 現在フェーズ
@@ -72,9 +78,11 @@ Phase 1（基盤・必須運用機能）: **99%**
 
 ## 現在の完了状態と残作業
 
-3.1.21.0でPhase 2のTODO 12項目をすべて完了しています。文書リンク64件、Release構成build警告0件・エラー0件、自動テスト207件合格、WiX MSI build成功、`C:\Hataori`へのMajor Upgrade成功、Windows Service Running / Automatic、MCP 28 tools、SQLite integrity `ok`を確認しました。3.1.21.0は実機導入済み、未リリースです。
+3.1.22.0で`doctor`のClaude Codeプラグイン有効化診断を追加しました。Release構成build警告0件・エラー0件、自動テスト212件合格、WiX MSI build成功、`C:\Hataori`へのMajor Upgrade成功、Windows Service Running / Automatic、MCP 28 tools、SQLite integrity `ok`を確認しました。
 
-機能TODOはありません。残作業は、隔離環境でのMSI Uninstall実機検証です。Claude CLIは実ユーザー権限で2.1.220の起動と`doctor` healthyを確認済みです。Codex sandbox SIDから実ユーザー専用WinGet packageを直接起動した場合のアクセス拒否は環境分離による想定動作です。
+3.1.22.0の実機検証では、既存設定を保持したMajor Upgrade後にCLI 3.1.22.0、Service稼働、MCP接続、`doctor` healthyを確認しました。既存設定には新しい`requiredClaudePlugin`がないため、後方互換動作として`claude_plugins`診断は無効です。新規生成設定では`kotodama-spec-guard@katsushoe-private`を診断します。新規Install／Uninstallは3.1.21.0で検証済みのため今回は実施していません。
+
+将来対応として、契約（What）／実装（How）の混同防止を正式なClaude Codeプラグイン（仮称 `kotodama-spec-guard`）として実装する項目が1件あります。2026.09.24にプラグイン本体0.1.0を別リポジトリ`KotodamaSpecGuard`へ実装しました（テスト6件合格、マニフェスト検証合格）。2026.09.25にHataoriの`doctor`へ読み取り専用の`claude_plugins`診断を実装しました。残作業はGitHub公開と、Claude Code実行時のhook発火確認です。Hataoriの責務は対象プロジェクトでのプラグイン有効化確認に限定し、対象ディレクトリへの設定自動書き込みは行わない方針です。詳細は[TODO.md](TODO.md)の「後でやる」を参照してください。既存機能の進捗率と過去の検証結果は変更しません。
 
 ## 時系列の進捗・検証メモ
 
@@ -133,6 +141,7 @@ Phase 1（基盤・必須運用機能）: **99%**
 - [x] Itoguruma未連携でもHataori Serverが起動できる修正（`docs/adr/0015`、2026-08-19）
 - [x] `hataori doctor`の`itoguruma`チェックがライブなServer状態を参照するよう修正（2026-08-19）
 - [x] 3.0.4.0 MSI Major Upgrade実機検証（2026-08-19）
+- [x] 3.1.21.0 MSI新規Install／Uninstall隔離実機検証（VirtualBox Windows 11、2026-09-02）
 - [x] MCP Server Instructionsと`hataori_workflow` Prompt（3.1.9.0、2026-08-26）
 - [x] MCP `list_projects`、未登録Project候補返却、Task登録前Project選択案内（3.1.12.0、2026-08-31）
 - [x] Workspace単位のTask管理、MCP `list_workspaces`、SQLite移行、Monitor・会話Hook連携（3.1.13.0、2026-08-31）

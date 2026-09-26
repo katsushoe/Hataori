@@ -7,4 +7,6 @@ public sealed class HookOptions
     public bool Enabled { get; init; } = true;
     public string CodexConfigPath { get; init; } = string.Empty;
     public string ClaudeConfigPath { get; init; } = string.Empty;
+    public string ClaudePluginSettingsPath { get; init; } = string.Empty;
+    public string RequiredClaudePlugin { get; init; } = string.Empty;
 }

@@ -700,6 +700,8 @@ Commands: [`doctor`](#hataori-doctor), [`logs`](#hataori-logs), [`monitor`](#hat
 | Processing | Runs all checks and records individual failures instead of stopping at the first check. |
 | Result | JSON `healthy` and `checks`; each check contains `name`, `ok`, optional `error`, and `skipped`. |
 | Example | `hataori doctor` |
+
+When `hooks.requiredClaudePlugin` is configured, the result also includes the read-only `claude_plugins` check. It verifies that the exact plugin ID is `true` in Claude Code `enabledPlugins`; Hataori never writes the Claude Code settings file.
 | Safety | Diagnostic; it makes read-only connection calls and executable `--version` calls. |
 
 #### `hataori logs`
