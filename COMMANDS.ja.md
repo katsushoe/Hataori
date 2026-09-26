@@ -550,6 +550,8 @@ Command: [`doctor`](#hataori-doctor)、[`logs`](#hataori-logs)、[`monitor`](#ha
 - 引数: 有効設定と標準配置を使います。
 - 処理・戻り値: 全checkを継続し、`healthy`と`name/ok/error/skipped`を持つ`checks`を返します。
 - 例: `hataori doctor`。
+
+`hooks.requiredClaudePlugin`が設定されている場合、結果には読み取り専用の`claude_plugins`診断も含まれます。Claude Codeの`enabledPlugins`で完全一致するプラグインIDが`true`かを確認し、HataoriはClaude Code設定fileを書き換えません。
 - 安全: 読み取り接続と実行fileの`--version` callを行います。
 
 #### `hataori logs`

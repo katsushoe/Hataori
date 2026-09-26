@@ -1,8 +1,10 @@
 # PROGRESS.md Version
-2026.09.24
+2026.09.26
 
 # 変更履歴
 
+- 2026.09.26: 3.1.22.0をRelease対象として検証。`doctor`のClaude Codeプラグイン有効化診断、Release build、212テスト、WiX MSI、`C:\Hataori`実機Major Upgrade、Service・CLI・MCP・DB整合性を確認。
+- 2026.09.25: `doctor`へ読み取り専用の`claude_plugins`診断を追加。対象プラグインIDとClaude Code設定pathを構成可能にし、Releaseテスト212件と文書リンク65件を検証。
 - 2026.09.24: `kotodama-spec-guard` 0.1.0の本体を別リポジトリへ実装した状況を残作業へ反映。
 - 2026.09.04: 3.1.21.0の完了範囲と、契約／実装レイヤー混同防止プラグインの将来対応を区別し、TODO.mdと残作業の記載を整合。
 - 2026.09.02: VirtualBox Windows 11隔離環境で3.1.21.0の新規Install／Uninstallを検証。製品登録・Service・`bin`・System `Path`削除と`config`・`data`・`logs`保持を確認。
@@ -76,11 +78,11 @@ Phase 1（基盤・必須運用機能）: **99%**
 
 ## 現在の完了状態と残作業
 
-3.1.21.0でPhase 2のTODO 12項目をすべて完了しています。文書リンク64件、Release構成build警告0件・エラー0件、自動テスト207件合格、WiX MSI build成功、`C:\Hataori`へのMajor Upgrade成功、Windows Service Running / Automatic、MCP 28 tools、SQLite integrity `ok`を確認し、GitHubへ正式リリース済みです。
+3.1.22.0で`doctor`のClaude Codeプラグイン有効化診断を追加しました。Release構成build警告0件・エラー0件、自動テスト212件合格、WiX MSI build成功、`C:\Hataori`へのMajor Upgrade成功、Windows Service Running / Automatic、MCP 28 tools、SQLite integrity `ok`を確認しました。
 
-3.1.21.0の対象範囲では、機能TODOと配布検証の残作業はありません。VirtualBox Windows 11隔離環境で3.1.21.0の新規Install／Uninstallを実施し、製品登録・Windows Service・`bin`・System `Path`のHataori項目削除と、`config\hataori.json`・`data\hataori`・`logs`保持を確認しました。Claude CLIは実ユーザー権限で2.1.220の起動と`doctor` healthyを確認済みです。Codex sandbox SIDから実ユーザー専用WinGet packageを直接起動した場合のアクセス拒否は環境分離による想定動作です。
+3.1.22.0の実機検証では、既存設定を保持したMajor Upgrade後にCLI 3.1.22.0、Service稼働、MCP接続、`doctor` healthyを確認しました。既存設定には新しい`requiredClaudePlugin`がないため、後方互換動作として`claude_plugins`診断は無効です。新規生成設定では`kotodama-spec-guard@katsushoe-private`を診断します。新規Install／Uninstallは3.1.21.0で検証済みのため今回は実施していません。
 
-将来対応として、契約（What）／実装（How）の混同防止を正式なClaude Codeプラグイン（仮称 `kotodama-spec-guard`）として実装する項目が1件あります。2026.09.24にプラグイン本体0.1.0を別リポジトリ`KotodamaSpecGuard`へ実装しました（テスト6件合格、マニフェスト検証合格）。GitHub公開、実行時のhook発火確認、Hataori側の有効化確認機能が未完了です。Hataoriの責務は対象プロジェクトでのプラグイン有効化確認に限定し、対象ディレクトリへの設定自動書き込みは行わない方針です。詳細は[TODO.md](TODO.md)の「後でやる」を参照してください。既存機能の進捗率と過去の検証結果は変更しません。
+将来対応として、契約（What）／実装（How）の混同防止を正式なClaude Codeプラグイン（仮称 `kotodama-spec-guard`）として実装する項目が1件あります。2026.09.24にプラグイン本体0.1.0を別リポジトリ`KotodamaSpecGuard`へ実装しました（テスト6件合格、マニフェスト検証合格）。2026.09.25にHataoriの`doctor`へ読み取り専用の`claude_plugins`診断を実装しました。残作業はGitHub公開と、Claude Code実行時のhook発火確認です。Hataoriの責務は対象プロジェクトでのプラグイン有効化確認に限定し、対象ディレクトリへの設定自動書き込みは行わない方針です。詳細は[TODO.md](TODO.md)の「後でやる」を参照してください。既存機能の進捗率と過去の検証結果は変更しません。
 
 ## 時系列の進捗・検証メモ
 

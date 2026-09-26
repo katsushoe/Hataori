@@ -449,6 +449,17 @@ public static class CliApplication
             var baseDirectory = InstallationLayout.Resolve(AppContext.BaseDirectory).RootPath;
             await HookDiagnostics.CheckAsync([hookOptions.CodexConfigPath, hookOptions.ClaudeConfigPath], baseDirectory, cancellationToken).ConfigureAwait(false);
         }).ConfigureAwait(false);
+        var doctorHookOptions = configuration.GetSection(HookOptions.SectionName).Get<HookOptions>();
+        if (!string.IsNullOrWhiteSpace(doctorHookOptions?.RequiredClaudePlugin))
+        {
+            await AddDoctorCheckAsync(checks, "claude_plugins", async () =>
+            {
+                var settingsPath = string.IsNullOrWhiteSpace(doctorHookOptions.ClaudePluginSettingsPath)
+                    ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".claude", "settings.json")
+                    : doctorHookOptions.ClaudePluginSettingsPath;
+                await ClaudePluginDiagnostics.CheckAsync(settingsPath, doctorHookOptions.RequiredClaudePlugin, cancellationToken).ConfigureAwait(false);
+            }).ConfigureAwait(false);
+        }
         return new { healthy = checks.All(check => check.Ok || check.Skipped), checks };
     }
 

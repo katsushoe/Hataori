@@ -1,8 +1,10 @@
 # TODO.md Version
-2026.09.24
+2026.09.26
 
 # 変更履歴
 
+- 2026.09.26: Hataori 3.1.22.0としてClaude Codeプラグイン有効化診断をMSI化し、実機Major Upgradeを検証。
+- 2026.09.25: `doctor`へClaude Codeプラグイン有効化診断を追加し、Hataori側の実装項目を完了。
 - 2026.09.24: `kotodama-spec-guard` 0.1.0の本体を別リポジトリ`KotodamaSpecGuard`へ実装（仕様書Markdown書込時のPostToolUse hook、`layer-reviewer`、手動スキル、テスト6件）。GitHub公開・実行時検証・Hataori側有効化確認は未完了。
 - 2026.09.04: 契約／実装レイヤー混同防止のClaude Codeプラグイン化を、優先順位・対象バージョン未定の将来対応として追加。
 - 2026.09.02: VirtualBox Windows 11隔離環境で3.1.21.0の新規Install／Uninstallを検証し、削除対象と保持対象を確認。
@@ -58,7 +60,7 @@
   - [ ] `KotodamaSpecGuard`をGitHubプライベートリポジトリとして作成し、Githubie／Moyaiへ登録してコミット・pushする。
     - 2026.09.24: Githubie／Moyaiにリポジトリ作成機能がないため、両プロジェクトへ機能追加CR（`CRs\inbox\Githubie\CR-2026-09-24-repository-create.md`、`CRs\inbox\Moyai\CR-2026-09-24-repository-create.md`）をItogurumaで送信済み。対応待ち。
   - [ ] Claude Code実行時にhook発火から`layer-reviewer`起動までを実機確認する（2026.09.24はCLIのOAuth期限切れで未確認。プラグイン読込とAgent／Skill登録は確認済み）。
-  - [ ] Hataori側で対象プロジェクトのプラグイン有効化を確認する機能（例: `doctor`チェック）を実装する。
+  - [X] Hataori側でClaude Code設定の`enabledPlugins`を読み取り、対象プラグインの有効化を確認する`doctor`チェックを実装する（設定は書き換えない）。
   - 背景: Kotodama仕様書の契約セクションにサーバ処理フロー、アルゴリズム選定、ヘルパーツール提案が混在した。追記時のレビューをHataori配下の全プロジェクトへ一貫して適用する。
   - 責務分離: プラグイン側がレビュー内容、hook／subagent定義、配布・バージョン管理を担い、Hataori側は対象プロジェクトでの有効化確認に限定する。
   - 不採用: Hataoriが起動前に対象ディレクトリの `settings.json` やagent定義を自動書き込みする方式。オーケストレーション層と拡張構成層の責務が混在するため。

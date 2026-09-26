@@ -405,7 +405,7 @@ Children: [`enabled`](#databasemaintenanceenabled), [`intervalHours`](#databasem
 
 ### `hooks`
 
-Children: [`enabled`](#hooksenabled), [`codexConfigPath`](#hookscodexconfigpath), and [`claudeConfigPath`](#hooksclaudeconfigpath).
+Children: [`enabled`](#hooksenabled), [`codexConfigPath`](#hookscodexconfigpath), [`claudeConfigPath`](#hooksclaudeconfigpath), [`claudePluginSettingsPath`](#hooksclaudepluginsettingspath), and [`requiredClaudePlugin`](#hooksrequiredclaudeplugin).
 
 #### `hooks.enabled`
 
@@ -427,6 +427,20 @@ Children: [`enabled`](#hooksenabled), [`codexConfigPath`](#hookscodexconfigpath)
 - Default: `bin/cli/hooks/claude-settings.json`.
 - Behavior: relative paths resolve from `%INSTALL_ROOT%`.
 - Example: `"claudeConfigPath": "bin/cli/hooks/claude-settings.json"`.
+
+#### `hooks.claudePluginSettingsPath`
+
+- Type/required: string, optional.
+- Default: empty. `doctor` then reads `%USERPROFILE%\.claude\settings.json`.
+- Behavior: selects an alternate Claude Code settings file for the read-only plugin enablement check. Hataori does not modify this file.
+- Example: `"claudePluginSettingsPath": ""`.
+
+#### `hooks.requiredClaudePlugin`
+
+- Type/required: string, optional.
+- Default in the generated file: `kotodama-spec-guard@katsushoe-private`.
+- Behavior: when non-empty, `doctor` adds `claude_plugins` and requires this exact key to be `true` in `enabledPlugins`. Empty disables only this check for backward-compatible existing configurations.
+- Example: `"requiredClaudePlugin": "kotodama-spec-guard@katsushoe-private"`.
 
 ### `allowedHosts`
 

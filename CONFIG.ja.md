@@ -398,7 +398,7 @@ Hataoriには名前付きprofile fileがありません。通常file path、環�
 
 ### `hooks`
 
-子項目: [`enabled`](#hooksenabled)、[`codexConfigPath`](#hookscodexconfigpath)、[`claudeConfigPath`](#hooksclaudeconfigpath)。
+子項目: [`enabled`](#hooksenabled)、[`codexConfigPath`](#hookscodexconfigpath)、[`claudeConfigPath`](#hooksclaudeconfigpath)、[`claudePluginSettingsPath`](#hooksclaudepluginsettingspath)、[`requiredClaudePlugin`](#hooksrequiredclaudeplugin)。
 
 #### `hooks.enabled`
 
@@ -417,6 +417,20 @@ Hataoriには名前付きprofile fileがありません。通常file path、環�
 - 型/必須: Hook有効時に空でないstring。
 - 既定値: `bin/cli/hooks/claude-settings.json`。相対pathは`%INSTALL_ROOT%`基準です。
 - 例: `"claudeConfigPath": "bin/cli/hooks/claude-settings.json"`。
+
+#### `hooks.claudePluginSettingsPath`
+
+- 型／必須: string、任意。
+- 既定値: 空。`doctor`は`%USERPROFILE%\.claude\settings.json`を読み取ります。
+- 動作: 読み取り専用のプラグイン有効化確認に使う別のClaude Code設定fileを指定します。Hataoriはこのfileを書き換えません。
+- 例: `"claudePluginSettingsPath": ""`。
+
+#### `hooks.requiredClaudePlugin`
+
+- 型／必須: string、任意。
+- 生成fileの既定値: `kotodama-spec-guard@katsushoe-private`。
+- 動作: 空でない場合、`doctor`は`claude_plugins`診断を追加し、`enabledPlugins`で完全一致するkeyが`true`であることを要求します。空の場合は、既存設定との後方互換性のためこの診断だけを無効にします。
+- 例: `"requiredClaudePlugin": "kotodama-spec-guard@katsushoe-private"`。
 
 ### `allowedHosts`
 
