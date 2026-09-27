@@ -1,8 +1,9 @@
 # PROGRESS.md Version
-2026.09.26
+2026.09.27
 
 # 変更履歴
 
+- 2026.09.27: 3.1.22.0をGitHub Releaseとして公開。`develop`から`main`へのPR #18をマージし、`v3.1.22.0`とx64 MSIを公開。残作業を外部プラグインのGitHub公開・Claude Code実機hook検証の2件へ整理。
 - 2026.09.26: 3.1.22.0をRelease対象として検証。`doctor`のClaude Codeプラグイン有効化診断、Release build、212テスト、WiX MSI、`C:\Hataori`実機Major Upgrade、Service・CLI・MCP・DB整合性を確認。
 - 2026.09.25: `doctor`へ読み取り専用の`claude_plugins`診断を追加。対象プラグインIDとClaude Code設定pathを構成可能にし、Releaseテスト212件と文書リンク65件を検証。
 - 2026.09.24: `kotodama-spec-guard` 0.1.0の本体を別リポジトリへ実装した状況を残作業へ反映。
@@ -56,19 +57,19 @@
 
 ### ≪Hataori≫
 
-| 機能 | 2026.08.16 | 2026.08.18 | 2026.08.25 | 2026.08.26 | 2026.08.31 | 2026.09.02 |
-| :--- | ---: | ---: | ---: | ---: | ---: | ---: |
-| **グループ全体** | **94%** | **96%** | **96%** | **96%** | **97%** | **99%** |
-| Server / Core / SQLite | 88% | 88% | 88% | 88% | 88% | 100% |
-| Itoguruma連携 | 98% | 98% | 98% | 98% | 98% | 98% |
-| Session / Activation | 100% | 100% | 100% | 100% | 100% | 100% |
-| Task管理 | 95% | 95% | 95% | 95% | 97% | 100% |
-| CLI | 97% | 98% | 98% | 98% | 98% | 99% |
-| Windows Service | 100% | 100% | 100% | 100% | 100% | 100% |
-| Monitor | 95% | 95% | 95% | 95% | 96% | 98% |
-| 運用・復旧 | 97% | 99% | 100% | 100% | 100% | 100% |
-| 文書・配布 | 75% | 90% | 90% | 90% | 95% | 100% |
-| テスト | 96% | 96% | 97% | 97% | 99% | 99% |
+| 機能 | 2026.08.16 | 2026.08.18 | 2026.08.25 | 2026.08.26 | 2026.08.31 | 2026.09.02 | 2026.09.27 |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| **グループ全体** | **94%** | **96%** | **96%** | **96%** | **97%** | **99%** | **99%** |
+| Server / Core / SQLite | 88% | 88% | 88% | 88% | 88% | 100% | 100% |
+| Itoguruma連携 | 98% | 98% | 98% | 98% | 98% | 98% | 98% |
+| Session / Activation | 100% | 100% | 100% | 100% | 100% | 100% | 100% |
+| Task管理 | 95% | 95% | 95% | 95% | 97% | 100% | 100% |
+| CLI | 97% | 98% | 98% | 98% | 98% | 99% | 99% |
+| Windows Service | 100% | 100% | 100% | 100% | 100% | 100% | 100% |
+| Monitor | 95% | 95% | 95% | 95% | 96% | 98% | 98% |
+| 運用・復旧 | 97% | 99% | 100% | 100% | 100% | 100% | 100% |
+| 文書・配布 | 75% | 90% | 90% | 90% | 95% | 100% | 100% |
+| テスト | 96% | 96% | 97% | 97% | 99% | 99% | 99% |
 
 ## 現在フェーズ
 
@@ -78,7 +79,7 @@ Phase 1（基盤・必須運用機能）: **99%**
 
 ## 現在の完了状態と残作業
 
-3.1.22.0で`doctor`のClaude Codeプラグイン有効化診断を追加しました。Release構成build警告0件・エラー0件、自動テスト212件合格、WiX MSI build成功、`C:\Hataori`へのMajor Upgrade成功、Windows Service Running / Automatic、MCP 28 tools、SQLite integrity `ok`を確認しました。
+3.1.22.0で`doctor`のClaude Codeプラグイン有効化診断を追加しました。Release構成build警告0件・エラー0件、自動テスト212件合格、WiX MSI build成功、`C:\Hataori`へのMajor Upgrade成功、Windows Service Running / Automatic、MCP 28 tools、SQLite integrity `ok`を確認しました。PR #18で`develop`を`main`へ反映し、`v3.1.22.0`のGitHub Releaseとx64 MSIを公開済みです。
 
 3.1.22.0の実機検証では、既存設定を保持したMajor Upgrade後にCLI 3.1.22.0、Service稼働、MCP接続、`doctor` healthyを確認しました。既存設定には新しい`requiredClaudePlugin`がないため、後方互換動作として`claude_plugins`診断は無効です。新規生成設定では`kotodama-spec-guard@katsushoe-private`を診断します。新規Install／Uninstallは3.1.21.0で検証済みのため今回は実施していません。
 
@@ -146,7 +147,7 @@ Phase 1（基盤・必須運用機能）: **99%**
 - [x] MCP `list_projects`、未登録Project候補返却、Task登録前Project選択案内（3.1.12.0、2026-08-31）
 - [x] Workspace単位のTask管理、MCP `list_workspaces`、SQLite移行、Monitor・会話Hook連携（3.1.13.0、2026-08-31）
 - [x] Workspace管理v2（Session・Message・Agent Run、SQLite移行、Monitor、CLI filter、2026-08-31）
-- [x] 自動テスト207件
+- [x] 自動テスト212件
 
 ## 部分実装
 

@@ -1,8 +1,9 @@
 # TODO.md Version
-2026.09.26
+2026.09.27
 
 # 変更履歴
 
+- 2026.09.27: Hataori 3.1.22.0をGitHub Releaseとして公開。Hataori側の実装・配布を完了し、残件を`KotodamaSpecGuard`のGitHub公開とClaude Code実機hook検証へ整理。
 - 2026.09.26: Hataori 3.1.22.0としてClaude Codeプラグイン有効化診断をMSI化し、実機Major Upgradeを検証。
 - 2026.09.25: `doctor`へClaude Codeプラグイン有効化診断を追加し、Hataori側の実装項目を完了。
 - 2026.09.24: `kotodama-spec-guard` 0.1.0の本体を別リポジトリ`KotodamaSpecGuard`へ実装（仕様書Markdown書込時のPostToolUse hook、`layer-reviewer`、手動スキル、テスト6件）。GitHub公開・実行時検証・Hataori側有効化確認は未完了。
