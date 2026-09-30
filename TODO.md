@@ -1,8 +1,9 @@
 # TODO.md Version
-2026.09.27
+2026.09.30
 
 # 変更履歴
 
+- 2026.09.30: `KotodamaSpecGuard` 0.1.0をprivate GitHub Repositoryへcommit・push済みと確認。残件をClaude Code実機hook検証の1件へ整理。
 - 2026.09.27: Hataori 3.1.22.0をGitHub Releaseとして公開。Hataori側の実装・配布を完了し、残件を`KotodamaSpecGuard`のGitHub公開とClaude Code実機hook検証へ整理。
 - 2026.09.26: Hataori 3.1.22.0としてClaude Codeプラグイン有効化診断をMSI化し、実機Major Upgradeを検証。
 - 2026.09.25: `doctor`へClaude Codeプラグイン有効化診断を追加し、Hataori側の実装項目を完了。
@@ -58,8 +59,8 @@
 
 - [ ] 契約（What）／実装（How）の混同を防ぐ正式なClaude Codeプラグイン（仮称 `kotodama-spec-guard`）を実装する。即時着手せず、後日優先順位を決めて将来バージョンで対応する（時期・対象バージョンは未定）。
   - 2026.09.24状況: プラグイン本体0.1.0を別リポジトリ`F:\Workspace\Projects\KotodamaSpecGuard`へ実装済み。発火条件は「仕様書Markdown（ファイル名に『仕様』／単語`spec`、または`spec`・`仕様書`ディレクトリ配下の`.md`）へのWrite／Edit／MultiEdit」に決定。
-  - [ ] `KotodamaSpecGuard`をGitHubプライベートリポジトリとして作成し、Githubie／Moyaiへ登録してコミット・pushする。
-    - 2026.09.24: Githubie／Moyaiにリポジトリ作成機能がないため、両プロジェクトへ機能追加CR（`CRs\inbox\Githubie\CR-2026-09-24-repository-create.md`、`CRs\inbox\Moyai\CR-2026-09-24-repository-create.md`）をItogurumaで送信済み。対応待ち。
+  - [X] `KotodamaSpecGuard`をGitHubプライベートリポジトリとして作成し、Githubieへ登録してコミット・pushする。
+    - 2026.09.28: private Repository `katsushoe/KotodamaSpecGuard`へGithubie経由でpush済み。commit `0937896`、Nodeテスト6件合格、local／remote `develop`一致、作業ツリーcleanを確認。Moyaiは対象Project未登録のためGithubieを使用。
   - [ ] Claude Code実行時にhook発火から`layer-reviewer`起動までを実機確認する（2026.09.24はCLIのOAuth期限切れで未確認。プラグイン読込とAgent／Skill登録は確認済み）。
   - [X] Hataori側でClaude Code設定の`enabledPlugins`を読み取り、対象プラグインの有効化を確認する`doctor`チェックを実装する（設定は書き換えない）。
   - 背景: Kotodama仕様書の契約セクションにサーバ処理フロー、アルゴリズム選定、ヘルパーツール提案が混在した。追記時のレビューをHataori配下の全プロジェクトへ一貫して適用する。
