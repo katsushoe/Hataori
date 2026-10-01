@@ -3,8 +3,9 @@
 
 # 変更履歴
 
-- 2026.09.30: `KotodamaSpecGuard` 0.1.0のprivate GitHub Repositoryへのcommit・push完了を反映。残作業をClaude Code実機hook検証の1件へ整理。
+- 2026.10.01: Claude Code 2.1.233で`KotodamaSpecGuard`をセッション限定で読み込み、仕様書MarkdownへのWrite後のPostToolUse hook発火、`layer-reviewer`起動、実装混入0件・要確認0件を実機確認。検証用ファイルは削除し、永続設定・既存プロジェクトファイルは変更なし。
 - 2026.10.01: `KotodamaSpecGuard`の公開・Hataori側診断実装が完了済みで、残作業はClaude Code実行時のhook発火から`layer-reviewer`起動までの実機確認1件であることを再確認。機能進捗率に変更はなく、更新周期内のため進捗表・グラフは据え置き。
+- 2026.09.30: `KotodamaSpecGuard` 0.1.0のprivate GitHub Repositoryへのcommit・push完了を反映。残作業をClaude Code実機hook検証の1件へ整理。
 - 2026.09.27: 3.1.22.0をGitHub Releaseとして公開。`develop`から`main`へのPR #18をマージし、`v3.1.22.0`とx64 MSIを公開。残作業を外部プラグインのGitHub公開・Claude Code実機hook検証の2件へ整理。
 - 2026.09.26: 3.1.22.0をRelease対象として検証。`doctor`のClaude Codeプラグイン有効化診断、Release build、212テスト、WiX MSI、`C:\Hataori`実機Major Upgrade、Service・CLI・MCP・DB整合性を確認。
 - 2026.09.25: `doctor`へ読み取り専用の`claude_plugins`診断を追加。対象プラグインIDとClaude Code設定pathを構成可能にし、Releaseテスト212件と文書リンク65件を検証。
@@ -85,7 +86,7 @@ Phase 1（基盤・必須運用機能）: **99%**
 
 3.1.22.0の実機検証では、既存設定を保持したMajor Upgrade後にCLI 3.1.22.0、Service稼働、MCP接続、`doctor` healthyを確認しました。既存設定には新しい`requiredClaudePlugin`がないため、後方互換動作として`claude_plugins`診断は無効です。新規生成設定では`kotodama-spec-guard@katsushoe-private`を診断します。新規Install／Uninstallは3.1.21.0で検証済みのため今回は実施していません。
 
-将来対応として、契約（What）／実装（How）の混同防止を正式なClaude Codeプラグイン（仮称 `kotodama-spec-guard`）として実装する項目が1件あります。2026.09.24にプラグイン本体0.1.0を別リポジトリ`KotodamaSpecGuard`へ実装し、2026.09.28にcommit `0937896`をprivate GitHub Repositoryへpushしました（テスト6件合格、マニフェスト・hook・agent・skill定義確認済み）。2026.09.25にHataoriの`doctor`へ読み取り専用の`claude_plugins`診断を実装しました。2026.10.01時点の残作業は、Claude Code実行時に対象Markdownへの書込でhookが発火し、`layer-reviewer`が起動することの実機確認1件です。Hataoriの責務は対象プロジェクトでのプラグイン有効化確認に限定し、対象ディレクトリへの設定自動書き込みは行わない方針です。詳細は[TODO.md](TODO.md)の「後でやる」を参照してください。既存機能の進捗率と過去の検証結果は変更しません。
+契約（What）／実装（How）の混同防止プラグイン`kotodama-spec-guard`は、2026.09.24に0.1.0を別リポジトリ`KotodamaSpecGuard`へ実装し、2026.09.28にcommit `0937896`をprivate GitHub Repositoryへpushしました（Nodeテスト6件合格、マニフェスト・hook・agent・skill定義確認済み）。2026.09.25にHataoriの`doctor`へ読み取り専用の`claude_plugins`診断を実装しました。2026.10.01、Claude Code 2.1.233のセッション限定pluginとして検証し、仕様書MarkdownへのWrite後にPostToolUse hookが発火し、`layer-reviewer`が起動して実装混入0件・要確認0件と判定することを確認しました。検証用ファイルは削除し、永続plugin設定や既存プロジェクトファイルは変更していません。プラグイン実装・配布・Hataori有効化診断・実機hook確認は完了です。Hataoriは対象プロジェクトでのプラグイン有効化確認に限定し、対象ディレクトリへの設定自動書き込みは行いません。既存機能の進捗率と過去の検証結果は変更しません。
 
 ## 時系列の進捗・検証メモ
 
