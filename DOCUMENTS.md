@@ -15,11 +15,11 @@ Public documentation, architecture decisions, progress, and plans are tracked in
 | :--- | :--- | :--- |
 | `.` | Yes | Solution, entry documents, and project-management sources. |
 | `src/` | Yes | Core, Application, Infrastructure, Server, CLI, and Monitor implementations. |
-| `tests/` | Yes | Automated tests. |
+| `tests/` | Yes | Automated tests, including the Windows-only Monitor WinForms regression project `Hataori.Monitor.Tests`. |
 | `installer/` | Yes | WiX x64 MSI definition. |
 | `scripts/` | Yes | Publish, MSI build, and documentation-link validation scripts. |
 | `docs/adr/` | Yes | Architecture decision records. |
-| `docs/validation/` | Yes | Sanitized real-machine validation records. |
+| `docs/validation/` | Yes | Sanitized real-machine validation records, including repeatable Monitor WinForms regression evidence. |
 | `progress/` | Yes | Progress visualization. |
 | `artifacts/`, `**/bin/`, `**/obj/` | No | Build, publish, and installer outputs. |
 

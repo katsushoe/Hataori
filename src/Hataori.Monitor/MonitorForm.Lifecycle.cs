@@ -1,0 +1,148 @@
+﻿using System.Globalization;
+using Hataori.Application.Localization;
+
+namespace Hataori.Monitor;
+
+public partial class MonitorForm
+{
+    private readonly CancellationTokenSource _lifetime = new();
+    private MonitorSettings _settings = new();
+    private MonitorSettingsStore? _settingsStore;
+    private MonitorUpdateClient? _updater;
+    private bool _exitRequested;
+    private bool _checkingUpdate;
+    private bool _skipUpdate;
+
+    internal void ConfigureRuntime(MonitorSettings settings, MonitorSettingsStore store, MonitorUpdateClient updater, bool skipUpdate)
+    {
+        _settingsStore = store;
+        _updater = updater;
+        _skipUpdate = skipUpdate;
+        ApplySettings(settings);
+    }
+
+    internal void ApplySettings(MonitorSettings settings)
+    {
+        settings.Validate();
+        _settings = settings;
+        refreshTimer.Interval = settings.RefreshSeconds * 1000;
+        var culture = CultureInfo.GetCultureInfo(settings.Language);
+        CultureInfo.CurrentCulture = culture;
+        CultureInfo.CurrentUICulture = culture;
+        CultureInfo.DefaultThreadCurrentCulture = culture;
+        CultureInfo.DefaultThreadCurrentUICulture = culture;
+        ApplyLocalizedText();
+    }
+
+    protected override void OnFormClosing(FormClosingEventArgs e)
+    {
+        base.OnFormClosing(e);
+        if (e.Cancel) return;
+        if (ShouldHideOnClose(e.CloseReason, _settings.CloseToTray, _exitRequested))
+        {
+            e.Cancel = true;
+            HideToTray();
+        }
+        else
+        {
+            refreshTimer.Stop();
+            trayIcon.Visible = false;
+            _lifetime.Cancel();
+        }
+    }
+
+    internal static bool ShouldHideOnClose(CloseReason reason, bool closeToTray, bool exitRequested) =>
+        reason == CloseReason.UserClosing && closeToTray && !exitRequested;
+
+    protected override void OnResize(EventArgs e)
+    {
+        base.OnResize(e);
+        if (WindowState == FormWindowState.Minimized && trayIcon is not null) HideToTray();
+    }
+
+    internal void HideToTray()
+    {
+        trayIcon.Visible = true;
+        ShowInTaskbar = false;
+        Hide();
+    }
+
+    internal void RestoreFromTray()
+    {
+        if (IsDisposed) return;
+        ShowInTaskbar = true;
+        Show();
+        WindowState = FormWindowState.Normal;
+        Activate();
+    }
+
+    private void OpenMenuItemClick(object? sender, EventArgs e) => RestoreFromTray();
+
+    private void ExitMenuItemClick(object? sender, EventArgs e)
+    {
+        _exitRequested = true;
+        Close();
+    }
+
+    private void SettingsButtonClick(object? sender, EventArgs e)
+    {
+        if (_settingsStore is null) return;
+        RestoreFromTray();
+        using var form = new MonitorSettingsForm(_settings, _settingsStore, _errors);
+        if (form.ShowDialog(this) == DialogResult.OK) ApplySettings(form.Settings);
+    }
+
+    private async void UpdateButtonClick(object? sender, EventArgs e) => await CheckForUpdateAsync(manual: true).ConfigureAwait(true);
+
+    internal async Task CheckForUpdateAsync(bool manual)
+    {
+        if (_updater is null || _checkingUpdate) return;
+        _checkingUpdate = true;
+        updateButton.Enabled = false;
+        try
+        {
+            using var deadline = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+            deadline.CancelAfter(TimeSpan.FromMinutes(10));
+            connectionStatusLabel.Text = DisplayLanguage.Text("アプリの更新を確認中…", "Checking for application updates…");
+            var version = typeof(MonitorForm).Assembly.GetName().Version ?? new Version(0, 0, 0, 0);
+            var release = await _updater.CheckAsync(version, deadline.Token).ConfigureAwait(true);
+            if (release is null)
+            {
+                if (manual) MessageBox.Show(this, DisplayLanguage.Text("最新バージョンです。", "You have the latest version."), Text);
+                return;
+            }
+            var directory = Path.Combine(MonitorSettingsStore.UserDirectory, "updates", Guid.NewGuid().ToString("N"));
+            var package = await _updater.DownloadAsync(release, directory, deadline.Token).ConfigureAwait(true);
+            deadline.Token.ThrowIfCancellationRequested();
+            MonitorUpdateInstaller.Start(package, release, _pipeName, _settings.Language);
+            _exitRequested = true;
+            Close();
+        }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
+        catch (Exception exception)
+        {
+            if (IsDisposed) return;
+            connectionStatusLabel.Text = DisplayLanguage.Text("アプリの更新に失敗しました。現在のバージョンを使用できます。", "Application update failed. You can use the current version.");
+            _errors.Report(exception, this, connectionStatusLabel.Text, showDialog: manual);
+            if (!manual)
+            {
+                trayIcon.ShowBalloonTip(6000, Text, connectionStatusLabel.Text, ToolTipIcon.Warning);
+            }
+        }
+        finally
+        {
+            _checkingUpdate = false;
+            if (!IsDisposed) updateButton.Enabled = true;
+        }
+    }
+
+    private void ApplyLifecycleText()
+    {
+        settingsButton.Text = DisplayLanguage.Text("設定", "Settings");
+        updateButton.Text = DisplayLanguage.Text("アプリの更新", "Update application");
+        openMenuItem.Text = DisplayLanguage.Text("Monitorを開く", "Open Monitor");
+        settingsMenuItem.Text = DisplayLanguage.Text("設定", "Settings");
+        exitMenuItem.Text = DisplayLanguage.Text("終了", "Exit");
+        Text = "Hataori Monitor " + typeof(MonitorForm).Assembly.GetName().Version;
+    }
+}

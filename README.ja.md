@@ -65,6 +65,12 @@ hataori monitor
 
 streamされるlog行とerror textを除き、CLI出力はJSONです。Command構文、結果、終了Code、安全上の注意は[コマンド](COMMANDS.ja.md)を参照してください。MCP Clientの登録は[MCPセットアップ](MCP_SETUP.ja.md)に従ってください。
 
+## Monitor
+
+Windowsのスタートメニューで **Hataori Monitor** を開くか、`hataori monitor`を実行します。既定では閉じるボタンを押してもタスクトレイに常駐し、最小化した場合もトレイへ格納します。トレイアイコンをダブルクリックすると画面が開きます。右クリックメニューから **Monitorを開く**、**設定**、**終了** を選べます。「終了」はMonitorだけを終了し、Serverは独立して動作します。
+
+画面またはトレイメニューの **設定** で、閉じる動作、最小化起動、起動時の自動更新、表示間隔、言語を変更できます。起動時の自動更新は、新しい正式版のx64 MSIを検証してインストールします。Windowsの管理者確認が表示される場合があり、更新中はサービスが再起動します。**アプリの更新** ボタンで手動確認もできます。更新できない場合は現在の版を引き続き使用できます。[Monitor設定](CONFIG.ja.md#monitor-settings)を参照してください。
+
 ## Documentation
 
 - [設定](CONFIG.ja.md)

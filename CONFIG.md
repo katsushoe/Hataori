@@ -10,6 +10,7 @@ This document is the source of truth for Hataori configuration files, precedence
 | :--- | :--- | :--- | :--- |
 | Main settings | `%INSTALL_ROOT%\config\hataori.json` | MSI, user, or `hataori config init` | Non-secret application language, Server, agent, retry, logging, maintenance, and hook settings. |
 | Service secret settings | `%INSTALL_ROOT%\config\hataori.service.json` | `hataori service setup` | Itoguruma token for the `LocalSystem` Windows Service. |
+| Monitor settings | `%LOCALAPPDATA%\Hataori\Monitor\settings.json` | Monitor Settings dialog | Per-user preferences, independent of Server configuration. |
 
 Relative `databasePath`, log, and hook paths are resolved from `%INSTALL_ROOT%`. An explicitly supplied `HATAORI_CONFIG_PATH` may point to another absolute main settings file.
 
@@ -19,6 +20,44 @@ Relative `databasePath`, log, and hook paths are resolved from `%INSTALL_ROOT%`.
 - `hataori config init [--language <ja-JP|en-US>]` creates the embedded default `hataori.json` only when the destination does not exist.
 - `hataori service setup` creates or replaces `hataori.service.json` and restricts its ACL to `SYSTEM` and `Administrators`.
 - Do not hand-create a token value in examples, source control, logs, or chat.
+
+## Monitor Settings
+
+Open **Hataori Monitor** from the Windows Start menu, then click **Settings** in its toolbar or right-click its tray icon and select **Settings**. Click **Save** to persist settings atomically; **Cancel** leaves them unchanged. The dialog displays the settings file location. Server configuration and credentials are not edited here. The settings file is retained by MSI upgrade and uninstall.
+
+All keys below are optional. No Server environment overrides apply to this file.
+
+| Key | Type | Default | Allowed values |
+| :--- | :--- | :--- | :--- |
+| `close_to_tray` | boolean | `true` | `true`, `false` |
+| `start_minimized` | boolean | `false` | `true`, `false` |
+| `auto_update` | boolean | `true` | `true`, `false` |
+| `refresh_seconds` | integer | `3` | 1–300 |
+| `language` | string | `ja-JP`; initial dialog inherits main application language | `ja-JP`, `en-US` |
+
+### close_to_tray
+
+Boolean; default/omitted `true`. Example: `{"close_to_tray":true}`. Closing the window hides it to the tray; `false` exits Monitor on close. Minimizing always hides it. **Exit** and Windows shutdown terminate normally. A second launch reopens the existing Monitor for the same user/session/installation/pipe.
+
+### start_minimized
+
+Boolean; default/omitted `false`. Example: `{"start_minimized":true}`. Starts Monitor hidden in the tray on the next launch. It does not register Windows logon startup.
+
+### auto_update
+
+Boolean; default/omitted `true`. Example: `{"auto_update":false}`. Checks for a newer official stable MSI at the next Monitor startup and installs it automatically after verifying the official URL, size, and API SHA-256 digest. The update feed is embedded from `src/Hataori.Monitor/monitor-update.json`; it is not a user-selectable download source. Only MSI installations in the standard `bin/monitor` layout can install updates. **Update application** checks manually even when this option is disabled. Windows may show UAC; approving it updates Server, CLI, and Monitor and restarts the service. Cancelling elevation or an installer failure restarts the existing Monitor and skips one update check. No automatic Windows reboot occurs. Exit code 3010 requests a manual reboot.
+
+Startup download failures show a tray warning, are logged, and leave Monitor usable; manual checks show an error dialog. Offline access, missing digest/MSI, private releases, API limits, and invalid metadata are recoverable errors. No other application's credentials are read. Updates and installer logs remain in `%LOCALAPPDATA%\Hataori\Monitor\updates`; remove old directories only while no update is running. An installer still active after the 20-minute deadline is not killed; wait for Windows Installer to finish before reopening Monitor.
+
+### refresh_seconds
+
+Integer; default/omitted `3`, range 1–300 inclusive. Example: `{"refresh_seconds":10}`. Applies immediately on Save and controls snapshot refresh in both visible and hidden states.
+
+### language
+
+String; values `ja-JP` (Japanese) or `en-US` (English), omitted key defaults to `ja-JP`. Example: `{"language":"en-US"}`. On first use, before the Monitor file exists, the dialog inherits `application.language` from the main configuration; a saved Monitor language takes precedence and applies immediately without changing Server's language.
+
+If the file cannot be read or validated, Monitor preserves it, reports the error, and uses defaults with automatic updates disabled for that launch. Open Settings and Save to replace the invalid file. Invalid values or failed writes leave the previous settings unchanged.
 
 ## Main Settings
 

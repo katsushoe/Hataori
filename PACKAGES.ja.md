@@ -1,8 +1,10 @@
 # PACKAGES.md Version
 
-2026.08.18
+2026.11.22
 
 # 変更履歴
+
+- 2026.11.22: Monitorの更新用HTTPクライアント依存を追加。
 
 - 2026.08.18: 日本語版を新規作成。
 
@@ -32,6 +34,7 @@
 | `Microsoft.Data.Sqlite` | `9.0.8` | Infrastructure | SQLite永続化 | .NET 9のサポート対象servicing lineを維持し、repositoryとmigrationのテストを実行する。 |
 | `Microsoft.Extensions.Hosting.WindowsServices` | `9.0.8` | Server | Windows Serviceライフタイム統合 | .NET 9 runtimeパッケージと足並みを揃える。 |
 | `Microsoft.Extensions.Logging.Abstractions` | `9.0.8` | Monitor | Monitorのログ抽象化 | .NET 9 runtimeパッケージと足並みを揃える。 |
+| `Microsoft.Extensions.Http` | `9.0.8` | Monitor | Factory管理の更新用HTTPクライアント | 更新時はタイムアウト・リダイレクト・整合性検証を確認する。 |
 | `ModelContextProtocol` | `2.0.0` | Infrastructure | MCP clientトランスポート | 更新前にプロトコルとAPI互換性を確認する。 |
 | `ModelContextProtocol.AspNetCore` | `2.0.0` | Server | Streamable HTTP MCP server | `ModelContextProtocol`と同時に更新し、initialize、`tools/list`、tool呼び出しを検証する。 |
 | `coverlet.collector` | `6.0.2` | 全テストプロジェクト | Coverage収集 | 開発専用。テスト検出を確認する。 |

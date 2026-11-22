@@ -10,6 +10,7 @@
 | :--- | :--- | :--- | :--- |
 | 通常設定 | `%INSTALL_ROOT%\config\hataori.json` | MSI、利用者、または`hataori config init` | 秘密情報を含まないアプリ言語、Server、Agent、Retry、Log、Maintenance、Hook設定。 |
 | Service秘密設定 | `%INSTALL_ROOT%\config\hataori.service.json` | `hataori service setup` | `LocalSystem` Windows Service用Itoguruma token。 |
+| Monitor設定 | `%LOCALAPPDATA%\Hataori\Monitor\settings.json` | Monitorの設定画面 | Server設定から独立したユーザー単位の設定。 |
 
 相対`databasePath`、log、hook pathは`%INSTALL_ROOT%`を基準に解決します。`HATAORI_CONFIG_PATH`へ絶対pathを指定すると別の通常設定fileを使用できます。
 
@@ -19,6 +20,44 @@
 - `hataori config init [--language <ja-JP|en-US>]`は出力先が存在しない場合だけ組込み既定`hataori.json`を作成します。
 - `hataori service setup`は`hataori.service.json`を作成または置換し、ACLを`SYSTEM`と`Administrators`だけに制限します。
 - tokenの実値をsample、Source Control、log、chatへ記載しないでください。
+
+## Monitor Settings
+
+Windowsのスタートメニューで **Hataori Monitor** を開き、画面上部の **設定** ボタン、またはトレイアイコンの右クリックメニューの **設定** を選びます。**保存** で設定を原子的に保存し、**キャンセル** なら変更しません。保存先は設定画面に表示します。Server設定や認証情報は編集しません。MSIのアップグレード・アンインストール後も設定は保持します。
+
+全キーは任意です。Server用環境変数による上書きは適用しません。
+
+| キー | 型 | 既定値 | 有効値 |
+| :--- | :--- | :--- | :--- |
+| `close_to_tray` | boolean | `true` | `true`、`false` |
+| `start_minimized` | boolean | `false` | `true`、`false` |
+| `auto_update` | boolean | `true` | `true`、`false` |
+| `refresh_seconds` | integer | `3` | 1～300 |
+| `language` | string | `ja-JP`。初回画面は通常設定の言語を継承 | `ja-JP`、`en-US` |
+
+### close_to_tray
+
+booleanで、既定値・省略時は`true`です。例: `{"close_to_tray":true}`。閉じるボタンでトレイへ格納します。`false`なら閉じるボタンでMonitorを終了します。最小化は常にトレイへ格納します。**終了** とWindows終了時は通常どおり終了します。同じユーザー・セッション・インストール先・接続先で再起動すると既存のMonitor画面を開きます。
+
+### start_minimized
+
+booleanで、既定値・省略時は`false`です。例: `{"start_minimized":true}`。次回起動時に画面をトレイへ格納して起動します。Windowsログオン時の自動起動登録は行いません。
+
+### auto_update
+
+booleanで、既定値・省略時は`true`です。例: `{"auto_update":false}`。次回Monitor起動時に新しい正式版MSIを確認し、公式URL・サイズ・APIのSHA-256を検証して自動インストールします。更新先は`src/Hataori.Monitor/monitor-update.json`から組み込み、利用者が任意のダウンロード先へ変更する設定は提供しません。標準の`bin/monitor`配置へMSIでインストールした環境だけで更新できます。無効時も **アプリの更新** ボタンで手動確認できます。WindowsのUACが表示された場合、承認するとServer・CLI・Monitorが更新され、サービスが再起動します。UAC取消やインストール失敗後は既存のMonitorを再起動し、更新確認を1回省略します。Windowsを自動再起動しません。終了コード3010では手動再起動を案内します。
+
+起動時の取得失敗はトレイ通知とログへ記録し、Monitorは引き続き使用できます。手動確認の失敗はダイアログで案内します。オフライン、MSI・digest欠落、非公開Release、API制限、不正メタデータは回復可能なエラーです。他アプリの認証情報は読みません。更新ファイルとインストールログは`%LOCALAPPDATA%\Hataori\Monitor\updates`に残します。古いディレクトリは更新処理がないときだけ削除してください。20分の期限後もWindows Installerが動作中なら強制終了せず、その完了を待ってからMonitorを開いてください。
+
+### refresh_seconds
+
+integerで、既定値・省略時は`3`、有効範囲は1～300です。例: `{"refresh_seconds":10}`。保存直後に反映し、画面表示中・トレイ格納中のスナップショット更新間隔へ適用します。
+
+### language
+
+stringで、`ja-JP`（日本語）または`en-US`（英語）、キー省略時は`ja-JP`です。例: `{"language":"en-US"}`。Monitor設定ファイルがまだない初回は通常設定の`application.language`を継承します。保存済みのMonitor言語を優先し、保存直後に反映します。Serverの言語は変更しません。
+
+設定を読み込めない、または検証に失敗した場合は元ファイルを保持し、エラーを案内して、その起動に限り自動更新を無効にした既定設定を使います。設定画面を開いて保存すると不正なファイルを置き換えます。不正値や書き込み失敗時は前の設定を保持します。
 
 ## Main Settings
 

@@ -8,6 +8,13 @@ partial class MonitorForm
     private TableLayoutPanel rootLayout = null!;
     private FlowLayoutPanel toolbar = null!;
     private Button refreshButton = null!;
+    private Button settingsButton = null!;
+    private Button updateButton = null!;
+    private NotifyIcon trayIcon = null!;
+    private ContextMenuStrip trayMenu = null!;
+    private ToolStripMenuItem openMenuItem = null!;
+    private ToolStripMenuItem settingsMenuItem = null!;
+    private ToolStripMenuItem exitMenuItem = null!;
     private Button cancelTaskButton = null!;
     private Button cancelRunButton = null!;
     private Label connectionStatusLabel = null!;
@@ -34,6 +41,8 @@ partial class MonitorForm
     {
         if (disposing)
         {
+            if (!_lifetime.IsCancellationRequested) _lifetime.Cancel();
+            _lifetime.Dispose();
             components?.Dispose();
         }
 
@@ -46,6 +55,13 @@ partial class MonitorForm
         rootLayout = new TableLayoutPanel();
         toolbar = new FlowLayoutPanel();
         refreshButton = new Button();
+        settingsButton = new Button();
+        updateButton = new Button();
+        trayIcon = new NotifyIcon(components);
+        trayMenu = new ContextMenuStrip(components);
+        openMenuItem = new ToolStripMenuItem();
+        settingsMenuItem = new ToolStripMenuItem();
+        exitMenuItem = new ToolStripMenuItem();
         cancelTaskButton = new Button();
         cancelRunButton = new Button();
         connectionStatusLabel = new Label();
@@ -72,7 +88,7 @@ partial class MonitorForm
         rootLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         rootLayout.Dock = DockStyle.Fill;
         rootLayout.RowCount = 2;
-        rootLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 44F));
+        rootLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 76F));
         rootLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
         toolbar.Dock = DockStyle.Fill;
         toolbar.FlowDirection = FlowDirection.LeftToRight;
@@ -80,6 +96,17 @@ partial class MonitorForm
         refreshButton.AutoSize = true;
         refreshButton.Text = "更新";
         refreshButton.Click += RefreshButtonClick;
+        settingsButton.AutoSize = true;
+        settingsButton.Click += SettingsButtonClick;
+        updateButton.AutoSize = true;
+        updateButton.Click += UpdateButtonClick;
+        trayMenu.Items.AddRange([openMenuItem, settingsMenuItem, exitMenuItem]);
+        openMenuItem.Click += OpenMenuItemClick;
+        settingsMenuItem.Click += SettingsButtonClick;
+        exitMenuItem.Click += ExitMenuItemClick;
+        trayIcon.Text = "Hataori Monitor";
+        trayIcon.ContextMenuStrip = trayMenu;
+        trayIcon.DoubleClick += OpenMenuItemClick;
         cancelTaskButton.AutoSize = true;
         cancelTaskButton.Enabled = false;
         cancelTaskButton.Click += CancelTaskButtonClick;
@@ -92,6 +119,8 @@ partial class MonitorForm
         toolbar.Controls.Add(refreshButton);
         toolbar.Controls.Add(cancelTaskButton);
         toolbar.Controls.Add(cancelRunButton);
+        toolbar.Controls.Add(settingsButton);
+        toolbar.Controls.Add(updateButton);
         toolbar.Controls.Add(connectionStatusLabel);
         tabs.Dock = DockStyle.Fill;
         tasksPage.Text = "Task";

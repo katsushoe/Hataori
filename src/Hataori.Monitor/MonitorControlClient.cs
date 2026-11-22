@@ -6,8 +6,18 @@ using Hataori.Application.Control;
 
 namespace Hataori.Monitor;
 
+/// <summary>MonitorがControl Pipeへ送る状態取得・管理要求の境界です。</summary>
+public interface IMonitorControlClient
+{
+    Task<MonitorSnapshot> GetSnapshotAsync(string pipeName, TimeSpan timeout, CancellationToken cancellationToken);
+
+    Task<ControlResponse> CancelTaskAsync(string pipeName, string taskId, TimeSpan timeout, CancellationToken cancellationToken);
+
+    Task<ControlResponse> CancelRunAsync(string pipeName, string runId, TimeSpan timeout, CancellationToken cancellationToken);
+}
+
 /// <summary>MonitorからローカルControl Pipeへ監視・管理要求を送信します。</summary>
-public sealed class MonitorControlClient
+public sealed class MonitorControlClient : IMonitorControlClient
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {

@@ -8,6 +8,11 @@
     <ProjectReference Include="..\Hataori.Application\Hataori.Application.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="Hataori.Monitor.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="monitor-update.json" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.8" />
   </ItemGroup>
 </Project>

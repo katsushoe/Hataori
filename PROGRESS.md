@@ -1,9 +1,16 @@
 # PROGRESS.md Version
-2026.11.01
+2026.11.22
 
 # 変更履歴
 
-- 2026.11.01: TODO.mdに未完了項目がなく、確認開始時点でHataoriのActive taskもないことを確認。進捗率を2026.11.01列へ更新し、残作業として機能別進捗の未達分（Itoguruma／Monitor 98%、CLI／テスト99%）を具体的な作業へ分解する必要を明記。前回の評価からコード変更がないため機能別評価値は据え置き、進捗グラフを表と同期。
+- 2026.11.22: Githubie登録パス修正のCR `CR-2026-11-22-hataori-local-root-reparse-point.md`を起票しItogurumaで送信（message ID `3cabdb84ce9843ec88c84a374010203e`）。C:\Hataoriでの実機更新タスクは取消され、E:\Hataoriへの移行と3.1.23.0実機更新はCodexタスク`hataori-live-migration-e-31230-20261122`が担当。進捗率は据え置き。
+- 2026.11.22: 3.1.23.0（Monitorトレイ常駐・起動時自動MSI更新・設定画面）をClaude Codeが引き継ぎ検証。Release build警告0・エラー0、Solution Releaseテスト245件（Core 17、Infrastructure 49、CLI 54、Server 92、Monitor 33）合格、WiX MSI `Hataori-3.1.23.0-x64.msi`（SHA-256 `8e6b3123a88e9853ea8854f62a4be2c95abad7df36efafaff0b59f8e871bffde`）生成。更新先設定は実行ファイルへ埋め込み済み。実機Major Upgrade・UAC取消・サービス復帰・更新後再起動は未確認。Githubieが旧登録パスの再解析ポイントを拒否するためcommit・pushは未実施。進捗率は据え置き。
+- 2026.11.03: Monitor実機確認の事前読取でHataori ServiceがRunning／Automatic、標準配置のMonitor実行ファイルが存在することを確認。GUI表示・更新・キャンセル操作は未実施で、AGENTS.mdのComputerUse規則に基づく明示許可待ち。実行手順とテスト専用データの条件を`docs/validation/2026-11-03-monitor-live-acceptance.md`に記録。進捗率は据え置き。
+- 2026.11.03: Monitor回帰テスト追加後のSolution Releaseテストを完了。Core 17、Infrastructure 49、CLI 54、Server 92、Monitor 5件の計217件が合格。テストカテゴリを88%から100%へ再評価し、全体は98.8%→99%、Phase 1は97.6%→98%。検証記録は`docs/validation/2026-11-03-release-test-attempt.md`。
+- 2026.11.03: Monitor回帰テスト追加後のReleaseテストをプロジェクト別に実行。Core 17、Infrastructure 49、Server 92、Monitor 5、CLI 52が合格。CLIの名前付きパイプを使う2件はsandbox内でハングし未確認。全Solution外部実行はworkspace credits不足で自動承認審査が開始できず、集計完了には至らない。記録は`docs/validation/2026-11-03-release-test-attempt.md`。受入軸は据え置き、全体98%・Phase 1 98%。
+- 2026.11.01: 実装・自動テスト・受入確認・文書の4軸（各25点）の算定基準を定義し、現行証跡で10カテゴリを再評価。Monitorとテストは受入確認が部分証拠のため各88%、他8カテゴリは100%。全体97.6%→98%、Phase 1 97.6%→98%。P2の算定基準・再計算を完了。
+- 2026.11.01: Monitor専用のWindows STA WinFormsテスト5件を追加。Snapshot表示・データ更新、Task／Agent Run状態によるキャンセル可否、確認・拒否・失敗応答の操作を自動検証し、Windows環境で5/5件合格。検証記録は`docs/validation/2026-11-01-monitor-regression.md`。この時点では進捗率算定基準の整理を次作業として残した。
+- 2026.11.01: 進捗率の根拠を仕様・テスト・受入記録と照合。Itogurumaは実機でBearer接続、受信後永続化・ACK、Replyと同一idempotency key再送を検証し、Worker／structured-contentの自動テストもある。CLIは各コマンド群の自動テストと実機検証がある。これらに具体的な未完了機能は見つからない一方、MonitorはADR 0010がWinForms表示を含む自動テストを検証対象としているが、専用test projectがなく、後続の実機記録もInstall／Version確認中心。Monitor回帰テストと機能別進捗の算定基準定義をTODOのP2に登録。既存率の元の配点根拠は残っていないため数値を推測で変えず、全体99%・Phase 1 99%およびグラフは据え置き。
 - 2026.10.01: Claude Code 2.1.233で`KotodamaSpecGuard`をセッション限定で読み込み、仕様書MarkdownへのWrite後のPostToolUse hook発火、`layer-reviewer`起動、実装混入0件・要確認0件を実機確認。検証用ファイルは削除し、永続設定・既存プロジェクトファイルは変更なし。
 - 2026.10.01: `KotodamaSpecGuard`の公開・Hataori側診断実装が完了済みで、残作業はClaude Code実行時のhook発火から`layer-reviewer`起動までの実機確認1件であることを再確認。機能進捗率に変更はなく、更新周期内のため進捗表・グラフは据え置き。
 - 2026.09.30: `KotodamaSpecGuard` 0.1.0のprivate GitHub Repositoryへのcommit・push完了を反映。残作業をClaude Code実機hook検証の1件へ整理。
@@ -57,33 +64,71 @@
 - プロジェクト全体は、下表10機能の単純平均を整数四捨五入します。
 - Phase 1は、仕様書のCore、Itoguruma、Session / Activation、Task、Monitorの単純平均です。
 
+### 進捗率算定基準（2026.11.01）
+
+各カテゴリを4つの証拠軸で評価し、各軸を同じ25点として扱います。対象範囲はリポジトリの仕様・TODO・機能チェックリストに記載された主要機能です。要求のない品質特性や未記録の将来構想は採点に加えません。
+
+| 証拠軸 | 100点 | 50点 | 0点 |
+| :--- | :--- | :--- | :--- |
+| 実装・範囲 | 対象カテゴリの主要項目が実装済みで、未完了の主要TODOがない。 | 主要経路はあるが、主要項目が一部未実装。 | 主要機能が未実装、または実装証拠がない。 |
+| 自動テスト | 主要な正常系・失敗系を含むテストがあり、対象動作を追跡できる。 | テストはあるが、主要動作または失敗系に未確認部分がある。 | テストがない、または結果を確認できない。 |
+| 受入確認 | 主要な実行・運用シナリオの合格証跡がある。 | 一部シナリオのみ、またはテストダブルによる確認に限られる。 | 合格証跡がない、または失敗が未解決。 |
+| 利用・運用文書 | 利用者向けまたは運用者向けの必要な手順・制約が文書化されている。 | 文書はあるが、主要手順または制約が不足している。 | 必要な文書がない、または内容を確認できない。 |
+
+カテゴリ率は4軸の平均を整数四捨五入します。総合率は10カテゴリ、Phase 1はCore／Itoguruma／Session・Activation／Task／Monitorの5カテゴリの平均を整数四捨五入します。未確認は完了扱いにせず、受入確認を部分証拠として採点します。
+
+テストカテゴリのみ、実装・範囲軸を「各主要レイヤーのテストプロジェクトがSolutionに登録されている」、自動テスト軸を「主要経路に対応するテストがある」、受入確認軸を「最新のテスト追加後に全テストを一括実行している」、文書軸を「再実行コマンドと結果を記録している」と読み替えます。
+
 ## 履歴
 
 ### ≪Hataori≫
 
-| 機能 | 2026.08.16 | 2026.08.18 | 2026.08.25 | 2026.08.26 | 2026.08.31 | 2026.09.02 | 2026.09.27 | 2026.09.30 | 2026.11.01 |
-| :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| **グループ全体** | **94%** | **96%** | **96%** | **96%** | **97%** | **99%** | **99%** | **99%** | **99%** |
-| Server / Core / SQLite | 88% | 88% | 88% | 88% | 88% | 100% | 100% | 100% | 100% |
-| Itoguruma連携 | 98% | 98% | 98% | 98% | 98% | 98% | 98% | 98% | 98% |
-| Session / Activation | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% |
-| Task管理 | 95% | 95% | 95% | 95% | 97% | 100% | 100% | 100% | 100% |
-| CLI | 97% | 98% | 98% | 98% | 98% | 99% | 99% | 99% | 99% |
-| Windows Service | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% |
-| Monitor | 95% | 95% | 95% | 95% | 96% | 98% | 98% | 98% | 98% |
-| 運用・復旧 | 97% | 99% | 100% | 100% | 100% | 100% | 100% | 100% | 100% |
-| 文書・配布 | 75% | 90% | 90% | 90% | 95% | 100% | 100% | 100% | 100% |
-| テスト | 96% | 96% | 97% | 97% | 99% | 99% | 99% | 99% | 99% |
+| 機能 | 2026.08.16 | 2026.08.18 | 2026.08.25 | 2026.08.26 | 2026.08.31 | 2026.09.02 | 2026.09.27 | 2026.09.30 | 2026.11.01 | 2026.11.03 |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| **グループ全体** | **94%** | **96%** | **96%** | **96%** | **97%** | **99%** | **99%** | **99%** | **98%** | **99%** |
+| Server / Core / SQLite | 88% | 88% | 88% | 88% | 88% | 100% | 100% | 100% | 100% | 100% |
+| Itoguruma連携 | 98% | 98% | 98% | 98% | 98% | 98% | 98% | 98% | 100% | 100% |
+| Session / Activation | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% |
+| Task管理 | 95% | 95% | 95% | 95% | 97% | 100% | 100% | 100% | 100% | 100% |
+| CLI | 97% | 98% | 98% | 98% | 98% | 99% | 99% | 99% | 100% | 100% |
+| Windows Service | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% |
+| Monitor | 95% | 95% | 95% | 95% | 96% | 98% | 98% | 98% | 88% | 88% |
+| 運用・復旧 | 97% | 99% | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% |
+| 文書・配布 | 75% | 90% | 90% | 90% | 95% | 100% | 100% | 100% | 100% | 100% |
+| テスト | 96% | 96% | 97% | 97% | 99% | 99% | 99% | 99% | 88% | 100% |
+
+最新列は本基準で再算定した値です。過去の列は当時の算定方法が残っていないため、記録値として維持しており、新基準の値との直接比較には使いません。
+
+### 2026.11.03列の証拠別採点
+
+I=実装・範囲、T=自動テスト、A=受入確認、D=利用・運用文書です。各値は前掲基準の0／50／100点で、4軸の平均を四捨五入しています。
+
+| カテゴリ | I | T | A | D | 得点 | 確認した主な証拠 |
+| :--- | ---: | ---: | ---: | ---: | ---: | :--- |
+| Server / Core / SQLite | 100 | 100 | 100 | 100 | 100% | `tests/Hataori.Core.Tests`、`tests/Hataori.Server.Tests`、3.1.22.0のbuild・test・SQLite integrity記録 |
+| Itoguruma連携 | 100 | 100 | 100 | 100 | 100% | `ItogurumaConnectionWorkerTests`、`ItogurumaStructuredContentDeserializerTests`、`2026-08-16-real-machine.md`のBearer受信・永続化ACK・Reply冪等再送 |
+| Session / Activation | 100 | 100 | 100 | 100 | 100% | `ConversationSessionTests`、`ActivationManagerTests`、`2026-08-16-real-machine.md`の同一Session resume |
+| Task管理 | 100 | 100 | 100 | 100 | 100% | `HataoriTaskTests`、`TaskMcpToolsTests`、Workspace／Task関連Release検証記録 |
+| CLI | 100 | 100 | 100 | 100 | 100% | `tests/Hataori.Cli.Tests`、`2026-09-26-installer-3.1.22.0.md`、`COMMANDS.md` |
+| Windows Service | 100 | 100 | 100 | 100 | 100% | `WindowsServiceManagerTests`、`WindowsServiceSetupServiceTests`、3.1.21.0／3.1.22.0のService・MSI検証、Installation文書 |
+| Monitor | 100 | 100 | 50 | 100 | 88% | `Hataori.Monitor.Tests` 5件合格と`DrawToBitmap`。Service Running／AutomaticとMonitor実行ファイル配置は事前確認済み。画面上の更新・キャンセル受入は未記録 |
+| 運用・復旧 | 100 | 100 | 100 | 100 | 100% | `StartupRecoveryServiceTests`、Reply Retryテスト、3.0.4.0のService復旧・`2026-08-16-real-machine.md`のGraceful Shutdown |
+| 文書・配布 | 100 | 100 | 100 | 100 | 100% | 利用者文書・Release手順、Documentation Links workflow、3.1.21.0隔離Install／Uninstall、3.1.22.0 MSI検証 |
+| テスト | 100 | 100 | 100 | 100 | 100% | Core 17、Infrastructure 49、CLI 54、Server 92、Monitor 5件、計217件がReleaseで合格。詳細は`docs/validation/2026-11-03-release-test-attempt.md` |
+
+受入確認50点は未完了機能の断定ではなく、指定した証跡粒度を満たしていないことを示します。Monitorは実サービス接続での操作が未確認のため88%です。全Solution Releaseテストは217件がすべて合格したため、テストカテゴリは100%です。
 
 ## 現在フェーズ
 
-Phase 1（基盤・必須運用機能）: **99%**
+Phase 1（基盤・必須運用機能）: **98%**
 
-算定: Core 100%、Itoguruma 98%、Session / Activation 100%、Task 100%、Monitor 98%の単純平均（99.2%）です。
+算定: Core 100%、Itoguruma 100%、Session / Activation 100%、Task 100%、Monitor 88%の単純平均（97.6%）を四捨五入しています。
 
 ## 現在の完了状態と残作業
 
-2026.11.01に`TODO.md`の未完了項目がなく、確認開始時点でHataoriのActive taskもないことを確認しました。未完了の製品実装・配布作業は登録されていません。数値上の未達分はItoguruma連携98%、Monitor 98%、CLI 99%、テスト99%ですが、その差分に対応する具体的な作業は現行文書にありません。**残作業は、これらの未達分を具体的な作業へ分解し、対応要否を決めることです。**根拠のない100%への引き上げはせず、前回評価の値を維持しました。
+2026.11.22: 3.1.23.0向けにMonitorのタスクトレイ常駐、起動時の自動MSI更新、設定画面を実装しました。設定はユーザー単位の別ファイルへ原子的に保存し、Server設定は変更しません。Releaseビルドは警告0・エラー0、Solution Releaseテスト245件（Monitor 33件を含む）が全件合格し、WiX MSI `Hataori-3.1.23.0-x64.msi`を生成しました。更新MSIの配布元・サイズ・SHA-256、更新用プロセスへの引き継ぎ、単一起動、既存インストール先の保持を実装しています。UAC取消、実際のMajor Upgrade、サービス復帰、更新後のMonitor再起動は未確認です。Githubieが登録パス内の再解析ポイントを拒否したため、commit・pushは未実施です。登録パスは2026.11.22にGithubieがE:\Workspace\Projects\Hataoriへ変更済みで、Githubie経由のstatus取得が成功するため、commit・pushは実施可能です。実機更新（E:\Hataoriへの移行を含む）はCodexが担当しています。以前の進捗率は過去の評価として保持し、新機能の受入完了率には使いません。
+
+2026.11.03時点で、全体99%・Phase 1 98%です。全体はカテゴリ合計988%の平均98.8%、Phase 1は対象5カテゴリ合計488%の平均97.6%を四捨五入しています。Monitorのみ88%で、実サービス接続での画面更新・Task／Agent Runキャンセルが未確認です。他9カテゴリは100%です。Solution Releaseテスト217件（Core 17、Infrastructure 49、CLI 54、Server 92、Monitor 5）は全件合格しました。事前確認ではHataori ServiceがRunning／Automatic、Monitor実行ファイルが標準配置にあることを確認しました。実画面操作および一時テストTask／Agent Runの作成・キャンセルはAGENTS.mdのComputerUse明示許可後に行います。手順と安全条件は`docs/validation/2026-11-03-monitor-live-acceptance.md`に記録しました。旧評価列は当時の根拠がないため変更していません。
 
 3.1.22.0で`doctor`のClaude Codeプラグイン有効化診断を追加しました。Release構成build警告0件・エラー0件、自動テスト212件合格、WiX MSI build成功、`C:\Hataori`へのMajor Upgrade成功、Windows Service Running / Automatic、MCP 28 tools、SQLite integrity `ok`を確認しました。PR #18で`develop`を`main`へ反映し、`v3.1.22.0`のGitHub Releaseとx64 MSIを公開済みです。
 
@@ -134,6 +179,7 @@ Phase 1（基盤・必須運用機能）: **99%**
 - [x] Server・Service・Task・Agent・Conversation・Queue・Config・DB・診断CLI
 - [x] 構造化ファイルログと`logs` CLI
 - [x] Monitorアプリ、Control Pipeスナップショット、Task／Agent Runキャンセル、`monitor` CLI
+- [x] Monitor WinForms回帰テスト（表示・描画・更新・Task／Agent Runキャンセル、5件）
 - [x] DB Maintenance、Retention purge、VACUUM、stale Task expiry
 - [x] Codex／Claude Code Lifecycle Hookランナーとdoctor診断
 - [x] 異常終了時のRun・Session・Message起動復旧
@@ -153,7 +199,8 @@ Phase 1（基盤・必須運用機能）: **99%**
 - [x] MCP `list_projects`、未登録Project候補返却、Task登録前Project選択案内（3.1.12.0、2026-08-31）
 - [x] Workspace単位のTask管理、MCP `list_workspaces`、SQLite移行、Monitor・会話Hook連携（3.1.13.0、2026-08-31）
 - [x] Workspace管理v2（Session・Message・Agent Run、SQLite移行、Monitor、CLI filter、2026-08-31）
-- [x] 自動テスト212件
+- [x] 自動テスト212件（2026-09-26 Release検証時点）
+- [x] Monitor WinForms回帰テスト5件（2026-11-01）
 
 ## 部分実装
 

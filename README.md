@@ -65,6 +65,12 @@ hataori monitor
 
 CLI output is JSON except for streamed log lines and error text. See [Commands](COMMANDS.md) for command syntax, results, exit codes, and safety notes. To register an MCP client, follow [MCP Setup](MCP_SETUP.md).
 
+## Monitor
+
+Open **Hataori Monitor** from the Windows Start menu or run `hataori monitor`. Closing the window keeps it in the system tray by default; minimizing also hides it there. Double-click the tray icon to reopen it. Right-click the icon for **Open Monitor**, **Settings**, or **Exit**. Exit stops Monitor; Server continues independently.
+
+Use **Settings** in the window or tray menu to change tray behavior, minimized startup, startup automatic updates, refresh interval, and language. Startup updates install a newer official x64 MSI after validation; Windows may ask for administrator approval and the service restarts during the upgrade. The **Update application** button checks manually. Failures leave the current version usable. See [Monitor settings](CONFIG.md#monitor-settings).
+
 ## Documentation
 
 - [Configuration](CONFIG.md)

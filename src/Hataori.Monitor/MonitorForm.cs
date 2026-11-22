@@ -9,34 +9,47 @@ public partial class MonitorForm : Form
 {
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(5);
     private readonly string _pipeName;
-    private readonly MonitorControlClient _client;
+    private readonly IMonitorControlClient _client;
     private readonly MonitorErrorHandler _errors;
+    private readonly IMonitorDialogs _dialogs;
     private bool _refreshing;
 
     public MonitorForm(string pipeName, MonitorControlClient client, MonitorErrorHandler errors)
+        : this(pipeName, client, errors, new WinFormsMonitorDialogs())
+    {
+    }
+
+    internal MonitorForm(string pipeName, IMonitorControlClient client, MonitorErrorHandler errors, IMonitorDialogs dialogs)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(pipeName);
         ArgumentNullException.ThrowIfNull(client);
         ArgumentNullException.ThrowIfNull(errors);
+        ArgumentNullException.ThrowIfNull(dialogs);
         _pipeName = pipeName;
         _client = client;
         _errors = errors;
+        _dialogs = dialogs;
         InitializeComponent();
+        trayIcon.Icon = SystemIcons.Application;
         ApplyLocalizedText();
     }
 
     protected override async void OnShown(EventArgs e)
     {
         base.OnShown(e);
+        trayIcon.Visible = true;
+        if (_settings.StartMinimized) HideToTray();
         await RefreshSnapshotAsync().ConfigureAwait(true);
+        if (IsDisposed) return;
         refreshTimer.Start();
+        if (_settings.AutoUpdate && !_skipUpdate) await CheckForUpdateAsync(manual: false).ConfigureAwait(true);
     }
 
     private async void RefreshTimerTick(object? sender, EventArgs e) => await RefreshSnapshotAsync().ConfigureAwait(true);
 
     private async void RefreshButtonClick(object? sender, EventArgs e) => await RefreshSnapshotAsync().ConfigureAwait(true);
 
-    private async Task RefreshSnapshotAsync()
+    internal async Task RefreshSnapshotAsync()
     {
         if (_refreshing)
         {
@@ -46,7 +59,8 @@ public partial class MonitorForm : Form
         _refreshing = true;
         try
         {
-            var snapshot = await _client.GetSnapshotAsync(_pipeName, RequestTimeout, CancellationToken.None).ConfigureAwait(true);
+            var snapshot = await _client.GetSnapshotAsync(_pipeName, RequestTimeout, _lifetime.Token).ConfigureAwait(true);
+            if (IsDisposed) return;
             taskGrid.DataSource = snapshot.Tasks.Select(task => new { task.TaskId, task.WorkspaceId, task.TaskName, task.AgentId, task.ProgressPercent, task.CurrentWork, task.LastActivityAtUtc, task.ConversationId, task.Status }).ToArray();
             agentGrid.DataSource = snapshot.Agents.ToArray();
             sessionGrid.DataSource = snapshot.Sessions.Select(session => new { session.ConversationId, session.AgentId, session.NativeSessionId, session.Status, session.LastUsedAtUtc }).ToArray();
@@ -59,6 +73,7 @@ public partial class MonitorForm : Form
             connectionStatusLabel.Text = DisplayLanguage.Text($"接続中: {_pipeName} / {DateTimeOffset.Now:T}", $"Connected: {_pipeName} / {DateTimeOffset.Now:T}");
             UpdateActionButtons();
         }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
         catch (Exception exception)
         {
             var transient = exception is IOException or TimeoutException;
@@ -77,7 +92,7 @@ public partial class MonitorForm : Form
 
     private void GridSelectionChanged(object? sender, EventArgs e) => UpdateActionButtons();
 
-    private void UpdateActionButtons()
+    internal void UpdateActionButtons()
     {
         cancelTaskButton.Enabled = !_refreshing && TryGetSelectedValue(taskGrid, "Status", out var taskStatus)
             && string.Equals(taskStatus, "active", StringComparison.OrdinalIgnoreCase);
@@ -85,25 +100,33 @@ public partial class MonitorForm : Form
             && IsCancellableRunStatus(runStatus);
     }
 
-    private async void CancelTaskButtonClick(object? sender, EventArgs e)
+    private async void CancelTaskButtonClick(object? sender, EventArgs e) => await ConfirmAndCancelTaskAsync().ConfigureAwait(true);
+
+    internal async Task ConfirmAndCancelTaskAsync()
     {
         if (!TryGetSelectedValue(taskGrid, "TaskId", out var taskId) || !ConfirmCancel("Task", taskId))
         {
             return;
         }
 
-        await ExecuteCancelAsync(() => _client.CancelTaskAsync(_pipeName, taskId, RequestTimeout, CancellationToken.None)).ConfigureAwait(true);
+        await CancelTaskAsync(taskId).ConfigureAwait(true);
     }
 
-    private async void CancelRunButtonClick(object? sender, EventArgs e)
+    private async void CancelRunButtonClick(object? sender, EventArgs e) => await ConfirmAndCancelRunAsync().ConfigureAwait(true);
+
+    internal async Task ConfirmAndCancelRunAsync()
     {
         if (!TryGetSelectedValue(runGrid, "RunId", out var runId) || !ConfirmCancel("Agent Run", runId))
         {
             return;
         }
 
-        await ExecuteCancelAsync(() => _client.CancelRunAsync(_pipeName, runId, RequestTimeout, CancellationToken.None)).ConfigureAwait(true);
+        await CancelRunAsync(runId).ConfigureAwait(true);
     }
+
+    internal Task CancelTaskAsync(string taskId) => ExecuteCancelAsync(() => _client.CancelTaskAsync(_pipeName, taskId, RequestTimeout, CancellationToken.None));
+
+    internal Task CancelRunAsync(string runId) => ExecuteCancelAsync(() => _client.CancelRunAsync(_pipeName, runId, RequestTimeout, CancellationToken.None));
 
     private async Task ExecuteCancelAsync(Func<Task<ControlResponse>> operation)
     {
@@ -114,7 +137,7 @@ public partial class MonitorForm : Form
             var response = await operation().ConfigureAwait(true);
             if (!response.Success)
             {
-                MessageBox.Show(this, DisplayLanguage.Text($"キャンセルできませんでした: {response.Status}", $"Cancellation failed: {response.Status}"), Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                _dialogs.ShowCancellationFailure(this, DisplayLanguage.Text($"キャンセルできませんでした: {response.Status}", $"Cancellation failed: {response.Status}"), Text);
             }
 
             await RefreshSnapshotAsync().ConfigureAwait(true);
@@ -129,13 +152,21 @@ public partial class MonitorForm : Form
         }
     }
 
-    private bool ConfirmCancel(string targetType, string targetId) => MessageBox.Show(
+    private bool ConfirmCancel(string targetType, string targetId) => _dialogs.ConfirmCancel(
         this,
         DisplayLanguage.Text($"{targetType} '{targetId}' をキャンセルしますか？", $"Cancel {targetType} '{targetId}'?"),
-        Text,
-        MessageBoxButtons.YesNo,
-        MessageBoxIcon.Warning,
-        MessageBoxDefaultButton.Button2) == DialogResult.Yes;
+        Text);
+
+    internal DataGridView TaskGrid => taskGrid;
+    internal DataGridView AgentGrid => agentGrid;
+    internal DataGridView SessionGrid => sessionGrid;
+    internal DataGridView RunGrid => runGrid;
+    internal Button CancelTaskButton => cancelTaskButton;
+    internal Button CancelRunButton => cancelRunButton;
+    internal Button RefreshButton => refreshButton;
+    internal string QueueValue => queueValueLabel.Text;
+    internal string ServerValue => serverValueLabel.Text;
+    internal string ConnectionStatus => connectionStatusLabel.Text;
 
     private static bool TryGetSelectedValue(DataGridView grid, string propertyName, out string value)
     {
@@ -166,5 +197,6 @@ public partial class MonitorForm : Form
         runsPage.Text = DisplayLanguage.Text("Agent実行", "Agent Runs");
         statusPage.Text = DisplayLanguage.Text("状態", "Status");
         queueNameLabel.Text = DisplayLanguage.Text("キュー件数", "Queue count");
+        ApplyLifecycleText();
     }
 }
