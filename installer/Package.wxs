@@ -11,6 +11,8 @@
     <MajorUpgrade AllowSameVersionUpgrades="yes"
                   DowngradeErrorMessage="A newer version of Hataori is already installed." />
     <MediaTemplate EmbedCab="yes" />
+    <Icon Id="HataoriIcon.ico" SourceFile="$(sys.SOURCEFILEDIR)..\assets\icon\hataori.ico" />
+    <Property Id="ARPPRODUCTICON" Value="HataoriIcon.ico" />
     <Property Id="HATAORI_LANGUAGE" Value="ja-JP" Secure="yes" />
     <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALL_ROOT" />
 

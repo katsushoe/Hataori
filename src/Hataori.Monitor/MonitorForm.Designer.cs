@@ -47,6 +47,11 @@ partial class MonitorForm
         }
 
         base.Dispose(disposing);
+        if (disposing)
+        {
+            _notifyIcon.Dispose();
+            _windowIcon.Dispose();
+        }
     }
 
     private void InitializeComponent()

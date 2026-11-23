@@ -12,6 +12,8 @@ public partial class MonitorForm : Form
     private readonly IMonitorControlClient _client;
     private readonly MonitorErrorHandler _errors;
     private readonly IMonitorDialogs _dialogs;
+    private readonly Icon _windowIcon;
+    private readonly Icon _notifyIcon;
     private bool _refreshing;
 
     public MonitorForm(string pipeName, MonitorControlClient client, MonitorErrorHandler errors)
@@ -30,7 +32,10 @@ public partial class MonitorForm : Form
         _errors = errors;
         _dialogs = dialogs;
         InitializeComponent();
-        trayIcon.Icon = SystemIcons.Application;
+        _windowIcon = MonitorIcon.Load(SystemInformation.IconSize);
+        _notifyIcon = MonitorIcon.Load(SystemInformation.SmallIconSize);
+        Icon = _windowIcon;
+        trayIcon.Icon = _notifyIcon;
         ApplyLocalizedText();
     }
 
