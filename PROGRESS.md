@@ -3,6 +3,7 @@
 
 # 変更履歴
 
+- 2026.11.24: 3.2.2.0のユーザー単位MSIを`E:\Hataori`へ上書きインストール（終了コード0、設定ファイルのハッシュ不変）。ログオン時と同じ`--startup`でMonitorを起動し、ServerがMonitorから起動、`doctor` healthy、Itoguruma 0.3.44への接続成功を確認。3.2.1.0では当日`register_agent`の失敗が15,819回記録されていたが、3.2.2.0では接続エラーなし。実機設定は`activation.enabled=false`のため、メッセージの受信・ACKは実行されず未確認。通知領域のアイコン表示は目視未確認。
 - 2026.11.24: Itoguruma 0.3.44の登録・リースAPIへ対応（3.2.2.0）。Project Inboxは未登録時だけ`register_project_inbox`で登録し、既存の表示名を保持。無効化ProjectとProject ID規則外のディレクトリは受信対象外。`get_messages`へ受信者IDを渡し、返された`lease_id`で`ack_message`。Hataori自身は`itoguruma.projectId`（既定`hataori`）のInboxを送信元・受信者として使う。Release build警告0・エラー0、Solution Releaseテスト263件合格。Itogurumaは88%（実機受信・ACKは未確認）、全体95%、Phase 1 95%。
 - 2026.11.24: 機織り機（正面図）のアプリアイコンをMonitorのexe・ウィンドウ・トレイとMSIの`ARPPRODUCTICON`へ組み込み、commit `b1f220c`として`develop`へ選択commit（未push）。Monitorテスト41件合格、Debugビルド警告0・エラー0、MSIのIcon表登録を確認。HataoriをMoyai／Githubieへ登録。2026.11.24列を追加し、ユーザー単位版3.2.1.0とItoguruma 0.3.44のAPI変更を反映して再採点。同日、Release build警告0・エラー0、Solution Releaseテスト253件（Core 17、Infrastructure 49、CLI 54、Server 92、Monitor 41）全件合格を確認し、テストを100%へ戻した（全体99%→90%、Phase 1 98%→85%）。
 - 2026.11.23: Hataori 3.2.1.0をユーザー単位MSIで `E:\Hataori` に導入。旧Windowsサービスを削除し、設定・SQLiteの検証済みバックアップを保持。ログオン起動コマンドの登録と実行、Monitor／Serverの同一ユーザー・同一セッションでの起動、同ユーザーからの制御パイプ、MCP 28ツール、SQLite整合性を確認。Releaseテスト245件、WiXビルド警告0・エラー0。実ログオンと通知領域のアイコン表示・復帰は未確認。Itoguruma 0.3.44への認証は成功するが、メッセージ連携は新しい登録・リースAPIへの対応が必要。
@@ -110,7 +111,7 @@
 
 | カテゴリ | I | T | A | D | 得点 | 確認した主な証拠 |
 | :--- | ---: | ---: | ---: | ---: | ---: | :--- |
-| Itoguruma連携 | 100 | 100 | 50 | 100 | 88% | 3.2.2.0で登録・リースAPIへ対応（`McpItogurumaClient`、`ItogurumaConnectionWorker`）。`ItogurumaConnectionWorkerTests`でInbox登録・表示名保持・無効Project除外・lease IDでのACK・lease ID欠落時の拒否を検証。`CONFIG.md`に`projectId`と受信者IDを記載。Itoguruma 0.3.44での認証成功は確認済みだが、実機での受信・ACKは未確認 |
+| Itoguruma連携 | 100 | 100 | 50 | 100 | 88% | 3.2.2.0で登録・リースAPIへ対応（`McpItogurumaClient`、`ItogurumaConnectionWorker`）。`ItogurumaConnectionWorkerTests`でInbox登録・表示名保持・無効Project除外・lease IDでのACK・lease ID欠落時の拒否を検証。`CONFIG.md`に`projectId`と受信者IDを記載。3.2.2.0を`E:\Hataori`へ導入し、Itoguruma 0.3.44への接続成功を確認。実機設定で受信が無効のため、受信・ACKは未確認 |
 | 常駐ホスト（旧Windows Service） | 100 | 50 | 50 | 100 | 75% | `UserServerProcess`とログオン起動登録を実装済み。2026.11.23に`E:\Hataori`で同一ユーザー・同一セッション起動を確認。ServerをMonitorから起動・停止する処理の自動テストはなく、実際のログオンからの起動は未確認。手順は`docs/installation.md` |
 | Monitor | 100 | 100 | 50 | 100 | 88% | トレイ常駐・自動MSI更新・設定画面・アプリアイコンを実装し、Monitorテスト41件合格。通知領域のアイコン表示と復帰、実サービス接続での更新・キャンセル操作、更新MSIによる自動更新は未確認 |
 | テスト | 100 | 100 | 100 | 100 | 100% | アイコンテスト8件の追加後、2026.11.24にSolution Releaseテスト253件（Core 17、Infrastructure 49、CLI 54、Server 92、Monitor 41）を一括実行し全件合格 |
@@ -145,11 +146,12 @@ Phase 1（基盤・必須運用機能）: **95%**
 2026.11.24: 機織り機の正面図を描いたアプリアイコン（`assets/icon`）を作成し、Monitorのexe・ウィンドウ・トレイとMSIの「アプリ」一覧表示へ組み込みました。commit `b1f220c`として`develop`へ選択commitし、ユーザー単位版3.2.1.0の未commit変更（30ファイル）とは分けています。HataoriをMoyaiとGithubieへ登録し、Moyai経由のGit操作が可能になりました。残作業は優先順に次のとおりです。
 
 1. ユーザー単位版3.2.1.0の未commit変更（30ファイル。ADR 0024、`UserServerProcess`、`Initialize-UserInstall.ps1`、文書ほか）を検証してcommitし、`b1f220c`と合わせて`develop`へpushする。以降の作業の前提です。
-2. Itoguruma 0.3.44の登録・リースAPI対応（3.2.2.0で実装・自動テスト済み）を実機で確認し、メッセージの受信・ACKまで記録する。
-3. 新しいアイコン入りのMSIを再ビルドして`E:\Hataori`を更新し、実際のログオンでMonitorとServerの自動起動、通知領域のアイコン表示と画面復帰を確認する。
-4. ServerをMonitorから起動・停止する処理（`UserServerProcess`）の自動テストを追加する。
-5. 起動中のServerへMonitorを接続し、表示・更新とテスト専用Task／Agent Runのキャンセルを確認して記録する（手順: `docs/validation/2026-11-03-monitor-live-acceptance.md`）。
-6. 更新MSIによるMonitorの自動更新と、更新後のMonitor再起動を実機で確認する。
+2. Itoguruma 0.3.44の登録・リースAPI対応（3.2.2.0で実装・自動テスト・実機接続済み）について、メッセージの受信・ACKを実機で確認する。実機設定は`activation.enabled=false`のため、確認には有効化するか、一時的な検証環境が必要。
+3. `E:\Hataori`は3.2.2.0へ更新済み。通知領域の新しいアイコン表示と画面復帰、実際のログオンからのMonitor・Server自動起動を確認する。
+4. Itoguruma接続中、MCP Clientが5秒ごとに「Tool 'get_version' not found in cache」の警告をログへ出す（接続後にツール一覧を取得していないため）。接続時に一度ツール一覧を取得して警告を止める。
+5. ServerをMonitorから起動・停止する処理（`UserServerProcess`）の自動テストを追加する。
+6. 起動中のServerへMonitorを接続し、表示・更新とテスト専用Task／Agent Runのキャンセルを確認して記録する（手順: `docs/validation/2026-11-03-monitor-live-acceptance.md`）。
+7. 更新MSIによるMonitorの自動更新と、更新後のMonitor再起動を実機で確認する。
 
 アイコンテスト追加後の全Solution Releaseテストは2026.11.24に253件すべて合格しました。
 
