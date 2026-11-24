@@ -127,7 +127,7 @@ Children: [`databasePath`](#serverdatabasepath), [`controlPipeName`](#servercont
 
 ### `itoguruma`
 
-Children: [`endpoint`](#itogurumaendpoint), [`authenticationToken`](#itogurumaauthenticationtoken), [`agentId`](#itogurumaagentid), [`agentType`](#itogurumaagenttype), [`connectionTimeoutSeconds`](#itogurumaconnectiontimeoutseconds), [`pollIntervalSeconds`](#itogurumapollintervalseconds), [`maxReconnectAttempts`](#itogurumamaxreconnectattempts), [`receiveBatchSize`](#itogurumareceivebatchsize), and [`leaseSeconds`](#itogurumaleaseseconds).
+Children: [`endpoint`](#itogurumaendpoint), [`authenticationToken`](#itogurumaauthenticationtoken), [`agentId`](#itogurumaagentid), [`agentType`](#itogurumaagenttype), [`projectId`](#itogurumaprojectid), [`connectionTimeoutSeconds`](#itogurumaconnectiontimeoutseconds), [`pollIntervalSeconds`](#itogurumapollintervalseconds), [`maxReconnectAttempts`](#itogurumamaxreconnectattempts), [`receiveBatchSize`](#itogurumareceivebatchsize), and [`leaseSeconds`](#itogurumaleaseseconds).
 
 #### `itoguruma.endpoint`
 
@@ -147,14 +147,23 @@ Children: [`endpoint`](#itogurumaendpoint), [`authenticationToken`](#itogurumaau
 
 - Type/required: non-empty string, required.
 - Default: `hataori`; omission fails validation.
-- Behavior: sender ID used by the Hataori Service for replies. It does not limit monitored projects; those are discovered under each root in `activation.workspaces`.
+- Behavior: sender ID used by Hataori Server for replies, and the consumer ID that owns message leases and acknowledgements. It does not limit monitored projects; those are discovered under each root in `activation.workspaces`. When it equals `projectId`, Hataori uses that project inbox as sender and consumer and does not call `register_agent`; otherwise it registers this ID as an agent of `projectId`.
 - Example: `"agentId": "hataori"`.
 
 #### `itoguruma.agentType`
 
 - Type/required: non-empty string, required.
 - Default: `hataori`; omission fails validation.
+- Behavior: agent type used only when `agentId` differs from `projectId`. Itoguruma rejects `project_inbox` here.
 - Example: `"agentType": "hataori"`.
+
+#### `itoguruma.projectId`
+
+- Type/required: string, optional.
+- Default: `hataori` when omitted.
+- Constraint: Itoguruma project ID format: starts with a lowercase letter and contains only lowercase letters, digits, and underscores.
+- Behavior: Hataori's own Itoguruma project. On connection Hataori registers its project inbox only when the project is not registered yet. Discovered projects are handled the same way: missing inboxes are registered with the directory name as display name, existing display names are kept, disabled projects and directory names outside the project ID format are not polled.
+- Example: `"projectId": "hataori"`.
 
 #### `itoguruma.connectionTimeoutSeconds`
 

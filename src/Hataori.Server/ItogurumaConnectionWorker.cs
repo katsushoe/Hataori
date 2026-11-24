@@ -79,7 +79,10 @@ public sealed class ItogurumaConnectionWorker(
         }
     }
 
-    /// <summary>Projects root直下の全プロジェクトを登録し、宛先別メッセージを1回取得します。</summary>
+    /// <summary>
+    /// Projects root直下の全プロジェクトについて、未登録のProject Inboxを登録し、宛先別メッセージを1回取得します。
+    /// 登録済みProjectの表示名は変更しません。無効化されたProjectとItogurumaのProject ID規則に合わないものは取得しません。
+    /// </summary>
     public async Task PollProjectsAsync(CancellationToken cancellationToken)
     {
         var activation = activationOptions.CurrentValue;
@@ -95,9 +98,15 @@ public sealed class ItogurumaConnectionWorker(
             throw new InvalidOperationException($"Project ID '{duplicate.Key}' exists in more than one activation workspace.");
         }
 
+        var registered = (await client.ListProjectsAsync(cancellationToken).ConfigureAwait(false))
+            .ToDictionary(project => project.ProjectId, StringComparer.OrdinalIgnoreCase);
         foreach (var entry in projects)
         {
-            await client.RegisterProjectAsync(entry.Project.ProjectId, cancellationToken).ConfigureAwait(false);
+            if (!await EnsureInboxAsync(entry.Project, registered, cancellationToken).ConfigureAwait(false))
+            {
+                continue;
+            }
+
             var messages = await client.GetMessagesAsync(
                 entry.Project.ProjectId,
                 options.Value.ReceiveBatchSize,
@@ -109,6 +118,23 @@ public sealed class ItogurumaConnectionWorker(
                 await PersistAndAcknowledgeAsync(entry.Workspace, entry.Project.ProjectId, message, cancellationToken).ConfigureAwait(false);
             }
         }
+    }
+
+    private async Task<bool> EnsureInboxAsync(ActivationProject project, IReadOnlyDictionary<string, ItogurumaProject> registered, CancellationToken cancellationToken)
+    {
+        if (!ItogurumaProjectId.IsValid(project.ProjectId))
+        {
+            logger.LogDebug("[Itoguruma] Skipping project {ProjectId}: the ID does not match the Itoguruma project ID rule", project.ProjectId);
+            return false;
+        }
+
+        if (registered.TryGetValue(project.ProjectId, out var existing))
+        {
+            return existing.Enabled;
+        }
+
+        await client.RegisterProjectInboxAsync(project.ProjectId, Path.GetFileName(project.ProjectPath), cancellationToken).ConfigureAwait(false);
+        return true;
     }
 
     private async Task SafeDisconnectAsync()
@@ -139,8 +165,13 @@ public sealed class ItogurumaConnectionWorker(
             message.PayloadJson,
             message.CreatedAt,
             workspace.WorkspaceId);
+        if (string.IsNullOrWhiteSpace(message.LeaseId))
+        {
+            throw new InvalidOperationException($"Itoguruma message '{message.MessageId}' has no lease ID.");
+        }
+
         var inserted = await messageQueue.EnqueueAsync(incoming, 0, cancellationToken).ConfigureAwait(false);
-        var acknowledged = await client.AcknowledgeAsync(agentId, message.MessageId, cancellationToken).ConfigureAwait(false);
+        var acknowledged = await client.AcknowledgeAsync(agentId, message.MessageId, message.LeaseId, cancellationToken).ConfigureAwait(false);
         if (!acknowledged)
         {
             throw new InvalidOperationException($"Itoguruma message '{message.MessageId}' could not be acknowledged.");

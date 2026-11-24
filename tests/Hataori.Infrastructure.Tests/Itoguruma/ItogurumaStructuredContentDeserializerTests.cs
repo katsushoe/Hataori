@@ -48,6 +48,30 @@ public sealed class ItogurumaStructuredContentDeserializerTests
     }
 
     [Fact]
+    public void Deserialize_LeasedMessage_MapsLeaseId()
+    {
+        using var document = JsonDocument.Parse("""
+            {"data":[{"messageId":"message-2","threadId":"thread-2","senderAgentId":"kotodama","provider":"codex","replyToMessageId":null,"messageType":"message","body":"work","payloadJson":null,"createdAt":"2026-11-24T08:00:00+00:00","deliveryStatus":"leased","leaseUntil":"2026-11-24T08:05:00+00:00","leaseId":"lease-1","leaseOwnerAgentId":"hataori","deliveryAttemptCount":1}]}
+            """);
+
+        var result = ItogurumaStructuredContentDeserializer.Deserialize<List<ItogurumaMessage>>(document.RootElement, Options);
+
+        result.Should().ContainSingle().Which.LeaseId.Should().Be("lease-1");
+    }
+
+    [Fact]
+    public void Deserialize_ProjectList_MapsInboxAndEnabledState()
+    {
+        using var document = JsonDocument.Parse("""
+            {"data":[{"projectId":"hataori","displayName":"Hataori","inboxAgentId":"hataori","enabled":true,"createdAt":"2026-09-24T08:23:46+00:00","updatedAt":"2026-09-24T08:23:46+00:00"}]}
+            """);
+
+        var result = ItogurumaStructuredContentDeserializer.Deserialize<List<ItogurumaProject>>(document.RootElement, Options);
+
+        result.Should().ContainSingle().Which.Should().Be(new ItogurumaProject("hataori", "Hataori", "hataori", true));
+    }
+
+    [Fact]
     public void Deserialize_DirectLegacyObject_RemainsSupported()
     {
         using var document = JsonDocument.Parse("""{"name":"itoguruma","version":"0.3.2"}""");

@@ -56,12 +56,7 @@ public sealed class McpItogurumaClient : IItogurumaClient
                 AdditionalHeaders = new Dictionary<string, string> { ["Authorization"] = $"Bearer {_options.AuthenticationToken}" },
             }, _loggerFactory);
             _client = await McpClient.CreateAsync(transport, loggerFactory: _loggerFactory, cancellationToken: cancellationToken).ConfigureAwait(false);
-            await CallAsync("register_agent", new Dictionary<string, object?>
-            {
-                ["agent_id"] = _options.AgentId,
-                ["agent_type"] = _options.AgentType,
-                ["name"] = "Hataori",
-            }, cancellationToken).ConfigureAwait(false);
+            await RegisterSelfAsync(cancellationToken).ConfigureAwait(false);
         }
         catch
         {
@@ -80,6 +75,7 @@ public sealed class McpItogurumaClient : IItogurumaClient
         var result = await CallAsync("get_messages", new Dictionary<string, object?>
         {
             ["agent_id"] = agentId,
+            ["consumer_agent_id"] = _options.AgentId,
             ["limit"] = limit,
             ["lease_seconds"] = leaseSeconds,
             ["thread_id"] = threadId,
@@ -87,14 +83,20 @@ public sealed class McpItogurumaClient : IItogurumaClient
         return Deserialize<List<ItogurumaMessage>>(result);
     }
 
-    public async Task RegisterProjectAsync(string projectId, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<ItogurumaProject>> ListProjectsAsync(CancellationToken cancellationToken)
+    {
+        var result = await CallAsync("list_projects", new Dictionary<string, object?>(), cancellationToken).ConfigureAwait(false);
+        return Deserialize<List<ItogurumaProject>>(result);
+    }
+
+    public async Task RegisterProjectInboxAsync(string projectId, string displayName, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(projectId);
-        await CallAsync("register_agent", new Dictionary<string, object?>
+        ArgumentException.ThrowIfNullOrWhiteSpace(displayName);
+        await CallAsync("register_project_inbox", new Dictionary<string, object?>
         {
-            ["agent_id"] = projectId,
-            ["agent_type"] = "project",
-            ["name"] = projectId,
+            ["project_id"] = projectId,
+            ["display_name"] = displayName,
         }, cancellationToken).ConfigureAwait(false);
     }
 
@@ -126,13 +128,17 @@ public sealed class McpItogurumaClient : IItogurumaClient
         return Deserialize<SendMessageResult>(result).MessageId;
     }
 
-    public async Task<bool> AcknowledgeAsync(string agentId, string messageId, CancellationToken cancellationToken)
+    public async Task<bool> AcknowledgeAsync(string agentId, string messageId, string leaseId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(agentId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(messageId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(leaseId);
         var result = await CallAsync("ack_message", new Dictionary<string, object?>
         {
             ["agent_id"] = agentId,
+            ["consumer_agent_id"] = _options.AgentId,
             ["message_id"] = messageId,
+            ["lease_id"] = leaseId,
         }, cancellationToken).ConfigureAwait(false);
         return Deserialize<AcknowledgeResult>(result).Acked;
     }
@@ -148,6 +154,32 @@ public sealed class McpItogurumaClient : IItogurumaClient
     {
         await ResetAsync().ConfigureAwait(false);
         _connectLock.Dispose();
+    }
+
+    /// <summary>
+    /// Hataori自身のProject Inboxを確保し、agentIdがInboxと異なる場合だけ通常エージェントとして登録します。
+    /// Project Inboxはregister_agentで登録できないため、agentIdとProject IDが同じ場合はInboxを受信者・送信者として使います。
+    /// </summary>
+    private async Task RegisterSelfAsync(CancellationToken cancellationToken)
+    {
+        var projects = await ListProjectsAsync(cancellationToken).ConfigureAwait(false);
+        if (!projects.Any(project => string.Equals(project.ProjectId, _options.ProjectId, StringComparison.OrdinalIgnoreCase)))
+        {
+            await RegisterProjectInboxAsync(_options.ProjectId, "Hataori", cancellationToken).ConfigureAwait(false);
+        }
+
+        if (string.Equals(_options.AgentId, _options.ProjectId, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        await CallAsync("register_agent", new Dictionary<string, object?>
+        {
+            ["agent_id"] = _options.AgentId,
+            ["agent_type"] = _options.AgentType,
+            ["project_id"] = _options.ProjectId,
+            ["name"] = "Hataori",
+        }, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<CallToolResult> CallAsync(string toolName, IReadOnlyDictionary<string, object?> arguments, CancellationToken cancellationToken)

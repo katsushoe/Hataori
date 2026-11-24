@@ -1,3 +1,4 @@
+using Hataori.Application.Itoguruma;
 using Hataori.Infrastructure.Itoguruma;
 using Microsoft.Extensions.Options;
 
@@ -22,6 +23,11 @@ public sealed class ItogurumaClientOptionsValidator : IValidateOptions<Itoguruma
         if (string.IsNullOrWhiteSpace(options.AgentId) || string.IsNullOrWhiteSpace(options.AgentType))
         {
             errors.Add("Itoguruma agentId and agentType are required.");
+        }
+
+        if (!ItogurumaProjectId.IsValid(options.ProjectId))
+        {
+            errors.Add("Itoguruma projectId must start with a lowercase letter and contain only lowercase letters, digits, and underscores.");
         }
 
         if (options.ConnectionTimeoutSeconds is < 1 or > 120)

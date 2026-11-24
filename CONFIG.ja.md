@@ -127,7 +127,7 @@ Hataoriには名前付きprofile fileがありません。通常file path、環�
 
 ### `itoguruma`
 
-子項目: [`endpoint`](#itogurumaendpoint)、[`authenticationToken`](#itogurumaauthenticationtoken)、[`agentId`](#itogurumaagentid)、[`agentType`](#itogurumaagenttype)、[`connectionTimeoutSeconds`](#itogurumaconnectiontimeoutseconds)、[`pollIntervalSeconds`](#itogurumapollintervalseconds)、[`maxReconnectAttempts`](#itogurumamaxreconnectattempts)、[`receiveBatchSize`](#itogurumareceivebatchsize)、[`leaseSeconds`](#itogurumaleaseseconds)。
+子項目: [`endpoint`](#itogurumaendpoint)、[`authenticationToken`](#itogurumaauthenticationtoken)、[`agentId`](#itogurumaagentid)、[`agentType`](#itogurumaagenttype)、[`projectId`](#itogurumaprojectid)、[`connectionTimeoutSeconds`](#itogurumaconnectiontimeoutseconds)、[`pollIntervalSeconds`](#itogurumapollintervalseconds)、[`maxReconnectAttempts`](#itogurumamaxreconnectattempts)、[`receiveBatchSize`](#itogurumareceivebatchsize)、[`leaseSeconds`](#itogurumaleaseseconds)。
 
 #### `itoguruma.endpoint`
 
@@ -147,14 +147,23 @@ Hataoriには名前付きprofile fileがありません。通常file path、環�
 
 - 型/必須: 空でないstring、必須。
 - 既定値: `hataori`。省略時は検証に失敗します。
-- 動作: Hataori Service自身が返信を送信するときの送信元IDです。監視対象プロジェクトを限定しません。監視対象は`activation.workspaces`の各root直下から自動検出されます。
+- 動作: Hataori Server自身が返信を送信するときの送信元IDであり、メッセージのリースと確認（ACK）を行う受信者IDです。監視対象プロジェクトを限定しません。監視対象は`activation.workspaces`の各root直下から自動検出されます。`projectId`と同じ値の場合は、そのProject Inboxを送信元・受信者として使い、`register_agent`を呼びません。異なる場合は`projectId`に属するエージェントとして登録します。
 - 例: `"agentId": "hataori"`。
 
 #### `itoguruma.agentType`
 
 - 型/必須: 空でないstring、必須。
 - 既定値: `hataori`。省略時は検証に失敗します。
+- 動作: `agentId`が`projectId`と異なる場合だけ使うエージェント種別です。Itogurumaは`project_inbox`をここで受け付けません。
 - 例: `"agentType": "hataori"`。
+
+#### `itoguruma.projectId`
+
+- 型/必須: string、任意。
+- 既定値: 省略時`hataori`。
+- 制約: ItogurumaのProject ID形式（英小文字で始まり、英小文字・数字・アンダースコアだけ）。
+- 動作: Hataori自身が属するItogurumaのProjectです。接続時、このProjectが未登録の場合だけProject Inboxを登録します。自動検出したプロジェクトも同様に、未登録のInboxだけをディレクトリ名を表示名として登録し、登録済みの表示名は変更しません。無効化されたProjectと、Project ID形式に合わないディレクトリ名のプロジェクトは受信しません。
+- 例: `"projectId": "hataori"`。
 
 #### `itoguruma.connectionTimeoutSeconds`
 

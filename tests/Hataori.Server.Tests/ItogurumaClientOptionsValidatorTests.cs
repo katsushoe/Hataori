@@ -35,6 +35,31 @@ public sealed class ItogurumaClientOptionsValidatorTests
         result.Failures.Should().Contain(message => message.Contains("loopback", StringComparison.Ordinal));
     }
 
+    [Theory]
+    [InlineData("Hataori")]
+    [InlineData("aloe-lang")]
+    [InlineData("")]
+    public void Validate_ProjectIdOutsideItogurumaRule_ReturnsFailure(string projectId)
+    {
+        var options = CreateValidOptions();
+        options = new ItogurumaClientOptions
+        {
+            Endpoint = options.Endpoint,
+            AuthenticationToken = options.AuthenticationToken,
+            AgentId = options.AgentId,
+            AgentType = options.AgentType,
+            ProjectId = projectId,
+            ConnectionTimeoutSeconds = options.ConnectionTimeoutSeconds,
+            PollIntervalSeconds = options.PollIntervalSeconds,
+            MaxReconnectAttempts = options.MaxReconnectAttempts,
+        };
+
+        var result = new ItogurumaClientOptionsValidator().Validate(null, options);
+
+        result.Failed.Should().BeTrue();
+        result.Failures.Should().Contain(message => message.Contains("projectId", StringComparison.Ordinal));
+    }
+
     private static ItogurumaClientOptions CreateValidOptions(
         string authenticationToken = "test-token",
         Uri? endpoint = null) => new()
