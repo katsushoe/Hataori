@@ -56,6 +56,8 @@ public sealed class McpItogurumaClient : IItogurumaClient
                 AdditionalHeaders = new Dictionary<string, string> { ["Authorization"] = $"Bearer {_options.AuthenticationToken}" },
             }, _loggerFactory);
             _client = await McpClient.CreateAsync(transport, loggerFactory: _loggerFactory, cancellationToken: cancellationToken).ConfigureAwait(false);
+            // ツール一覧を接続ごとに一度取得してSDKのキャッシュへ載せる。未取得のままtools/callすると、呼び出しのたびに警告ログが出る。
+            await _client.ListToolsAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
             await RegisterSelfAsync(cancellationToken).ConfigureAwait(false);
         }
         catch

@@ -3,6 +3,7 @@
 
 # 変更履歴
 
+- 2026.11.24: Itoguruma接続時にMCPのツール一覧を一度取得し、`tools/call`のたびに出ていた「Tool '...' not found in cache」警告を止める修正を実装。Release build警告0・エラー0、Solution Releaseテスト263件合格。実機ログでの停止確認は次のMSI更新時に行う。進捗率は据え置き。
 - 2026.11.24: 残作業を再整理。3.2.1.0・3.2.2.0の変更と記録を`develop`へpush済み（HEAD `9afa532`）のため完了扱いとし、残りを6件へ更新。進捗率は全体95%、Phase 1 95%で据え置き。
 - 2026.11.24: 3.2.2.0のユーザー単位MSIを`E:\Hataori`へ上書きインストール（終了コード0、設定ファイルのハッシュ不変）。ログオン時と同じ`--startup`でMonitorを起動し、ServerがMonitorから起動、`doctor` healthy、Itoguruma 0.3.44への接続成功を確認。3.2.1.0では当日`register_agent`の失敗が15,819回記録されていたが、3.2.2.0では接続エラーなし。実機設定は`activation.enabled=false`のため、メッセージの受信・ACKは実行されず未確認。通知領域に新しい機織り機アイコンが表示されることを利用者が目視で確認。
 - 2026.11.24: Itoguruma 0.3.44の登録・リースAPIへ対応（3.2.2.0）。Project Inboxは未登録時だけ`register_project_inbox`で登録し、既存の表示名を保持。無効化ProjectとProject ID規則外のディレクトリは受信対象外。`get_messages`へ受信者IDを渡し、返された`lease_id`で`ack_message`。Hataori自身は`itoguruma.projectId`（既定`hataori`）のInboxを送信元・受信者として使う。Release build警告0・エラー0、Solution Releaseテスト263件合格。Itogurumaは88%（実機受信・ACKは未確認）、全体95%、Phase 1 95%。
@@ -147,7 +148,7 @@ Phase 1（基盤・必須運用機能）: **95%**
 2026.11.24: 機織り機の正面図を描いたアプリアイコン（`assets/icon`）をMonitorのexe・ウィンドウ・トレイとMSIの「アプリ」一覧表示へ組み込み、通知領域での表示を目視確認しました。ユーザー単位版3.2.1.0の変更（`f780acf`）と、Itoguruma 0.3.44の登録・リースAPI対応（3.2.2.0、`5be9a29`）をcommitし、`develop`へpush済みです（HEAD `9afa532`）。`E:\Hataori`は3.2.2.0で稼働し、`doctor` healthy、Itoguruma 0.3.44への接続を確認しました。HataoriはMoyaiとGithubieへ登録済みですが、Githubie 2.2.2.0への更新後はMoyaiの固定ハッシュ値と一致せず（`discovery_runtime_mismatch`）、Git操作はGithubie経由で行っています。残作業は優先順に次のとおりです。
 
 1. Itoguruma 0.3.44でのメッセージ受信・ACKを実機で確認する（実装・自動テスト・実機接続は済み）。実機設定は`activation.enabled=false`のため、確認には受信の有効化か、一時的な検証環境が必要。
-2. Itoguruma接続中、MCP Clientが5秒ごとに「Tool 'get_version' not found in cache」の警告をログへ出す（接続後にツール一覧を取得していないため）。接続時に一度ツール一覧を取得して警告を止める。
+2. Itoguruma接続中に5秒ごとに出ていた「Tool 'get_version' not found in cache」警告の修正（接続時にツール一覧を取得）は実装・テスト済み。次のMSI更新後に、実機ログで警告が止まったことを確認する。
 3. トレイからの画面復帰と、実際のログオンからのMonitor・Server自動起動を確認する（通知領域のアイコン表示は確認済み）。
 4. ServerをMonitorから起動・停止する処理（`UserServerProcess`）の自動テストを追加する。
 5. 起動中のServerへMonitorを接続し、表示・更新とテスト専用Task／Agent Runのキャンセルを確認して記録する（手順: `docs/validation/2026-11-03-monitor-live-acceptance.md`）。
