@@ -15,9 +15,9 @@ public sealed class MonitorUpdateTests
     public void ParseRelease_selects_only_new_stable_four_part_versions()
     {
         using var release = Release();
-        Assert.Equal(new Version(3, 1, 24, 0), MonitorUpdateClient.ParseRelease(release.RootElement, new Version(3, 1, 23, 0))!.Version);
-        Assert.Null(MonitorUpdateClient.ParseRelease(release.RootElement, new Version(3, 1, 24, 0)));
-        Assert.Null(MonitorUpdateClient.ParseRelease(release.RootElement, new Version(3, 1, 25, 0)));
+        Assert.Equal(new Version(3, 2, 1, 0), MonitorUpdateClient.ParseRelease(release.RootElement, new Version(3, 2, 0, 0))!.Version);
+        Assert.Null(MonitorUpdateClient.ParseRelease(release.RootElement, new Version(3, 2, 1, 0)));
+        Assert.Null(MonitorUpdateClient.ParseRelease(release.RootElement, new Version(3, 2, 2, 0)));
         using var preview = Release(prerelease: true);
         Assert.Null(MonitorUpdateClient.ParseRelease(preview.RootElement, new Version(3, 1, 23, 0)));
         using var draft = Release(draft: true);
@@ -25,12 +25,12 @@ public sealed class MonitorUpdateTests
     }
 
     [Theory]
-    [InlineData("v3.1.24", "sha256:invalid", "https://example.com/update.msi", 16)]
-    [InlineData("v3.1.24.0", "sha256:invalid", "https://github.com/katsushoe/Hataori/releases/download/v3.1.24.0/Hataori-3.1.24.0-x64.msi", 16)]
-    [InlineData("v3.1.24.0", null, "http://github.com/katsushoe/Hataori/releases/download/v3.1.24.0/Hataori-3.1.24.0-x64.msi", 16)]
-    [InlineData("v3.1.24.0", null, "https://example.com/update.msi", 16)]
-    [InlineData("v3.1.24.0", null, null, 0)]
-    [InlineData("v3.1.24.0", null, null, 536870913)]
+    [InlineData("v3.2.1", "sha256:invalid", "https://example.com/update.msi", 16)]
+    [InlineData("v3.2.1.0", "sha256:invalid", "https://github.com/katsushoe/Hataori/releases/download/v3.2.1.0/Hataori-3.2.1.0-user-x64.msi", 16)]
+    [InlineData("v3.2.1.0", null, "http://github.com/katsushoe/Hataori/releases/download/v3.2.1.0/Hataori-3.2.1.0-user-x64.msi", 16)]
+    [InlineData("v3.2.1.0", null, "https://example.com/update.msi", 16)]
+    [InlineData("v3.2.1.0", null, null, 0)]
+    [InlineData("v3.2.1.0", null, null, 536870913)]
     public void ParseRelease_rejects_invalid_versions_digests_urls_and_sizes(string tag, string? digest, string? url, long size)
     {
         using var release = Release(tag, digest, url, size);
@@ -71,7 +71,7 @@ public sealed class MonitorUpdateTests
             });
             using var http = new HttpClient(handler);
             var client = new MonitorUpdateClient(http, new Uri("https://api.github.com/"));
-            var release = new MonitorRelease(new Version(3, 1, 24, 0), new Uri("https://github.com/katsushoe/Hataori/releases/download/v3.1.24.0/Hataori-3.1.24.0-x64.msi"), corrupt ? new string('0', 64) : Digest, Package.Length);
+            var release = new MonitorRelease(new Version(3, 1, 24, 0), new Uri("https://github.com/katsushoe/Hataori/releases/download/v3.2.1.0/Hataori-3.2.1.0-user-x64.msi"), corrupt ? new string('0', 64) : Digest, Package.Length);
             if (corrupt || truncated)
             {
                 await Assert.ThrowsAsync<InvalidDataException>(() => client.DownloadAsync(release, directory, CancellationToken.None));
@@ -99,7 +99,7 @@ public sealed class MonitorUpdateTests
             });
             using var http = new HttpClient(handler);
             var client = new MonitorUpdateClient(http, new Uri("https://api.github.com/"));
-            var release = new MonitorRelease(new Version(3, 1, 24, 0), new Uri("https://github.com/katsushoe/Hataori/releases/download/v3.1.24.0/Hataori-3.1.24.0-x64.msi"), Digest, Package.Length);
+            var release = new MonitorRelease(new Version(3, 1, 24, 0), new Uri("https://github.com/katsushoe/Hataori/releases/download/v3.2.1.0/Hataori-3.2.1.0-user-x64.msi"), Digest, Package.Length);
             var file = await client.DownloadAsync(release, directory, CancellationToken.None);
             Assert.True(File.Exists(file));
             File.Delete(file);
@@ -116,20 +116,20 @@ public sealed class MonitorUpdateTests
         var directory = Path.Combine(Path.GetTempPath(), "Hataori test space");
         var job = new MonitorUpdateJob(1, Path.Combine(directory, "update.msi"), Digest, Path.Combine(directory, "monitor.exe"), directory, "custom-pipe", "en-US");
         var start = MonitorUpdateInstaller.CreateInstallerStart(job);
-        Assert.Equal("runas", start.Verb);
+        Assert.False(start.UseShellExecute);
         Assert.Contains(job.PackagePath, start.ArgumentList);
         Assert.Contains("INSTALL_ROOT=" + directory, start.ArgumentList);
         Assert.Contains("/norestart", start.ArgumentList);
         Assert.DoesNotContain("/quiet", start.ArgumentList);
     }
 
-    private static JsonDocument Release(string tag = "v3.1.24.0", string? digest = null, string? url = null, long size = 16, bool prerelease = false, bool draft = false) =>
+    private static JsonDocument Release(string tag = "v3.2.1.0", string? digest = null, string? url = null, long size = 16, bool prerelease = false, bool draft = false) =>
         JsonDocument.Parse(JsonSerializer.Serialize(new
         {
             tag_name = tag,
             prerelease,
             draft,
-            assets = new[] { new { name = "Hataori-3.1.24.0-x64.msi", browser_download_url = url ?? "https://github.com/katsushoe/Hataori/releases/download/v3.1.24.0/Hataori-3.1.24.0-x64.msi", digest = digest ?? "sha256:" + Digest, size } },
+            assets = new[] { new { name = "Hataori-3.2.1.0-user-x64.msi", browser_download_url = url ?? "https://github.com/katsushoe/Hataori/releases/download/v3.2.1.0/Hataori-3.2.1.0-user-x64.msi", digest = digest ?? "sha256:" + Digest, size } },
         }));
 
     private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler

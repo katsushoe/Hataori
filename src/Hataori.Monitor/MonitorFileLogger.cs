@@ -1,5 +1,4 @@
 ﻿using System.Globalization;
-using Hataori.Application;
 using Microsoft.Extensions.Logging;
 
 namespace Hataori.Monitor;
@@ -9,9 +8,9 @@ public sealed class MonitorFileLogger : ILogger
 {
     private readonly object _sync = new();
 
-    /// <summary>現在のMonitorログファイルパスを取得します。</summary>
+    /// <summary>ユーザー専用のMonitorログファイルパスを取得します。</summary>
     public string LogPath { get; } = Path.Combine(
-        InstallationLayout.Resolve(AppContext.BaseDirectory).LogsPath,
+        MonitorSettingsStore.UserDirectory, "logs",
         $"hataori-monitor-{DateTimeOffset.Now:yyyyMMdd}.log");
 
     /// <inheritdoc />

@@ -7,12 +7,12 @@ using Hataori.Application.Localization;
 
 namespace Hataori.Monitor;
 
-internal sealed record MonitorUpdateJob(int ParentId, string PackagePath, string Sha256, string MonitorPath, string InstallRoot, string PipeName, string Language);
+internal sealed record MonitorUpdateJob(int ParentId, string PackagePath, string Sha256, string MonitorPath, string InstallRoot, string PipeName, string Language, bool StartInTray = false);
 
 /// <summary>Monitor終了後にMSIを実行し、更新後または失敗時にMonitorを再開します。</summary>
 internal static class MonitorUpdateInstaller
 {
-    public static void Start(string packagePath, MonitorRelease release, string pipeName, string language)
+    public static void Start(string packagePath, MonitorRelease release, string pipeName, string language, bool startInTray)
     {
         var executable = Environment.ProcessPath ?? throw new InvalidOperationException("Monitor executable path is unavailable.");
         var layout = InstallationLayout.Resolve(AppContext.BaseDirectory);
@@ -25,7 +25,7 @@ internal static class MonitorUpdateInstaller
         foreach (var file in Directory.EnumerateFiles(AppContext.BaseDirectory))
             File.Copy(file, Path.Combine(helperDirectory, Path.GetFileName(file)));
         var job = new MonitorUpdateJob(Environment.ProcessId, packagePath, release.Sha256, executable,
-            layout.RootPath, pipeName, language);
+            layout.RootPath, pipeName, language, startInTray);
         var jobPath = Path.Combine(directory, "job.json");
         File.WriteAllText(jobPath, JsonSerializer.Serialize(job));
         var start = new ProcessStartInfo(Path.Combine(helperDirectory, Path.GetFileName(executable)))
@@ -85,6 +85,7 @@ internal static class MonitorUpdateInstaller
                     restart.ArgumentList.Add("--pipe");
                     restart.ArgumentList.Add(job.PipeName);
                     restart.ArgumentList.Add("--skip-update");
+                    if (job.StartInTray) restart.ArgumentList.Add("--startup");
                     using var process = Process.Start(restart) ?? throw new IOException("Could not restart Monitor.");
                 }
                 catch (Exception exception)
@@ -99,8 +100,8 @@ internal static class MonitorUpdateInstaller
     {
         var start = new ProcessStartInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "msiexec.exe"))
         {
-            UseShellExecute = true,
-            Verb = "runas",
+            UseShellExecute = false,
+            CreateNoWindow = true,
         };
         start.ArgumentList.Add("/i");
         start.ArgumentList.Add(job.PackagePath);

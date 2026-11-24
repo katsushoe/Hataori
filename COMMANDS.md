@@ -2,6 +2,8 @@
 
 [English](COMMANDS.md) | [日本語](COMMANDS.ja.md)
 
+Starting with 3.2.0.0, use `hataori monitor` to start the installed tray and its Server under the signed-in user. Windows also runs this tray at logon. The Windows Service commands below are for administering legacy 3.1.x installations.
+
 This document is the source of truth for the Hataori CLI, service controls, integration checks, JSON results, exit codes, and safety requirements.
 
 ## Command Groups

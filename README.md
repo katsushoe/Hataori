@@ -6,29 +6,25 @@ Hataori is a local Windows orchestration service for Codex Desktop, Codex CLI, a
 
 ## Getting Started
 
-Install the x64 MSI, open an elevated PowerShell terminal, and run:
+Install the user x64 MSI and open **Hataori Monitor** from the Windows Start menu. Monitor starts Server in your session. In a regular PowerShell terminal, check the connection:
 
 ```powershell
-hataori config init
-hataori service setup
-Start-Service Hataori
-hataori service status
 hataori mcp status
 ```
 
-Pass conditions are a running `Hataori` service and an MCP status response containing `connected: true` and a positive tool count.
+The MCP status response shows `connected: true` and a positive tool count when Server is ready.
 
 ## Installation
 
 ### Installer
 
-The standard artifact is the self-contained Windows x64 MSI. Double-click it and approve UAC, or specify a custom installation root from an elevated terminal:
+The standard artifact is the self-contained Windows user x64 MSI. Install it in the signed-in user's ordinary session. For a fixed installation root prepared for that user:
 
 ```powershell
-msiexec.exe /i Hataori-3.1.21.0-x64.msi INSTALL_ROOT="C:\Hataori"
+msiexec.exe /i Hataori-3.2.0.0-user-x64.msi INSTALL_ROOT="E:\Hataori"
 ```
 
-The MSI installs Server, CLI, Monitor, the Windows Service registration, the system `PATH` entry, and a Start menu shortcut. See [Installation](docs/installation.md) for Install, Upgrade, and Uninstall behavior.
+The MSI adds the user's `PATH` entry, logon startup and Start menu shortcut. See [Installation](docs/installation.md) for migrating from the old Windows service.
 
 ### Binary Archive
 
@@ -50,7 +46,7 @@ Generated artifacts are written below `artifacts/` and are not tracked by Git.
 
 ## Configuration
 
-The standard mutable directories are `%INSTALL_ROOT%\config`, `logs`, and `data`; they survive Upgrade and Uninstall. Generate the non-secret main settings with `hataori config init`. Link the Itoguruma token without displaying it by running `hataori service setup` from an elevated terminal.
+The standard mutable directories are `%INSTALL_ROOT%\config`, `logs`, and `data`. To link a new Itoguruma token, run `hataori setup itoguruma` under the ordinary user account and restart Monitor.
 
 See [Configuration](CONFIG.md) for every setting, precedence rule, constraint, and safe sample.
 
@@ -67,9 +63,9 @@ CLI output is JSON except for streamed log lines and error text. See [Commands](
 
 ## Monitor
 
-Open **Hataori Monitor** from the Windows Start menu or run `hataori monitor`. Closing the window keeps it in the system tray by default; minimizing also hides it there. Double-click the tray icon to reopen it. Right-click the icon for **Open Monitor**, **Settings**, or **Exit**. Exit stops Monitor; Server continues independently.
+Open **Hataori Monitor** from the Windows Start menu or run `hataori monitor`. Closing the window keeps it in the system tray by default; minimizing also hides it there. Double-click the tray icon to reopen it. Right-click the icon for **Open Monitor**, **Settings**, or **Exit**. Windows starts Monitor in the notification area at sign-in. Exit stops Monitor and the Server it started.
 
-Use **Settings** in the window or tray menu to change tray behavior, minimized startup, startup automatic updates, refresh interval, and language. Startup updates install a newer official x64 MSI after validation; Windows may ask for administrator approval and the service restarts during the upgrade. The **Update application** button checks manually. Failures leave the current version usable. See [Monitor settings](CONFIG.md#monitor-settings).
+Use **Settings** in the window or tray menu to change tray behavior, minimized startup, startup automatic updates, refresh interval, and language. Startup updates verify and install a newer official user MSI and then restart Hataori under the same user account. The **Update application** button checks manually. Failures leave the current version usable. See [Monitor settings](CONFIG.md#monitor-settings).
 
 ## Documentation
 
@@ -85,7 +81,7 @@ Use **Settings** in the window or tray menu to change tray behavior, minimized s
 
 ## Security
 
-Hataori binds its MCP endpoint to loopback by default. Itoguruma tokens must not be committed, logged, pasted into chat, or placed in MCP client settings. `hataori service setup` writes the service token to a separate file restricted to `SYSTEM` and `Administrators`.
+Hataori binds its MCP endpoint to loopback by default. Itoguruma tokens must not be committed, logged, pasted into chat, or placed in MCP client settings. `hataori service setup` is a legacy service-edition command. The user edition reads the protected `config/hataori.user.json` when present.
 
 See [Security](SECURITY.md) before changing bind addresses, permissions, or secret storage.
 

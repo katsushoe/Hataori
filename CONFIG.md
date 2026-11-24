@@ -9,7 +9,7 @@ This document is the source of truth for Hataori configuration files, precedence
 | File | Standard location | Owner | Purpose |
 | :--- | :--- | :--- | :--- |
 | Main settings | `%INSTALL_ROOT%\config\hataori.json` | MSI, user, or `hataori config init` | Non-secret application language, Server, agent, retry, logging, maintenance, and hook settings. |
-| Service secret settings | `%INSTALL_ROOT%\config\hataori.service.json` | `hataori service setup` | Itoguruma token for the `LocalSystem` Windows Service. |
+| User secret settings | `%INSTALL_ROOT%\config\hataori.user.json` | Legacy migration | Optional Itoguruma credentials restricted to the intended user, SYSTEM, and Administrators. |
 | Monitor settings | `%LOCALAPPDATA%\Hataori\Monitor\settings.json` | Monitor Settings dialog | Per-user preferences, independent of Server configuration. |
 
 Relative `databasePath`, log, and hook paths are resolved from `%INSTALL_ROOT%`. An explicitly supplied `HATAORI_CONFIG_PATH` may point to another absolute main settings file.
@@ -45,7 +45,7 @@ Boolean; default/omitted `false`. Example: `{"start_minimized":true}`. Starts Mo
 
 ### auto_update
 
-Boolean; default/omitted `true`. Example: `{"auto_update":false}`. Checks for a newer official stable MSI at the next Monitor startup and installs it automatically after verifying the official URL, size, and API SHA-256 digest. The update feed is embedded from `src/Hataori.Monitor/monitor-update.json`; it is not a user-selectable download source. Only MSI installations in the standard `bin/monitor` layout can install updates. **Update application** checks manually even when this option is disabled. Windows may show UAC; approving it updates Server, CLI, and Monitor and restarts the service. Cancelling elevation or an installer failure restarts the existing Monitor and skips one update check. No automatic Windows reboot occurs. Exit code 3010 requests a manual reboot.
+Boolean; default/omitted `true`. Example: `{"auto_update":false}`. Checks for a newer official stable MSI at the next Monitor startup and installs it automatically after verifying the official URL, size, and API SHA-256 digest. The update feed is embedded from `src/Hataori.Monitor/monitor-update.json`; it is not a user-selectable download source. Only MSI installations in the standard `bin/monitor` layout can install updates. **Update application** checks manually even when this option is disabled. The user MSI updates Server, CLI and Monitor in the current user session. An installer failure restarts the existing Monitor and skips one update check. No automatic Windows reboot occurs. Exit code 3010 requests a manual reboot.
 
 Startup download failures show a tray warning, are logged, and leave Monitor usable; manual checks show an error dialog. Offline access, missing digest/MSI, private releases, API limits, and invalid metadata are recoverable errors. No other application's credentials are read. Updates and installer logs remain in `%LOCALAPPDATA%\Hataori\Monitor\updates`; remove old directories only while no update is running. An installer still active after the 20-minute deadline is not killed; wait for Windows Installer to finish before reopening Monitor.
 
@@ -65,16 +65,18 @@ The Server loads settings in this effective order, with later sources overriding
 
 1. .NET host defaults.
 2. The main `hataori.json` selected by `HATAORI_CONFIG_PATH` or the standard path.
-3. `hataori.service.json` when running as a Windows Service.
+3. Optional `hataori.user.json` in the installation configuration directory.
 4. Environment variables with the `HATAORI_` prefix; use `__` for JSON nesting, for example `HATAORI_SERVER__MCPPORT=45440`.
+
+For the standard Itoguruma endpoint `http://127.0.0.1:47631/mcp`, Server uses the signed-in user's Itoguruma credential in Windows Credential Manager when present. Server reads it directly and does not copy it into configuration or the environment.
 
 CLI commands that load Server settings use the main JSON followed by `HATAORI_` environment variables. `--config` selects the main JSON for commands that accept it. CLI-only path variables are documented in [Commands](COMMANDS.md).
 
-All sections in the default file are required for Server startup except `hooks`, which is optional when hooks are disabled by omission. The default file intentionally omits `itoguruma.authenticationToken`; Service mode obtains it from the service secret file.
+All sections in the default file are required for Server startup except `hooks`, which is optional when hooks are disabled by omission. The default file intentionally omits `itoguruma.authenticationToken`; The user edition obtains it from the protected user file or the documented user environment override.
 
 ## Profile Settings
 
-Hataori has no named profile file. Runtime variants are selected by the main file path, environment overrides, and whether the process runs as the Windows Service. MCP access is unauthenticated and loopback-only; Itoguruma authentication is a separate outbound-client setting.
+Hataori has no named profile file. Runtime variants are selected by the main file path, environment overrides, and the optional user credential file. MCP access is unauthenticated and loopback-only; Itoguruma authentication is a separate outbound-client setting.
 
 ## Settings Reference
 

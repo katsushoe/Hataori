@@ -3,12 +3,13 @@
     <OutputType>Package</OutputType>
     <Platform>x64</Platform>
     <InstallerPlatform>x64</InstallerPlatform>
-    <SuppressIces>ICE61</SuppressIces>
+    <!-- ICE91 describes an ALLUSERS scenario which this fixed per-user package does not support. -->
+    <SuppressIces>ICE61;ICE91</SuppressIces>
     <PublishRoot Condition="'$(PublishRoot)' == ''">$(MSBuildThisFileDirectory)..\artifacts\publish</PublishRoot>
     <ProductVersion Condition="'$(ProductVersion)' == ''">3.0.3.0</ProductVersion>
     <DefineConstants>PublishRoot=$(PublishRoot);ProductVersion=$(ProductVersion)</DefineConstants>
     <OutputPath>$(MSBuildThisFileDirectory)..\artifacts\installer\</OutputPath>
-    <OutputName>Hataori-$(ProductVersion)-x64</OutputName>
+    <OutputName>Hataori-$(ProductVersion)-user-x64</OutputName>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="WixToolset.UI.wixext" Version="5.0.2" />

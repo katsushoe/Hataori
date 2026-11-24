@@ -3,13 +3,20 @@
   <Package Name="Hataori"
            Manufacturer="Akatsukisoft"
            Version="$(var.ProductVersion)"
-           UpgradeCode="1EC49A4B-879B-4F59-8B54-53A4761068C7"
-           Scope="perMachine"
+           UpgradeCode="6AF718AA-029F-4DBC-AB8E-B5E00C9A7E22"
+           Scope="perUser"
            Language="1041"
            Codepage="932"
            InstallerVersion="500">
-    <MajorUpgrade AllowSameVersionUpgrades="yes"
+    <MajorUpgrade Schedule="afterInstallInitialize"
                   DowngradeErrorMessage="A newer version of Hataori is already installed." />
+    <Property Id="LEGACYHATAORISERVICE" Secure="yes">
+      <RegistrySearch Id="LegacyHataoriService" Root="HKLM" Key="SYSTEM\CurrentControlSet\Services\Hataori" Name="ImagePath" Type="raw" />
+    </Property>
+    <Property Id="INSTALL_ROOT" Secure="yes">
+      <RegistrySearch Id="PreviousUserInstallRoot" Root="HKCU" Key="Software\Akatsukisoft\Hataori" Name="InstallRoot" Type="raw" Bitness="always64" />
+    </Property>
+    <Launch Condition="Installed OR NOT LEGACYHATAORISERVICE" Message="Uninstall the legacy machine-wide Hataori Windows Service before installing the user edition." />
     <MediaTemplate EmbedCab="yes" />
     <Icon Id="HataoriIcon.ico" SourceFile="$(sys.SOURCEFILEDIR)..\assets\icon\hataori.ico" />
     <Property Id="ARPPRODUCTICON" Value="HataoriIcon.ico" />
@@ -39,70 +46,63 @@
       <Show Dialog="LanguageDlg" Before="CostFinalize" Condition="NOT Installed AND UILevel &gt;= 4" />
     </InstallUISequence>
 
-    <StandardDirectory Id="ProgramFiles6432Folder">
-      <Directory Id="INSTALL_ROOT" Name="Hataori">
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="INSTALL_ROOT" Name="Hataori" ComponentGuidGenerationSeed="0A665181-5372-47F2-B6AA-60D58A4BA888">
         <Directory Id="BINDIR" Name="bin">
           <Directory Id="SERVERDIR" Name="server">
-            <Component Id="ServerExecutable" Guid="41E617B4-D0EC-4876-B16F-E1C126A0BB98" Bitness="always64">
-              <File Id="ServerExe" Source="$(var.PublishRoot)\server\Hataori.Server.exe" KeyPath="yes" />
-              <ServiceInstall Id="HataoriServiceInstall"
-                              Name="Hataori"
-                              DisplayName="Hataori Server"
-                              Description="Hataori task coordination server"
-                              Type="ownProcess"
-                              Start="auto"
-                              ErrorControl="normal"
-                              Account="LocalSystem"
-                              Vital="yes" />
-              <ServiceControl Id="HataoriServiceControl"
-                              Name="Hataori"
-                              Start="install"
-                              Stop="both"
-                              Remove="uninstall"
-                              Wait="yes" />
+            <Component Id="ServerExecutable" Guid="D0D62639-E3DB-461C-8B1A-FC6ADD7606DB" Bitness="always64">
+              <File Id="ServerExe" Source="$(var.PublishRoot)\server\Hataori.Server.exe" />
+              <RegistryValue Root="HKCU" Key="Software\Akatsukisoft\Hataori\Components" Name="Server" Value="1" Type="integer" KeyPath="yes" />
+              <RemoveFolder Id="RemoveServerDir" On="uninstall" />
+              <RemoveFolder Id="RemoveBinDir" Directory="BINDIR" On="uninstall" />
+              <RemoveFolder Id="RemoveRootIfEmpty" Directory="INSTALL_ROOT" On="uninstall" />
             </Component>
           </Directory>
           <Directory Id="CLIDIR" Name="cli">
-            <Component Id="CliExecutable" Guid="E4DA66D4-3D8D-4F2B-935E-71161DF976FC" Bitness="always64">
-              <File Id="CliExe" Source="$(var.PublishRoot)\cli\Hataori.Cli.exe" KeyPath="yes" />
-              <Environment Id="HataoriPath" Name="PATH" Value="[CLIDIR]" Action="set" Part="last" System="yes" />
+            <Component Id="CliExecutable" Guid="DC5CBDFF-DC23-4C76-A1A8-5B5013CC40AC" Bitness="always64">
+              <File Id="CliExe" Source="$(var.PublishRoot)\cli\Hataori.Cli.exe" />
+              <RegistryValue Root="HKCU" Key="Software\Akatsukisoft\Hataori\Components" Name="Cli" Value="1" Type="integer" KeyPath="yes" />
+              <RemoveFolder Id="RemoveCliDir" On="uninstall" />
+              <Environment Id="HataoriPath" Name="PATH" Value="[CLIDIR]" Action="set" Part="last" System="no" />
             </Component>
             <Directory Id="HOOKSDIR" Name="hooks">
-              <Component Id="HookTemplates" Guid="92B22522-1670-4B9A-8F80-9F440457D48E" Bitness="always64">
-                <File Id="CodexHooks" Source="$(var.PublishRoot)\cli\hooks\codex-hooks.json" KeyPath="yes" />
+              <Component Id="HookTemplates" Guid="3A23DFAF-02A8-4EC6-A56F-56542B0A6271" Bitness="always64">
+                <File Id="CodexHooks" Source="$(var.PublishRoot)\cli\hooks\codex-hooks.json" />
                 <File Id="ClaudeHooks" Source="$(var.PublishRoot)\cli\hooks\claude-settings.json" />
+                <RegistryValue Root="HKCU" Key="Software\Akatsukisoft\Hataori\Components" Name="Hooks" Value="1" Type="integer" KeyPath="yes" />
+                <RemoveFolder Id="RemoveHooksDir" On="uninstall" />
               </Component>
             </Directory>
           </Directory>
           <Directory Id="MONITORDIR" Name="monitor">
-            <Component Id="MonitorExecutable" Guid="2111F2D1-EAF9-4FE0-AE6E-C5496CA32C04" Bitness="always64">
-              <File Id="MonitorExe" Source="$(var.PublishRoot)\monitor\Hataori.Monitor.exe" KeyPath="yes">
-                <Shortcut Id="MonitorShortcut"
-                          Directory="ProgramMenuFolder"
-                          Name="Hataori Monitor"
-                          Description="Open Hataori Monitor"
-                          Advertise="yes"
-                          WorkingDirectory="INSTALL_ROOT" />
-              </File>
+            <Component Id="MonitorExecutable" Guid="4FC00E99-25FF-45A8-AD94-A41CB61CF44D" Bitness="always64">
+              <File Id="MonitorExe" Source="$(var.PublishRoot)\monitor\Hataori.Monitor.exe" />
+              <RegistryValue Root="HKCU" Key="Software\Microsoft\Windows\CurrentVersion\Run" Name="Hataori" Value="&quot;[#MonitorExe]&quot; --startup" Type="string" KeyPath="yes" />
+              <RegistryValue Root="HKCU" Key="Software\Akatsukisoft\Hataori" Name="InstallRoot" Value="[INSTALL_ROOT]" Type="string" />
+              <Shortcut Id="MonitorShortcut" Directory="ProgramMenuFolder" Name="Hataori Monitor" Target="[#MonitorExe]" WorkingDirectory="INSTALL_ROOT" />
+              <RemoveFolder Id="RemoveMonitorDir" On="uninstall" />
             </Component>
           </Directory>
         </Directory>
         <Directory Id="CONFIGDIR" Name="config">
-          <Component Id="PreservedConfigDirectory" Guid="E3C91B93-6C26-4A31-BE73-D2869C34AA58" Permanent="yes" NeverOverwrite="yes" Bitness="always64">
+          <Component Id="PreservedConfigDirectory" Guid="0FA320C5-E174-4695-A860-6EB00E6472C7" Permanent="yes" NeverOverwrite="yes" Bitness="always64">
             <CreateFolder />
-            <RegistryValue Root="HKLM" Key="Software\sazysoft\Hataori\Paths" Name="Config" Value="[CONFIGDIR]" Type="string" KeyPath="yes" />
+            <RemoveFolder Id="RemoveConfigIfEmpty" On="uninstall" />
+            <RegistryValue Root="HKCU" Key="Software\Akatsukisoft\Hataori\Paths" Name="Config" Value="[CONFIGDIR]" Type="string" KeyPath="yes" />
           </Component>
         </Directory>
         <Directory Id="LOGSDIR" Name="logs">
-          <Component Id="PreservedLogsDirectory" Guid="1796DFA5-C234-4550-8B2B-2FAED73A1501" Permanent="yes" NeverOverwrite="yes" Bitness="always64">
+          <Component Id="PreservedLogsDirectory" Guid="51D17CCD-083E-4105-ACB4-C1C8EE203BEC" Permanent="yes" NeverOverwrite="yes" Bitness="always64">
             <CreateFolder />
-            <RegistryValue Root="HKLM" Key="Software\sazysoft\Hataori\Paths" Name="Logs" Value="[LOGSDIR]" Type="string" KeyPath="yes" />
+            <RemoveFolder Id="RemoveLogsIfEmpty" On="uninstall" />
+            <RegistryValue Root="HKCU" Key="Software\Akatsukisoft\Hataori\Paths" Name="Logs" Value="[LOGSDIR]" Type="string" KeyPath="yes" />
           </Component>
         </Directory>
         <Directory Id="DATADIR" Name="data">
-          <Component Id="PreservedDataDirectory" Guid="72F71F2B-339D-4C3F-9E79-E7B456279B5B" Permanent="yes" NeverOverwrite="yes" Bitness="always64">
+          <Component Id="PreservedDataDirectory" Guid="72B71F6D-03F3-488F-B12A-B59DD2434E32" Permanent="yes" NeverOverwrite="yes" Bitness="always64">
             <CreateFolder />
-            <RegistryValue Root="HKLM" Key="Software\sazysoft\Hataori\Paths" Name="Data" Value="[DATADIR]" Type="string" KeyPath="yes" />
+            <RemoveFolder Id="RemoveDataIfEmpty" On="uninstall" />
+            <RegistryValue Root="HKCU" Key="Software\Akatsukisoft\Hataori\Paths" Name="Data" Value="[DATADIR]" Type="string" KeyPath="yes" />
           </Component>
         </Directory>
       </Directory>
@@ -122,9 +122,13 @@
                   FileRef="CliExe"
                   ExeCommand="config init --config &quot;[CONFIGDIR]hataori.json&quot; --language &quot;[HATAORI_LANGUAGE]&quot;"
                   Execute="deferred"
-                  Impersonate="no"
+                  Impersonate="yes"
                   Return="check" />
+    <CustomAction Id="StopTray" Directory="MONITORDIR"
+                  ExeCommand="&quot;[MONITORDIR]Hataori.Monitor.exe&quot; --stop"
+                  Execute="immediate" Impersonate="yes" Return="check" />
     <InstallExecuteSequence>
+      <Custom Action="StopTray" Before="InstallValidate" Condition="Installed OR WIX_UPGRADE_DETECTED" />
       <Custom Action="InitializeConfiguration" After="InstallFiles" Condition="NOT Installed" />
     </InstallExecuteSequence>
   </Package>

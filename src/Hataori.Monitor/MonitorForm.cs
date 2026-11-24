@@ -43,7 +43,7 @@ public partial class MonitorForm : Form
     {
         base.OnShown(e);
         trayIcon.Visible = true;
-        if (_settings.StartMinimized) HideToTray();
+        if (_startInTray || _settings.StartMinimized) HideToTray();
         await RefreshSnapshotAsync().ConfigureAwait(true);
         if (IsDisposed) return;
         refreshTimer.Start();
@@ -81,7 +81,7 @@ public partial class MonitorForm : Form
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
         catch (Exception exception)
         {
-            var transient = exception is IOException or TimeoutException;
+            var transient = exception is IOException or TimeoutException or UnauthorizedAccessException;
             connectionStatusLabel.Text = transient
                 ? DisplayLanguage.Text($"接続エラー: {exception.Message}", $"Connection error: {exception.Message}")
                 : DisplayLanguage.Text("表示データの取得に失敗しました。詳細はログを確認してください。", "Failed to retrieve display data. Check the log for details.");

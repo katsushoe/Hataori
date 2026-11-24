@@ -9,7 +9,7 @@
 | File | 標準配置 | 作成主体 | 用途 |
 | :--- | :--- | :--- | :--- |
 | 通常設定 | `%INSTALL_ROOT%\config\hataori.json` | MSI、利用者、または`hataori config init` | 秘密情報を含まないアプリ言語、Server、Agent、Retry、Log、Maintenance、Hook設定。 |
-| Service秘密設定 | `%INSTALL_ROOT%\config\hataori.service.json` | `hataori service setup` | `LocalSystem` Windows Service用Itoguruma token。 |
+| ユーザー秘密設定 | `%INSTALL_ROOT%\config\hataori.user.json` | 旧版移行手順 | 対象ユーザー、SYSTEM、Administratorsに制限した任意のItoguruma認証。 |
 | Monitor設定 | `%LOCALAPPDATA%\Hataori\Monitor\settings.json` | Monitorの設定画面 | Server設定から独立したユーザー単位の設定。 |
 
 相対`databasePath`、log、hook pathは`%INSTALL_ROOT%`を基準に解決します。`HATAORI_CONFIG_PATH`へ絶対pathを指定すると別の通常設定fileを使用できます。
@@ -45,7 +45,7 @@ booleanで、既定値・省略時は`false`です。例: `{"start_minimized":tr
 
 ### auto_update
 
-booleanで、既定値・省略時は`true`です。例: `{"auto_update":false}`。次回Monitor起動時に新しい正式版MSIを確認し、公式URL・サイズ・APIのSHA-256を検証して自動インストールします。更新先は`src/Hataori.Monitor/monitor-update.json`から組み込み、利用者が任意のダウンロード先へ変更する設定は提供しません。標準の`bin/monitor`配置へMSIでインストールした環境だけで更新できます。無効時も **アプリの更新** ボタンで手動確認できます。WindowsのUACが表示された場合、承認するとServer・CLI・Monitorが更新され、サービスが再起動します。UAC取消やインストール失敗後は既存のMonitorを再起動し、更新確認を1回省略します。Windowsを自動再起動しません。終了コード3010では手動再起動を案内します。
+booleanで、既定値・省略時は`true`です。例: `{"auto_update":false}`。次回Monitor起動時に新しい正式版MSIを確認し、公式URL・サイズ・APIのSHA-256を検証して自動インストールします。更新先は`src/Hataori.Monitor/monitor-update.json`から組み込み、利用者が任意のダウンロード先へ変更する設定は提供しません。標準の`bin/monitor`配置へMSIでインストールした環境だけで更新できます。無効時も **アプリの更新** ボタンで手動確認できます。ユーザー単位MSIでServer・CLI・Monitorを通常権限で更新します。インストール失敗後は既存のMonitorを再起動し、更新確認を1回省略します。Windowsを自動再起動しません。終了コード3010では手動再起動を案内します。
 
 起動時の取得失敗はトレイ通知とログへ記録し、Monitorは引き続き使用できます。手動確認の失敗はダイアログで案内します。オフライン、MSI・digest欠落、非公開Release、API制限、不正メタデータは回復可能なエラーです。他アプリの認証情報は読みません。更新ファイルとインストールログは`%LOCALAPPDATA%\Hataori\Monitor\updates`に残します。古いディレクトリは更新処理がないときだけ削除してください。20分の期限後もWindows Installerが動作中なら強制終了せず、その完了を待ってからMonitorを開いてください。
 
@@ -65,16 +65,18 @@ Serverは次の順で設定を読み、後のsourceが前を上書きします�
 
 1. .NET Host既定設定。
 2. `HATAORI_CONFIG_PATH`または標準pathで選択した通常`hataori.json`。
-3. Windows Service実行時の`hataori.service.json`。
+3. インストール先の設定フォルダーにある任意の`hataori.user.json`。
 4. `HATAORI_`接頭辞の環境変数。JSON階層には`__`を使います。例: `HATAORI_SERVER__MCPPORT=45440`。
+
+標準のItoguruma接続先 `http://127.0.0.1:47631/mcp` では、Windows資格情報マネージャーにログオンユーザーのItoguruma資格情報があれば、Serverが直接読み取って優先します。設定ファイルや環境変数には複製しません。
 
 Server設定を読むCLI commandは通常JSONの後に`HATAORI_`環境変数を適用します。対応commandでは`--config`で通常JSONを選択します。CLI専用path変数は[コマンド](COMMANDS.ja.md)を参照してください。
 
-既定file内の各sectionはServer起動に必要です。`hooks`だけは無効として省略できます。`itoguruma.authenticationToken`は意図的に通常fileへ含めず、Serviceでは秘密設定fileから取得します。
+既定file内の各sectionはServer起動に必要です。`hooks`だけは無効として省略できます。`itoguruma.authenticationToken`は意図的に通常fileへ含めず、ユーザー版は保護されたユーザー秘密設定またはユーザー環境変数から取得します。
 
 ## Profile Settings
 
-Hataoriには名前付きprofile fileがありません。通常file path、環境変数override、Windows Service実行かどうかでruntime設定を分けます。MCPは認証なし・loopback限定で、Itoguruma認証は別のoutbound client設定です。
+Hataoriには名前付きprofile fileがありません。通常file path、環境変数override、任意のユーザー秘密設定で実行時の設定を分けます。MCPは認証なし・loopback限定で、Itoguruma認証は別のoutbound client設定です。
 
 ## Settings Reference
 

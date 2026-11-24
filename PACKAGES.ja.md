@@ -32,7 +32,6 @@
 | パッケージ | Version | 対象プロジェクト | 用途 | 更新方針 |
 | :--- | :--- | :--- | :--- | :--- |
 | `Microsoft.Data.Sqlite` | `9.0.8` | Infrastructure | SQLite永続化 | .NET 9のサポート対象servicing lineを維持し、repositoryとmigrationのテストを実行する。 |
-| `Microsoft.Extensions.Hosting.WindowsServices` | `9.0.8` | Server | Windows Serviceライフタイム統合 | .NET 9 runtimeパッケージと足並みを揃える。 |
 | `Microsoft.Extensions.Logging.Abstractions` | `9.0.8` | Monitor | Monitorのログ抽象化 | .NET 9 runtimeパッケージと足並みを揃える。 |
 | `Microsoft.Extensions.Http` | `9.0.8` | Monitor | Factory管理の更新用HTTPクライアント | 更新時はタイムアウト・リダイレクト・整合性検証を確認する。 |
 | `ModelContextProtocol` | `2.0.0` | Infrastructure | MCP clientトランスポート | 更新前にプロトコルとAPI互換性を確認する。 |

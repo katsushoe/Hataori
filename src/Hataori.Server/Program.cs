@@ -24,10 +24,11 @@ using Hataori.Infrastructure.Metrics;
 using Hataori.Server;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Options;
-using Microsoft.Extensions.Hosting.WindowsServices;
 using ModelContextProtocol.Server;
 
 ILogger? fatalLogger = null;
+var ownedByMonitor = args.Contains("--monitor-parent", StringComparer.Ordinal);
+args = args.Where(arg => !string.Equals(arg, "--monitor-parent", StringComparison.Ordinal)).ToArray();
 try
 {
     var layout = InstallationLayout.Resolve(AppContext.BaseDirectory);
@@ -37,12 +38,7 @@ try
     DisplayLanguage.ApplyFromConfiguration(configurationPath);
     var builder = WebApplication.CreateBuilder(new WebApplicationOptions { Args = args, ContentRootPath = layout.RootPath });
     builder.Configuration.AddJsonFile(configurationPath, optional: false, reloadOnChange: true);
-    if (WindowsServiceHelpers.IsWindowsService())
-    {
-        // optional: true — hataori.service.jsonはItogurumaトークン連携（`hataori service setup`）でのみ作られる。
-        // 未作成でもHataori自体はItoguruma未連携（degraded）で起動できるため、file不在で起動を止めない。
-        builder.Configuration.AddJsonFile(ServiceConfigurationPath.GetDefaultPath(AppContext.BaseDirectory), optional: true, reloadOnChange: true);
-    }
+    builder.Configuration.AddJsonFile(Path.Combine(layout.ConfigPath, "hataori.user.json"), optional: true, reloadOnChange: true);
     builder.Configuration.AddEnvironmentVariables("HATAORI_");
     var startupFileLogOptions = builder.Configuration.GetRequiredSection(FileLogOptions.SectionName).Get<FileLogOptions>()
         ?? throw new InvalidOperationException(DisplayLanguage.Text("ファイルログ設定がありません。", "File logging configuration is missing."));
@@ -60,16 +56,24 @@ try
     var startupOptions = builder.Configuration.GetRequiredSection(ServerOptions.SectionName).Get<ServerOptions>()
         ?? throw new InvalidOperationException(DisplayLanguage.Text("Server設定がありません。", "Server configuration is missing."));
     builder.WebHost.ConfigureKestrel(options => options.Listen(IPAddress.Parse(startupOptions.McpHost), startupOptions.McpPort));
-    if (WindowsServiceHelpers.IsWindowsService())
-    {
-        builder.Services.AddWindowsService();
-    }
     builder.Services.AddOptions<ServerOptions>()
         .Bind(builder.Configuration.GetRequiredSection(ServerOptions.SectionName))
         .ValidateOnStart();
     builder.Services.AddSingleton<IValidateOptions<ServerOptions>, ServerOptionsValidator>();
     builder.Services.AddOptions<ItogurumaClientOptions>()
         .Bind(builder.Configuration.GetRequiredSection(ItogurumaClientOptions.SectionName))
+        .PostConfigure<ILogger<ItogurumaConnectionWorker>>((options, logger) =>
+        {
+            try
+            {
+                if (options.Endpoint is { } endpoint && ItogurumaWindowsCredential.Read(endpoint) is { } credential)
+                    options.AuthenticationToken = credential;
+            }
+            catch (System.ComponentModel.Win32Exception exception)
+            {
+                logger.LogWarning(exception, "Could not read the Itoguruma credential; using explicitly configured authentication if present.");
+            }
+        })
         .ValidateOnStart();
     builder.Services.AddSingleton<IValidateOptions<ItogurumaClientOptions>, ItogurumaClientOptionsValidator>();
     builder.Services.AddOptions<CodexDriverOptions>()
@@ -224,9 +228,15 @@ try
     fatalLogger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Hataori.Server.Fatal");
     app.UseHostFiltering();
     app.MapMcp(startupOptions.McpPath);
+    if (ownedByMonitor)
+    {
+        // Redirected stdin closes when Monitor exits, even when Windows terminates the parent.
+        _ = Task.Run(() => StopWhenParentClosesAsync(app.Lifetime, fatalLogger));
+    }
     await app.RunAsync();
     return 0;
 }
+
 catch (OperationCanceledException)
 {
     return 0;
@@ -247,4 +257,20 @@ catch (Exception exception)
         ? DisplayLanguage.Text("詳細ログは保存できませんでした。", "The detailed log could not be saved.")
         : DisplayLanguage.Text($"詳細ログ: {report.LogPath}", $"Detailed log: {report.LogPath}"));
     return 1;
+}
+
+static async Task StopWhenParentClosesAsync(IHostApplicationLifetime lifetime, ILogger logger)
+{
+    try
+    {
+        await Console.In.ReadLineAsync();
+    }
+    catch (IOException exception)
+    {
+        logger.LogWarning(exception, "Monitor control stream closed unexpectedly.");
+    }
+    finally
+    {
+        lifetime.StopApplication();
+    }
 }

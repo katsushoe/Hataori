@@ -33,7 +33,6 @@ No repository `nuget.config` is present. Restore therefore uses the NuGet source
 | Package | Version | Projects | Purpose | Update policy |
 | :--- | :--- | :--- | :--- | :--- |
 | `Microsoft.Data.Sqlite` | `9.0.8` | Infrastructure | SQLite persistence | Keep on the supported .NET 9 servicing line; run repository and migration tests. |
-| `Microsoft.Extensions.Hosting.WindowsServices` | `9.0.8` | Server | Windows Service lifetime integration | Keep aligned with the .NET 9 runtime packages. |
 | `Microsoft.Extensions.Logging.Abstractions` | `9.0.8` | Monitor | Monitor logging abstraction | Keep aligned with the .NET 9 runtime packages. |
 | `Microsoft.Extensions.Http` | `9.0.8` | Monitor | Factory-managed update HTTP client | Verify timeouts, redirects, and integrity checks when updating. |
 | `ModelContextProtocol` | `2.0.0` | Infrastructure | MCP client transport | Review protocol and API compatibility before updating. |

@@ -32,17 +32,28 @@ internal static class Program
                 return;
             }
             var layout = InstallationLayout.Resolve(AppContext.BaseDirectory);
-            var defaultLanguage = DisplayLanguage.ApplyFromConfiguration(Path.GetFullPath(Environment.GetEnvironmentVariable("HATAORI_CONFIG_PATH") ?? layout.ConfigurationPath));
-            var pipeName = GetPipeName(args);
-            var identity = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(layout.RootPath.ToUpperInvariant() + "|" + pipeName + "|" + Environment.UserName)));
+            var configuration = Path.GetFullPath(Environment.GetEnvironmentVariable("HATAORI_CONFIG_PATH") ?? layout.ConfigurationPath);
+            var defaultLanguage = DisplayLanguage.ApplyFromConfiguration(configuration);
+            var pipeName = GetPipeName(args, configuration);
+            var identity = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(Path.TrimEndingDirectorySeparator(layout.RootPath).ToUpperInvariant() + "|" + Environment.UserName)));
             using var mutex = new Mutex(false, @"Local\Hataori.Monitor." + identity);
             using var restore = new EventWaitHandle(false, EventResetMode.AutoReset, @"Local\Hataori.Monitor.Restore." + identity);
-            bool ownsMutex;
-            try { ownsMutex = mutex.WaitOne(0); }
-            catch (AbandonedMutexException) { ownsMutex = true; }
-            if (!ownsMutex)
+            using var stop = new EventWaitHandle(false, EventResetMode.AutoReset, @"Local\Hataori.Monitor.Stop." + identity);
+            if (args.Contains("--stop", StringComparer.Ordinal))
             {
-                restore.Set();
+                if (!TakeMutex(mutex, TimeSpan.Zero))
+                {
+                    stop.Set();
+                    if (!TakeMutex(mutex, TimeSpan.FromSeconds(35)))
+                        throw new TimeoutException("Hataori did not shut down in time.");
+                }
+                mutex.ReleaseMutex();
+                return;
+            }
+            var logon = args.Contains("--startup", StringComparer.OrdinalIgnoreCase);
+            if (!TakeMutex(mutex, TimeSpan.Zero))
+            {
+                if (!logon) restore.Set();
                 return;
             }
             try
@@ -64,10 +75,19 @@ internal static class Program
                     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
                 using var provider = services.BuildServiceProvider();
                 using var http = provider.GetRequiredService<IHttpClientFactory>().CreateClient("updates");
+                using var server = new UserServerProcess();
+                var ownsServer = !args.Contains("--connect-only", StringComparer.Ordinal) &&
+                    MonitorUpdateInstaller.IsInstalledMonitor(AppContext.BaseDirectory, layout.RootPath);
+                if (ownsServer) server.Start(layout);
                 using var form = new MonitorForm(pipeName, new MonitorControlClient(), errors);
+                form.ConfigureHost(ownsServer ? server : null, logon);
                 form.ConfigureRuntime(settings, store, new MonitorUpdateClient(http, endpoint), args.Contains("--skip-update", StringComparer.OrdinalIgnoreCase));
                 using var restoreTimer = new System.Windows.Forms.Timer { Interval = 400 };
-                restoreTimer.Tick += (_, _) => { if (restore.WaitOne(0)) form.RestoreFromTray(); };
+                restoreTimer.Tick += (_, _) =>
+                {
+                    if (stop.WaitOne(0)) form.RequestExit();
+                    else if (restore.WaitOne(0)) form.RestoreFromTray();
+                };
                 restoreTimer.Start();
                 System.Windows.Forms.Application.Run(form);
             }
@@ -76,7 +96,7 @@ internal static class Program
         catch (Exception exception)
         {
             Environment.ExitCode = 1;
-            errors.Report(exception, null, DisplayLanguage.Text("Monitorを起動できませんでした。ログを確認してください。", "Could not start Monitor. Check the log."), showDialog: true);
+            errors.Report(exception, null, DisplayLanguage.Text("Monitorの処理に失敗しました。ログを確認してください。", "Monitor operation failed. Check the log."), showDialog: !args.Contains("--stop", StringComparer.Ordinal));
         }
     }
 
@@ -100,7 +120,13 @@ internal static class Program
         System.Windows.Forms.Application.Run(context);
     }
 
-    private static string GetPipeName(IReadOnlyList<string> args)
+    private static bool TakeMutex(Mutex mutex, TimeSpan timeout)
+    {
+        try { return mutex.WaitOne(timeout); }
+        catch (AbandonedMutexException) { return true; }
+    }
+
+    private static string GetPipeName(IReadOnlyList<string> args, string configuration)
     {
         for (var index = 0; index < args.Count - 1; index++)
         {
@@ -110,6 +136,16 @@ internal static class Program
             }
         }
 
-        return Environment.GetEnvironmentVariable("HATAORI_CONTROL_PIPE_NAME") ?? "hataori-control";
+        var environment = Environment.GetEnvironmentVariable("HATAORI_CONTROL_PIPE_NAME")
+            ?? Environment.GetEnvironmentVariable("HATAORI_SERVER__CONTROLPIPENAME");
+        if (!string.IsNullOrWhiteSpace(environment)) return environment;
+        if (File.Exists(configuration))
+        {
+            using var document = JsonDocument.Parse(File.ReadAllText(configuration));
+            if (document.RootElement.TryGetProperty("server", out var server) &&
+                server.TryGetProperty("controlPipeName", out var name) && name.GetString() is { Length: > 0 } configured)
+                return configured;
+        }
+        return "hataori-control";
     }
 }

@@ -2,6 +2,16 @@
 
 [English](installation.md) | [日本語](installation.ja.md)
 
+## User installation in 3.2.0.0 and later
+
+`Hataori-<version>-user-x64.msi` registers Monitor in that user's Windows Run key. Monitor starts in the notification area when the user signs in and starts Server under the same account. Tray **Exit** or signing out stops Server. Ordinary use and updates run without elevation.
+
+A new installation defaults to `%LOCALAPPDATA%\Hataori`. To migrate a fixed-root machine installation, retain the old MSI and run `installer/Initialize-UserInstall.ps1` as administrator with `-InstallRoot`, the intended Windows account's `-UserSid`, and a new `-BackupDirectory`. The script verifies a configuration and SQLite backup, removes the old MSI and service, grants the selected user access, and copies Itoguruma credentials to the protected user configuration without displaying the value.
+
+Install the user MSI under the intended user's ordinary account, passing the same `INSTALL_ROOT` to adopt the existing directory. To start immediately, open **Hataori Monitor** from the Start menu. Startup updates use only the user MSI. To roll back, remove the user MSI and restore administrator-controlled installation permissions before installing the old machine MSI.
+
+The following sections describe the legacy 3.1.x service edition.
+
 The supported Windows artifact is the x64 MSI. It manages the Server, CLI, Monitor, Windows Service, system `PATH`, and Monitor Start menu shortcut.
 
 ## Standard Layout

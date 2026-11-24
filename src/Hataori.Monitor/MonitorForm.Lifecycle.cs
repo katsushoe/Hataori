@@ -12,6 +12,15 @@ public partial class MonitorForm
     private bool _exitRequested;
     private bool _checkingUpdate;
     private bool _skipUpdate;
+    private UserServerProcess? _server;
+    private bool _startInTray;
+    private bool _stopping;
+
+    internal void ConfigureHost(UserServerProcess? server, bool startInTray)
+    {
+        _server = server;
+        _startInTray = startInTray;
+    }
 
     internal void ConfigureRuntime(MonitorSettings settings, MonitorSettingsStore store, MonitorUpdateClient updater, bool skipUpdate)
     {
@@ -34,7 +43,7 @@ public partial class MonitorForm
         ApplyLocalizedText();
     }
 
-    protected override void OnFormClosing(FormClosingEventArgs e)
+    protected override async void OnFormClosing(FormClosingEventArgs e)
     {
         base.OnFormClosing(e);
         if (e.Cancel) return;
@@ -42,6 +51,24 @@ public partial class MonitorForm
         {
             e.Cancel = true;
             HideToTray();
+        }
+        else if (_server is not null && !_server.HasExited && e.CloseReason == CloseReason.UserClosing)
+        {
+            e.Cancel = true;
+            if (_stopping) return;
+            _stopping = true;
+            try
+            {
+                // Let WinForms finish processing the current Close before issuing a second one.
+                await Task.Yield();
+                await _server.StopAsync();
+                Close();
+            }
+            catch (Exception exception)
+            {
+                _errors.Report(exception, this, DisplayLanguage.Text("Serverを停止できませんでした。しばらく待ってから再試行してください。", "Server shutdown did not complete. Wait and try again."), showDialog: true);
+            }
+            finally { _stopping = false; }
         }
         else
         {
@@ -78,7 +105,9 @@ public partial class MonitorForm
 
     private void OpenMenuItemClick(object? sender, EventArgs e) => RestoreFromTray();
 
-    private void ExitMenuItemClick(object? sender, EventArgs e)
+    private void ExitMenuItemClick(object? sender, EventArgs e) => RequestExit();
+
+    internal void RequestExit()
     {
         _exitRequested = true;
         Close();
@@ -114,9 +143,8 @@ public partial class MonitorForm
             var directory = Path.Combine(MonitorSettingsStore.UserDirectory, "updates", Guid.NewGuid().ToString("N"));
             var package = await _updater.DownloadAsync(release, directory, deadline.Token).ConfigureAwait(true);
             deadline.Token.ThrowIfCancellationRequested();
-            MonitorUpdateInstaller.Start(package, release, _pipeName, _settings.Language);
-            _exitRequested = true;
-            Close();
+            MonitorUpdateInstaller.Start(package, release, _pipeName, _settings.Language, !Visible);
+            RequestExit();
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
         catch (Exception exception)

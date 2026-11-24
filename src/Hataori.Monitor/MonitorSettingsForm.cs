@@ -17,7 +17,7 @@ internal partial class MonitorSettingsForm : Form
         Text = DisplayLanguage.Text("Hataori Monitor 設定", "Hataori Monitor Settings");
         closeToTray.Text = DisplayLanguage.Text("閉じるボタンでタスクトレイへ格納", "Close button hides to the system tray");
         startMinimized.Text = DisplayLanguage.Text("最小化して起動", "Start minimized to the system tray");
-        autoUpdate.Text = DisplayLanguage.Text("起動時に自動更新（Windowsの管理者確認が表示されます）", "Update automatically at startup (Windows may request elevation)");
+        autoUpdate.Text = DisplayLanguage.Text("起動時に自動更新", "Update automatically at startup");
         intervalLabel.Text = DisplayLanguage.Text("表示の更新間隔（秒）", "Refresh interval (seconds)");
         languageLabel.Text = DisplayLanguage.Text("表示言語", "Display language");
         language.Items.AddRange(["日本語", "English"]);

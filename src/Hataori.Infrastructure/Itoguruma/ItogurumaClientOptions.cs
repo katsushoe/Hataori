@@ -8,7 +8,7 @@ public sealed class ItogurumaClientOptions
     public const string SectionName = "itoguruma";
 
     public Uri? Endpoint { get; init; }
-    public string AuthenticationToken { get; init; } = string.Empty;
+    public string AuthenticationToken { get; set; } = string.Empty;
     public string AgentId { get; init; } = string.Empty;
     public string AgentType { get; init; } = string.Empty;
     public int ConnectionTimeoutSeconds { get; init; }

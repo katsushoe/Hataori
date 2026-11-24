@@ -2,6 +2,8 @@
 
 [English](COMMANDS.md) | [日本語](COMMANDS.ja.md)
 
+3.2.0.0以降は `hataori monitor` でトレイとServerをログオンユーザーの権限で起動します。Windowsログオン時にもトレイが起動します。以下のWindows Serviceコマンドは旧3.1系の管理用です。
+
 この文書はHataori CLI、Service制御、連携確認、JSON戻り値、終了Code、安全要件の正本です。
 
 ## Command Groups

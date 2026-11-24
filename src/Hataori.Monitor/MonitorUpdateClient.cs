@@ -30,7 +30,7 @@ internal sealed class MonitorUpdateClient(HttpClient client, Uri endpoint)
         if (!Version.TryParse(tag.TrimStart('v'), out var version) || version.Revision < 0)
             throw new InvalidDataException("Release version must have four numeric components.");
         if (version <= currentVersion) return null;
-        var expectedName = $"Hataori-{version}-x64.msi";
+        var expectedName = $"Hataori-{version}-user-x64.msi";
         var assets = release.GetProperty("assets").EnumerateArray()
             .Where(asset => asset.GetProperty("name").GetString() == expectedName).ToArray();
         if (assets.Length != 1) throw new InvalidDataException("The release must contain exactly one matching x64 MSI.");
@@ -49,7 +49,7 @@ internal sealed class MonitorUpdateClient(HttpClient client, Uri endpoint)
     public async Task<string> DownloadAsync(MonitorRelease release, string directory, CancellationToken cancellationToken)
     {
         Directory.CreateDirectory(directory);
-        var path = Path.Combine(directory, $"Hataori-{release.Version}-x64.msi");
+        var path = Path.Combine(directory, $"Hataori-{release.Version}-user-x64.msi");
         var created = false;
         try
         {
