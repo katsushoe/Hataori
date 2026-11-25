@@ -3,6 +3,7 @@
 
 # 変更履歴
 
+- 2026.11.25: Itoguruma 0.3.45で受信・ACKを実機確認。専用検証Project `hataori_lease_test` を`McpItogurumaClient`で登録し、送信→`get_messages`でリース（`lease_id`取得）→`ack_message`でACK成功→再取得で0件を確認（`ItogurumaLiveLeaseTests`、`HATAORI_ITOGURUMA_LIVE_TEST=1`のときだけ実行）。実機の`activation.enabled=false`は変更せず、他Projectの受信箱には触れていない。検証後に履歴・エージェント登録・Projectを削除。Itoguruma連携88%→100%、全体95%→96%、Phase 1 95%→98%。
 - 2026.11.25: 3.2.3.0のMonitor・Serverが2026.11.24 22:23の起動から約6.5時間停止せず稼働し、その間MonitorのControl Pipe応答タイムアウト0件、Serverログの書き込みは22:26以降なし（警告によるログ増加の停止を確認）。残作業を6件で据え置き。進捗率は全体95%、Phase 1 95%で据え置き（更新周期内のため列は追加しない）。
 - 2026.11.24: 3.2.3.0のユーザー単位MSIを`E:\Hataori`へ上書きインストール（終了コード0、設定ファイルのハッシュ不変）。起動後1分間のServerログで「not found in cache」警告0件、エラー・警告0件、Itoguruma 0.3.45への接続成功、`doctor` healthyを確認し、ログ警告の残作業を完了。なお22:03ごろMonitor・Serverが終了ログなしで停止しており（Server log 22:03:30で途絶）、17:46以降はMonitorにControl Pipe応答タイムアウトが散発。原因は未調査で残作業へ追加。進捗率は据え置き。
 - 2026.11.24: Itoguruma接続時にMCPのツール一覧を一度取得し、`tools/call`のたびに出ていた「Tool '...' not found in cache」警告を止める修正を実装。Release build警告0・エラー0、Solution Releaseテスト263件合格。実機ログでの停止確認は次のMSI更新時に行う。進捗率は据え置き。
@@ -95,9 +96,9 @@
 
 | 機能 | 2026.08.16 | 2026.08.18 | 2026.08.25 | 2026.08.26 | 2026.08.31 | 2026.09.02 | 2026.09.27 | 2026.09.30 | 2026.11.01 | 2026.11.03 | 2026.11.24 |
 | :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| **グループ全体** | **94%** | **96%** | **96%** | **96%** | **97%** | **99%** | **99%** | **99%** | **98%** | **99%** | **95%** |
+| **グループ全体** | **94%** | **96%** | **96%** | **96%** | **97%** | **99%** | **99%** | **99%** | **98%** | **99%** | **96%** |
 | Server / Core / SQLite | 88% | 88% | 88% | 88% | 88% | 100% | 100% | 100% | 100% | 100% | 100% |
-| Itoguruma連携 | 98% | 98% | 98% | 98% | 98% | 98% | 98% | 98% | 100% | 100% | 88% |
+| Itoguruma連携 | 98% | 98% | 98% | 98% | 98% | 98% | 98% | 98% | 100% | 100% | 100% |
 | Session / Activation | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% |
 | Task管理 | 95% | 95% | 95% | 95% | 97% | 100% | 100% | 100% | 100% | 100% | 100% |
 | CLI | 97% | 98% | 98% | 98% | 98% | 99% | 99% | 99% | 100% | 100% | 100% |
@@ -115,7 +116,7 @@
 
 | カテゴリ | I | T | A | D | 得点 | 確認した主な証拠 |
 | :--- | ---: | ---: | ---: | ---: | ---: | :--- |
-| Itoguruma連携 | 100 | 100 | 50 | 100 | 88% | 3.2.2.0で登録・リースAPIへ対応（`McpItogurumaClient`、`ItogurumaConnectionWorker`）。`ItogurumaConnectionWorkerTests`でInbox登録・表示名保持・無効Project除外・lease IDでのACK・lease ID欠落時の拒否を検証。`CONFIG.md`に`projectId`と受信者IDを記載。3.2.2.0を`E:\Hataori`へ導入し、Itoguruma 0.3.44への接続成功を確認。実機設定で受信が無効のため、受信・ACKは未確認 |
+| Itoguruma連携 | 100 | 100 | 100 | 100 | 100% | 3.2.2.0で登録・リースAPIへ対応（`McpItogurumaClient`、`ItogurumaConnectionWorker`）。`ItogurumaConnectionWorkerTests`でInbox登録・表示名保持・無効Project除外・lease IDでのACK・lease ID欠落時の拒否を検証。`CONFIG.md`に`projectId`と受信者IDを記載。`E:\Hataori`でItoguruma 0.3.45への接続を確認し、2026.11.25に専用検証Projectで送信・リース・ACK・ACK後0件を実機確認（`ItogurumaLiveLeaseTests`） |
 | 常駐ホスト（旧Windows Service） | 100 | 50 | 50 | 100 | 75% | `UserServerProcess`とログオン起動登録を実装済み。2026.11.23に`E:\Hataori`で同一ユーザー・同一セッション起動を確認。ServerをMonitorから起動・停止する処理の自動テストはなく、実際のログオンからの起動は未確認。手順は`docs/installation.md` |
 | Monitor | 100 | 100 | 50 | 100 | 88% | トレイ常駐・自動MSI更新・設定画面・アプリアイコンを実装し、Monitorテスト41件合格。3.2.2.0で通知領域の新しいアイコン表示を目視確認済み。トレイからの復帰、実サービス接続での更新・キャンセル操作、更新MSIによる自動更新は未確認 |
 | テスト | 100 | 100 | 100 | 100 | 100% | アイコンテスト8件の追加後、2026.11.24にSolution Releaseテスト253件（Core 17、Infrastructure 49、CLI 54、Server 92、Monitor 41）を一括実行し全件合格 |
@@ -141,20 +142,21 @@ I=実装・範囲、T=自動テスト、A=受入確認、D=利用・運用文書
 
 ## 現在フェーズ
 
-Phase 1（基盤・必須運用機能）: **95%**
+Phase 1（基盤・必須運用機能）: **98%**
 
-算定: Core 100%、Itoguruma 88%、Session / Activation 100%、Task 100%、Monitor 88%の単純平均（95.2%）を四捨五入しています。全体95%は10カテゴリ合計951%の平均95.1%を四捨五入した値です。
+算定: Core 100%、Itoguruma 100%、Session / Activation 100%、Task 100%、Monitor 88%の単純平均（97.6%）を四捨五入しています。全体96%は10カテゴリ合計963%の平均96.3%を四捨五入した値です。
 
 ## 現在の完了状態と残作業
 
 2026.11.24: 機織り機の正面図を描いたアプリアイコン（`assets/icon`）をMonitorのexe・ウィンドウ・トレイとMSIの「アプリ」一覧表示へ組み込み、通知領域での表示を目視確認しました。ユーザー単位版3.2.1.0の変更（`f780acf`）と、Itoguruma 0.3.44の登録・リースAPI対応（3.2.2.0、`5be9a29`）をcommitし、`develop`へpush済みです（HEAD `9afa532`）。`E:\Hataori`は3.2.2.0で稼働し、`doctor` healthy、Itoguruma 0.3.44への接続を確認しました。HataoriはMoyaiとGithubieへ登録済みですが、Githubie 2.2.2.0への更新後はMoyaiの固定ハッシュ値と一致せず（`discovery_runtime_mismatch`）、Git操作はGithubie経由で行っています。残作業は優先順に次のとおりです。
 
-1. Itoguruma 0.3.45でのメッセージ受信・ACKを実機で確認する（実装・自動テスト・実機接続は済み）。実機設定は`activation.enabled=false`のため、確認には受信の有効化か、一時的な検証環境が必要。
-2. 2026.11.24 22:03ごろMonitorとServerが終了ログなしで停止した原因と、17:46以降Monitorに散発したControl Pipe応答タイムアウト（`Hataori Server did not respond before the timeout`）の原因を調べる。3.2.3.0では起動後約6.5時間、停止・タイムアウトともに再発していない。
-3. トレイからの画面復帰と、実際のログオンからのMonitor・Server自動起動を確認する（通知領域のアイコン表示は確認済み）。
-4. ServerをMonitorから起動・停止する処理（`UserServerProcess`）の自動テストを追加する。
-5. 起動中のServerへMonitorを接続し、表示・更新とテスト専用Task／Agent Runのキャンセルを確認して記録する（手順: `docs/validation/2026-11-03-monitor-live-acceptance.md`）。
-6. 更新MSIによるMonitorの自動更新と、更新後のMonitor再起動を実機で確認する。
+1. 2026.11.24 22:03ごろMonitorとServerが終了ログなしで停止した原因と、17:46以降Monitorに散発したControl Pipe応答タイムアウト（`Hataori Server did not respond before the timeout`）の原因を調べる。3.2.3.0では起動後約6.5時間、停止・タイムアウトともに再発していない。
+2. トレイからの画面復帰と、実際のログオンからのMonitor・Server自動起動を確認する（通知領域のアイコン表示は確認済み）。
+3. ServerをMonitorから起動・停止する処理（`UserServerProcess`）の自動テストを追加する。
+4. 起動中のServerへMonitorを接続し、表示・更新とテスト専用Task／Agent Runのキャンセルを確認して記録する（手順: `docs/validation/2026-11-03-monitor-live-acceptance.md`）。
+5. 更新MSIによるMonitorの自動更新と、更新後のMonitor再起動を実機で確認する。
+
+Itoguruma 0.3.45での受信・ACKは2026.11.25に専用検証Projectで実機確認済みです（`ItogurumaLiveLeaseTests`）。
 
 2026.11.24のSolution Releaseテストは263件すべて合格しました。
 
