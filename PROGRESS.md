@@ -3,6 +3,7 @@
 
 # 変更履歴
 
+- 2026.11.25: 残作業を再確認。3.2.3.0は2026.11.24 22:23の起動から約13時間停止なく稼働しているが、MonitorのControl Pipe応答タイムアウトが05時台5件・11時台12件再発（Server側は応答遅延後の`Pipe is broken`）。残作業1をタイムアウト原因の調査・修正として更新。Moyai経由のGit操作が再び利用可能。進捗率は全体96%、Phase 1 98%で据え置き。
 - 2026.11.25: Itoguruma 0.3.45で受信・ACKを実機確認。専用検証Project `hataori_lease_test` を`McpItogurumaClient`で登録し、送信→`get_messages`でリース（`lease_id`取得）→`ack_message`でACK成功→再取得で0件を確認（`ItogurumaLiveLeaseTests`、`HATAORI_ITOGURUMA_LIVE_TEST=1`のときだけ実行）。実機の`activation.enabled=false`は変更せず、他Projectの受信箱には触れていない。検証後に履歴・エージェント登録・Projectを削除。Itoguruma連携88%→100%、全体95%→96%、Phase 1 95%→98%。
 - 2026.11.25: 3.2.3.0のMonitor・Serverが2026.11.24 22:23の起動から約6.5時間停止せず稼働し、その間MonitorのControl Pipe応答タイムアウト0件、Serverログの書き込みは22:26以降なし（警告によるログ増加の停止を確認）。残作業を6件で据え置き。進捗率は全体95%、Phase 1 95%で据え置き（更新周期内のため列は追加しない）。
 - 2026.11.24: 3.2.3.0のユーザー単位MSIを`E:\Hataori`へ上書きインストール（終了コード0、設定ファイルのハッシュ不変）。起動後1分間のServerログで「not found in cache」警告0件、エラー・警告0件、Itoguruma 0.3.45への接続成功、`doctor` healthyを確認し、ログ警告の残作業を完了。なお22:03ごろMonitor・Serverが終了ログなしで停止しており（Server log 22:03:30で途絶）、17:46以降はMonitorにControl Pipe応答タイムアウトが散発。原因は未調査で残作業へ追加。進捗率は据え置き。
@@ -148,9 +149,9 @@ Phase 1（基盤・必須運用機能）: **98%**
 
 ## 現在の完了状態と残作業
 
-2026.11.24: 機織り機の正面図を描いたアプリアイコン（`assets/icon`）をMonitorのexe・ウィンドウ・トレイとMSIの「アプリ」一覧表示へ組み込み、通知領域での表示を目視確認しました。ユーザー単位版3.2.1.0の変更（`f780acf`）と、Itoguruma 0.3.44の登録・リースAPI対応（3.2.2.0、`5be9a29`）をcommitし、`develop`へpush済みです（HEAD `9afa532`）。`E:\Hataori`は3.2.2.0で稼働し、`doctor` healthy、Itoguruma 0.3.44への接続を確認しました。HataoriはMoyaiとGithubieへ登録済みですが、Githubie 2.2.2.0への更新後はMoyaiの固定ハッシュ値と一致せず（`discovery_runtime_mismatch`）、Git操作はGithubie経由で行っています。残作業は優先順に次のとおりです。
+2026.11.24: 機織り機の正面図を描いたアプリアイコン（`assets/icon`）をMonitorのexe・ウィンドウ・トレイとMSIの「アプリ」一覧表示へ組み込み、通知領域での表示を目視確認しました。ユーザー単位版3.2.1.0の変更（`f780acf`）と、Itoguruma 0.3.44の登録・リースAPI対応（3.2.2.0、`5be9a29`）をcommitし、`develop`へpush済みです。2026.11.25時点で`E:\Hataori`は3.2.3.0で稼働し、`doctor` healthy、Itoguruma 0.3.45への接続と受信・ACKを確認済みです。HataoriはMoyaiとGithubieへ登録済みで、2026.11.25からMoyai経由のGit操作が再び使えています（2026.11.24はGithubie 2.2.2.0更新後の固定ハッシュ値不一致のためGithubie経由）。残作業は優先順に次のとおりです。
 
-1. 2026.11.24 22:03ごろMonitorとServerが終了ログなしで停止した原因と、17:46以降Monitorに散発したControl Pipe応答タイムアウト（`Hataori Server did not respond before the timeout`）の原因を調べる。3.2.3.0では起動後約6.5時間、停止・タイムアウトともに再発していない。
+1. MonitorのControl Pipe応答タイムアウト（`Hataori Server did not respond before the timeout`）の原因を調べて直す。3.2.3.0でも2026.11.25 05時台に5件、11時台に12件再発し継続中。Server側ではMonitorがタイムアウトした後に応答を書こうとして`Pipe is broken`となっており、Serverは停止ではなく応答遅延。2026.11.24 22:03ごろMonitorとServerが終了ログなしで停止した件も合わせて調べる（3.2.3.0では停止は再発していない）。
 2. トレイからの画面復帰と、実際のログオンからのMonitor・Server自動起動を確認する（通知領域のアイコン表示は確認済み）。
 3. ServerをMonitorから起動・停止する処理（`UserServerProcess`）の自動テストを追加する。
 4. 起動中のServerへMonitorを接続し、表示・更新とテスト専用Task／Agent Runのキャンセルを確認して記録する（手順: `docs/validation/2026-11-03-monitor-live-acceptance.md`）。
