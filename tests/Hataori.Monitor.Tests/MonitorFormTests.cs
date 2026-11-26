@@ -253,6 +253,53 @@ public sealed class MonitorFormTests
         });
     }
 
+    [Fact]
+    public void Snapshot_refresh_pauses_while_server_is_stopped_from_the_menu_and_resumes_after_start()
+    {
+        RunOnStaAsync(async () =>
+        {
+            var client = new FakeMonitorControlClient(Snapshot("active"));
+            var controller = new FakeMcpController { Status = new McpServerStatus(McpServerState.Running, "1.0") };
+            using var form = CreateForm(client, new FakeMonitorDialogs { ConfirmResult = true });
+            form.ConfigureMcpServer(controller);
+            await form.RefreshMcpStatusAsync();
+            await form.RefreshSnapshotAsync();
+            Assert.Equal(1, client.SnapshotRequests);
+
+            await Pump(form.ConfirmAndStopMcpServerAsync());
+            Assert.True(form.IsServerIntentionallyDown);
+            await form.RefreshSnapshotAsync();
+            Assert.Equal(1, client.SnapshotRequests);
+            Assert.Contains("MCP", form.ConnectionStatus);
+
+            await Pump(form.StartMcpServerAsync());
+            Assert.False(form.IsServerIntentionallyDown);
+            await form.RefreshSnapshotAsync();
+            Assert.Equal(2, client.SnapshotRequests);
+        });
+    }
+
+    [Fact]
+    public void Server_started_elsewhere_after_menu_stop_resumes_snapshot_refresh()
+    {
+        RunOnStaAsync(async () =>
+        {
+            var client = new FakeMonitorControlClient(Snapshot("active"));
+            var controller = new FakeMcpController { Status = new McpServerStatus(McpServerState.Running, "1.0") };
+            using var form = CreateForm(client, new FakeMonitorDialogs { ConfirmResult = true });
+            form.ConfigureMcpServer(controller);
+            await Pump(form.ConfirmAndStopMcpServerAsync());
+            Assert.True(form.IsServerIntentionallyDown);
+
+            controller.Status = new McpServerStatus(McpServerState.Running, "1.0");
+            await form.RefreshMcpStatusAsync();
+
+            Assert.False(form.IsServerIntentionallyDown);
+            await form.RefreshSnapshotAsync();
+            Assert.Equal(1, client.SnapshotRequests);
+        });
+    }
+
     [Theory]
     [InlineData(McpServerState.Running, "running")]
     [InlineData(McpServerState.Stopped, "stopped")]
@@ -393,8 +440,13 @@ public sealed class MonitorFormTests
         public List<string> CancelledRuns { get; } = [];
         public ControlResponse RunResponse { get; set; } = new(true, "cancelled", DateTimeOffset.UtcNow);
 
-        public Task<MonitorSnapshot> GetSnapshotAsync(string pipeName, TimeSpan timeout, CancellationToken cancellationToken) =>
-            Task.FromResult(_snapshots.Count > 1 ? _snapshots.Dequeue() : _snapshots.Peek());
+        public int SnapshotRequests { get; private set; }
+
+        public Task<MonitorSnapshot> GetSnapshotAsync(string pipeName, TimeSpan timeout, CancellationToken cancellationToken)
+        {
+            SnapshotRequests++;
+            return Task.FromResult(_snapshots.Count > 1 ? _snapshots.Dequeue() : _snapshots.Peek());
+        }
 
         public Task<ControlResponse> CancelTaskAsync(string pipeName, string taskId, TimeSpan timeout, CancellationToken cancellationToken)
         {

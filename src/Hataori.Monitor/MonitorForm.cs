@@ -61,6 +61,18 @@ public partial class MonitorForm : Form
             return;
         }
 
+        if (IsServerIntentionallyDown)
+        {
+            // MCPサーバーメニューで停止中・起動停止の実行中は、接続できないのが正常なので取得もエラー記録もしない。
+            if (!_serverBusy)
+            {
+                connectionStatusLabel.Text = DisplayLanguage.Text(
+                    "Serverは停止中です。トレイの「MCPサーバー」から起動できます。",
+                    "Server is stopped. Start it from the tray's MCP server menu.");
+            }
+
+            return;
+        }
         _refreshing = true;
         try
         {

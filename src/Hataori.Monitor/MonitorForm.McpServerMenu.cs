@@ -10,6 +10,10 @@ public partial class MonitorForm
     private McpServerStatus _mcpStatus = McpServerStatus.Unknown;
     private string? _mcpProgress;
     private bool _mcpChecking;
+    private bool _serverStoppedByUser;
+
+    /// <summary>メニューから停止した後、または起動・停止・再起動の実行中で、Serverに接続できないのが正常な状態です。</summary>
+    internal bool IsServerIntentionallyDown => _serverBusy || _serverStoppedByUser;
 
     internal ToolStripMenuItem McpServerMenuItem => mcpServerMenuItem;
     internal ToolStripMenuItem McpStatusLabel => mcpStatusLabel;
@@ -85,6 +89,8 @@ public partial class MonitorForm
             var status = await _mcp.CheckAsync(_lifetime.Token).ConfigureAwait(true);
             if (IsDisposed) return;
             _mcpStatus = status;
+            // 他の手段で起動された場合は、停止中の扱いをやめて表示の更新を再開する。
+            if (status.State == McpServerState.Running) _serverStoppedByUser = false;
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { return; }
         catch (Exception exception)
@@ -182,6 +188,7 @@ public partial class MonitorForm
             var status = await Task.Run(operation, _lifetime.Token).ConfigureAwait(true);
             if (IsDisposed) return;
             _mcpStatus = status;
+            _serverStoppedByUser = status.State == McpServerState.Stopped;
             Notify(success, ToolTipIcon.Info);
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
@@ -189,6 +196,7 @@ public partial class MonitorForm
         {
             if (IsDisposed) return;
             _mcpStatus = new McpServerStatus(McpServerState.Error);
+            _serverStoppedByUser = false;
             _errors.Report(exception, this, failure, showDialog: false);
             Notify(failure, ToolTipIcon.Error);
         }
