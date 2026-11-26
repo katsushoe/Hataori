@@ -3,6 +3,8 @@
 
 # 変更履歴
 
+- 2026.11.26: 3.2.6.0でMonitorのControl Pipeタイムアウトを修正。原因はMonitorが3秒ごとに全Task 823件（約46万文字）を取得し、応答に0.6～3.9秒かかっていたこと（Monitorの待ち時間5秒）。担当者不明だった未コミット修正（実行中は全件、終了済みは新しい200件に制限、1秒超の要求を内訳付きで警告記録）をユーザー承認のうえレビューして採用し、実機で応答0.09～0.38秒・約12万文字（207件）を確認。無ログ停止の原因は、AIエージェントのツールから`Start-Process`で起動したMonitor・Serverが呼び出し元のWindowsジョブオブジェクトに属し、ジョブ終了時にまとめて強制終了されていたこと（実機で`IsProcessInJob`により確認）。WMI（`Win32_Process.Create`）で起動すればジョブ外で動くことを確認し、手順を`docs/installation*.md`へ記載。ユーザー単位MSI `Hataori-3.2.6.0-user-x64.msi`（SHA-256 `397a4aa944a47beeabef14500b7839c837142ffda54301b2b2706a4a7d693c63`）を`E:\Hataori`へ導入（終了コード0、設定不変、`/health` ok、`doctor` healthy）。Releaseビルド警告0・エラー0、テスト304件合格（1件スキップ）。進捗率は据え置き。
+- 2026.11.26: 残作業を再整理。3.2.4.0・3.2.5.0のトレイメニュー追加と導入を完了扱いとし、19:55の無ログ停止の再発、別作業の未コミット変更の確認、テストのログ出力先を追加して7件へ更新。進捗率は全体96%、Phase 1 98%で据え置き。
 - 2026.11.26: 3.2.5.0（トレイに全製品共通仕様の「MCPサーバー」サブメニューと4状態ランプ、状態確認・起動・停止を追加。Serverに`GET /health`を追加）。Releaseビルド警告0・エラー0、Solution Releaseテスト303件合格（1件スキップ）、ランプ4色とメニュー描画を画像で確認。ユーザー単位MSI `Hataori-3.2.5.0-user-x64.msi`（SHA-256 `6c51c512e588a5cefa9f8fa3ac642c849509ffc395de46d828cb8b69f7651e29`）を`E:\Hataori`へ上書きインストール（終了コード0、`config\hataori.json`のハッシュ不変）。Monitor起動でServerが起動し、`/health`が`ok`・3.2.5.0、`doctor` healthyを確認。トレイからの停止→起動の実機操作は未確認。Serverが19:55に終了ログなしで停止した事象を再観測（原因未調査）。進捗率は据え置き。
 - 2026.11.26: 3.2.4.0（Monitorトレイメニューに「Serverを再起動」を追加、commit `045040e`）。Releaseビルド警告0・エラー0、Solution Releaseテスト266件合格（1件スキップ）。ユーザー単位MSI `Hataori-3.2.4.0-user-x64.msi`（SHA-256 `5a465bfb1f9062dd543085f9109f753d5b4087b61f49219d8f081bdb10cf4ed3`）を`E:\Hataori`へ上書きインストール（終了コード0、`config\hataori.json`のハッシュ不変）。Monitor起動でServerが起動し、`doctor` healthy、MCP `get_version`で3.2.4.0を確認。トレイからの再起動操作は未確認。進捗率は据え置き。
 - 2026.11.25: 残作業を再確認。3.2.3.0は2026.11.24 22:23の起動から約13時間停止なく稼働しているが、MonitorのControl Pipe応答タイムアウトが05時台5件・11時台12件再発（Server側は応答遅延後の`Pipe is broken`）。残作業1をタイムアウト原因の調査・修正として更新。Moyai経由のGit操作が再び利用可能。進捗率は全体96%、Phase 1 98%で据え置き。
@@ -151,14 +153,17 @@ Phase 1（基盤・必須運用機能）: **98%**
 
 ## 現在の完了状態と残作業
 
-2026.11.24: 機織り機の正面図を描いたアプリアイコン（`assets/icon`）をMonitorのexe・ウィンドウ・トレイとMSIの「アプリ」一覧表示へ組み込み、通知領域での表示を目視確認しました。ユーザー単位版3.2.1.0の変更（`f780acf`）と、Itoguruma 0.3.44の登録・リースAPI対応（3.2.2.0、`5be9a29`）をcommitし、`develop`へpush済みです。2026.11.25時点で`E:\Hataori`は3.2.3.0で稼働し、`doctor` healthy、Itoguruma 0.3.45への接続と受信・ACKを確認済みです。HataoriはMoyaiとGithubieへ登録済みで、2026.11.25からMoyai経由のGit操作が再び使えています（2026.11.24はGithubie 2.2.2.0更新後の固定ハッシュ値不一致のためGithubie経由）。残作業は優先順に次のとおりです。
+2026.11.24: 機織り機の正面図を描いたアプリアイコン（`assets/icon`）をMonitorのexe・ウィンドウ・トレイとMSIの「アプリ」一覧表示へ組み込み、通知領域での表示を目視確認しました。ユーザー単位版3.2.1.0の変更（`f780acf`）と、Itoguruma 0.3.44の登録・リースAPI対応（3.2.2.0、`5be9a29`）をcommitし、`develop`へpush済みです。2026.11.25時点で`E:\Hataori`は3.2.3.0で稼働し、`doctor` healthy、Itoguruma 0.3.45への接続と受信・ACKを確認済みです。HataoriはMoyaiとGithubieへ登録済みで、2026.11.25からMoyai経由のGit操作が再び使えています（2026.11.24はGithubie 2.2.2.0更新後の固定ハッシュ値不一致のためGithubie経由）。
 
-1. MonitorのControl Pipe応答タイムアウト（`Hataori Server did not respond before the timeout`）の原因を調べて直す。3.2.3.0でも2026.11.25 05時台に5件、11時台に12件再発し継続中。Server側ではMonitorがタイムアウトした後に応答を書こうとして`Pipe is broken`となっており、Serverは停止ではなく応答遅延。2026.11.24 22:03ごろMonitorとServerが終了ログなしで停止した件も合わせて調べる（3.2.3.0では停止は再発していない）。
-2. トレイからの画面復帰と、実際のログオンからのMonitor・Server自動起動を確認する（通知領域のアイコン表示は確認済み）。
-3. ServerをMonitorから起動・停止する処理（`UserServerProcess`）の自動テストを追加する。
-4. 起動中のServerへMonitorを接続し、表示・更新とテスト専用Task／Agent Runのキャンセルを確認して記録する（手順: `docs/validation/2026-11-03-monitor-live-acceptance.md`）。
-5. 更新MSIによるMonitorの自動更新と、更新後のMonitor再起動を実機で確認する。
+2026.11.26: 3.2.6.0（Control Pipeタイムアウト修正）を`E:\Hataori`へ導入し、ジョブ外で起動しています。残作業は優先順に次のとおりです。
 
+1. 3.2.6.0のControl Pipeタイムアウト修正と、ジョブ外起動での長時間稼働を数日観察し、タイムアウト・無ログ停止が再発しないことを確認する（2026.11.26に原因を特定・修正済み）。
+2. トレイの「MCPサーバー」メニューで停止→起動を実機で確認する（停止中はHataoriを使うCodex・Claude Codeのセッションが切断されるため、ユーザーご本人の操作または承認が必要）。
+3. Monitorのテストが実際のMonitorログ（`%LOCALAPPDATA%\Hataori\Monitor\logs`）へ書き込む問題を直し、テスト用の出力先を分ける。
+4. トレイからの画面復帰と、実際のログオンからのMonitor・Server自動起動を確認する。
+5. 実プロセスを使う`UserServerProcess`・`McpServerController`の起動・停止の自動テストを追加する（現状はテスト用の代替実装で画面側の動作のみ検証）。
+6. 起動中のServerへMonitorを接続し、表示・更新とテスト専用Task／Agent Runのキャンセルを確認して記録する（手順: `docs/validation/2026-11-03-monitor-live-acceptance.md`）。
+7. 更新MSIによるMonitorの自動更新と、更新後のMonitor再起動を実機で確認する。
 Itoguruma 0.3.45での受信・ACKは2026.11.25に専用検証Projectで実機確認済みです（`ItogurumaLiveLeaseTests`）。
 
 2026.11.24のSolution Releaseテストは263件すべて合格しました。

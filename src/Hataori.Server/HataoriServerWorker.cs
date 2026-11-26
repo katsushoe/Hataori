@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO.Pipes;
 using System.Text;
 using System.Text.Json;
@@ -24,6 +25,9 @@ public sealed class HataoriServerWorker : BackgroundService
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
         Converters = { new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower) },
     };
+
+    /// <summary>この時間を超えたControl Pipe要求を警告として記録します。Monitorの要求タイムアウト（5秒）より短く設定します。</summary>
+    private static readonly TimeSpan SlowRequestThreshold = TimeSpan.FromSeconds(1);
 
     private readonly ITaskRepository _repository;
     private readonly IConversationSessionRepository _sessionRepository;
@@ -139,11 +143,41 @@ public sealed class HataoriServerWorker : BackgroundService
     {
         await using var pipe = new NamedPipeServerStream(_options.ControlPipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
         await pipe.WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
-        using var reader = new StreamReader(pipe, Encoding.UTF8, false, leaveOpen: true);
-        await using var writer = new StreamWriter(pipe, new UTF8Encoding(false), leaveOpen: true) { AutoFlush = true };
-        var line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
-        var request = JsonSerializer.Deserialize<ControlRequest>(line ?? string.Empty, JsonOptions) ?? throw new JsonException("Control request is empty.");
-        var response = await _handler.HandleAsync(request, cancellationToken).ConfigureAwait(false);
-        await writer.WriteLineAsync(JsonSerializer.Serialize(response, JsonOptions)).ConfigureAwait(false);
+        var timer = Stopwatch.StartNew();
+        var command = "(unread)";
+        TimeSpan readTime = TimeSpan.Zero, handleTime = TimeSpan.Zero;
+        var payloadLength = 0;
+        try
+        {
+            using var reader = new StreamReader(pipe, Encoding.UTF8, false, leaveOpen: true);
+            await using var writer = new StreamWriter(pipe, new UTF8Encoding(false), leaveOpen: true) { AutoFlush = true };
+            var line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+            readTime = timer.Elapsed;
+            var request = JsonSerializer.Deserialize<ControlRequest>(line ?? string.Empty, JsonOptions) ?? throw new JsonException("Control request is empty.");
+            command = request.Command;
+            var response = await _handler.HandleAsync(request, cancellationToken).ConfigureAwait(false);
+            var payload = JsonSerializer.Serialize(response, JsonOptions);
+            handleTime = timer.Elapsed - readTime;
+            payloadLength = payload.Length;
+            await writer.WriteLineAsync(payload).ConfigureAwait(false);
+        }
+        finally
+        {
+            LogSlowRequest(command, timer.Elapsed, readTime, handleTime, payloadLength);
+        }
+    }
+
+    /// <summary>
+    /// 接続後の処理が閾値を超えた要求を、読み取り・処理・書き込みの内訳付きで記録します。
+    /// 書き込み時間が長い場合は、クライアントが応答を読み取っていないことを示します。
+    /// </summary>
+    private void LogSlowRequest(string command, TimeSpan total, TimeSpan read, TimeSpan handle, int payloadLength)
+    {
+        if (total < SlowRequestThreshold) return;
+        var write = total - read - handle;
+        _logger.LogWarning(
+            "[ControlPipe] Slow request {Command}: total {TotalMs} ms (read {ReadMs} ms, handle {HandleMs} ms, write {WriteMs} ms, {PayloadLength} chars)",
+            command, (long)total.TotalMilliseconds, (long)read.TotalMilliseconds, (long)handle.TotalMilliseconds,
+            (long)Math.Max(0, write.TotalMilliseconds), payloadLength);
     }
 }

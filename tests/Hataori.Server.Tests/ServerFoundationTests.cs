@@ -176,6 +176,36 @@ public sealed class ServerFoundationTests
     }
 
     [Fact]
+    public async Task Handle_Monitor_ManyEndedTasks_ReturnsActiveAndNewestWithinLimit()
+    {
+        var tasks = Substitute.For<ITaskRepository>();
+        var sessions = Substitute.For<IConversationSessionRepository>();
+        var runs = Substitute.For<IAgentRunRepository>();
+        var queue = Substitute.For<IMessageQueueRepository>();
+        var start = DateTimeOffset.UtcNow.AddDays(-30);
+        var active = HataoriTask.Start("task-active", "Old active", "codex", null, null, "監視", "実行中", start);
+        var ended = Enumerable.Range(1, ControlCommandHandler.MonitorRecentItemLimit + 50).Select(index =>
+        {
+            var task = HataoriTask.Start($"task-{index:000}", "Done", "codex", null, null, "完了", "完了", start.AddMinutes(index));
+            task.Complete("ok", start.AddMinutes(index));
+            return task;
+        }).ToArray();
+        tasks.ListAsync(null, null, Arg.Any<CancellationToken>()).Returns(ended.Append(active).ToArray());
+        sessions.ListAsync(null, null, Arg.Any<CancellationToken>()).Returns(Array.Empty<ConversationSession>());
+        runs.ListAsync(null, null, Arg.Any<CancellationToken>()).Returns(Array.Empty<AgentRun>());
+        queue.ListAsync(null, Arg.Any<CancellationToken>()).Returns(Array.Empty<QueuedMessage>());
+        var handler = new ControlCommandHandler(new TestLifetime(), TimeProvider.System, tasks, new TaskService(tasks, TimeProvider.System), sessions, runs, queue, new ItogurumaConnectionState(), CreateActivationManager());
+
+        var response = await handler.HandleAsync(new ControlRequest("monitor"), CancellationToken.None);
+
+        var returned = response.Monitor!.Tasks;
+        returned.Should().HaveCount(ControlCommandHandler.MonitorRecentItemLimit + 1);
+        returned.Should().Contain(task => task.TaskId == "task-active");
+        returned[0].TaskId.Should().Be($"task-{ControlCommandHandler.MonitorRecentItemLimit + 50:000}");
+        returned.Should().NotContain(task => task.TaskId == "task-001");
+    }
+
+    [Fact]
     public async Task Handle_Monitor_WithPopulatedDomainObjects_RoundTripsJson()
     {
         var lifetime = new TestLifetime();

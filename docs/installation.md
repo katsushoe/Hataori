@@ -8,7 +8,7 @@
 
 A new installation defaults to `%LOCALAPPDATA%\Hataori`. To migrate a fixed-root machine installation, retain the old MSI and run `installer/Initialize-UserInstall.ps1` as administrator with `-InstallRoot`, the intended Windows account's `-UserSid`, and a new `-BackupDirectory`. The script verifies a configuration and SQLite backup, removes the old MSI and service, grants the selected user access, and copies Itoguruma credentials to the protected user configuration without displaying the value.
 
-Install the user MSI under the intended user's ordinary account, passing the same `INSTALL_ROOT` to adopt the existing directory. To start immediately, open **Hataori Monitor** from the Start menu. Startup updates use only the user MSI. To roll back, remove the user MSI and restore administrator-controlled installation permissions before installing the old machine MSI.
+Install the user MSI under the intended user's ordinary account, passing the same `INSTALL_ROOT` to adopt the existing directory. To start immediately, open **Hataori Monitor** from the Start menu. When an AI agent or script starts Monitor, start it through WMI instead of `Start-Process`; otherwise Monitor and Server belong to the caller's Windows job object and are terminated without log entries when that job closes (for example, `Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = '"<INSTALL_ROOT>\bin\monitor\Hataori.Monitor.exe" --startup' }`). Startup updates use only the user MSI. To roll back, remove the user MSI and restore administrator-controlled installation permissions before installing the old machine MSI.
 
 The following sections describe the legacy 3.1.x service edition.
 

@@ -725,7 +725,7 @@ When `hooks.requiredClaudePlugin` is configured, the result also includes the re
 | Purpose | Launch Hataori Monitor for status display and Task / Agent Run cancellation. |
 | Syntax | `hataori monitor [--monitor <exe>] [--pipe <name>]` |
 | Arguments | Executable defaults to the standard installed Monitor path or `HATAORI_MONITOR_PATH`. |
-| Processing | Starts Monitor with shell execution and optionally passes the pipe name. |
+| Processing | Starts Monitor with shell execution and optionally passes the pipe name. Monitor shows all active Tasks, running Conversation Sessions, and queued or running Agent Runs, plus the 200 most recent ended items of each list. |
 | Result | JSON `status: "started"` and resolved `path`. |
 | Example | `hataori monitor --pipe hataori-control` |
 | Safety | Read-only UI; launching an untrusted override executable is unsafe. |
