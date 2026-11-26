@@ -1,8 +1,9 @@
 # PROGRESS.md Version
-2026.11.25
+2026.11.26
 
 # 変更履歴
 
+- 2026.11.26: 3.2.4.0（Monitorトレイメニューに「Serverを再起動」を追加、commit `045040e`）。Releaseビルド警告0・エラー0、Solution Releaseテスト266件合格（1件スキップ）。ユーザー単位MSI `Hataori-3.2.4.0-user-x64.msi`（SHA-256 `5a465bfb1f9062dd543085f9109f753d5b4087b61f49219d8f081bdb10cf4ed3`）を`E:\Hataori`へ上書きインストール（終了コード0、`config\hataori.json`のハッシュ不変）。Monitor起動でServerが起動し、`doctor` healthy、MCP `get_version`で3.2.4.0を確認。トレイからの再起動操作は未確認。進捗率は据え置き。
 - 2026.11.25: 残作業を再確認。3.2.3.0は2026.11.24 22:23の起動から約13時間停止なく稼働しているが、MonitorのControl Pipe応答タイムアウトが05時台5件・11時台12件再発（Server側は応答遅延後の`Pipe is broken`）。残作業1をタイムアウト原因の調査・修正として更新。Moyai経由のGit操作が再び利用可能。進捗率は全体96%、Phase 1 98%で据え置き。
 - 2026.11.25: Itoguruma 0.3.45で受信・ACKを実機確認。専用検証Project `hataori_lease_test` を`McpItogurumaClient`で登録し、送信→`get_messages`でリース（`lease_id`取得）→`ack_message`でACK成功→再取得で0件を確認（`ItogurumaLiveLeaseTests`、`HATAORI_ITOGURUMA_LIVE_TEST=1`のときだけ実行）。実機の`activation.enabled=false`は変更せず、他Projectの受信箱には触れていない。検証後に履歴・エージェント登録・Projectを削除。Itoguruma連携88%→100%、全体95%→96%、Phase 1 95%→98%。
 - 2026.11.25: 3.2.3.0のMonitor・Serverが2026.11.24 22:23の起動から約6.5時間停止せず稼働し、その間MonitorのControl Pipe応答タイムアウト0件、Serverログの書き込みは22:26以降なし（警告によるログ増加の停止を確認）。残作業を6件で据え置き。進捗率は全体95%、Phase 1 95%で据え置き（更新周期内のため列は追加しない）。
