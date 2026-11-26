@@ -15,62 +15,15 @@ public partial class MonitorForm
     private IMonitorServerHost? _server;
     private bool _startInTray;
     private bool _stopping;
-    private bool _restarting;
+    private bool _serverBusy;
 
     internal void ConfigureHost(IMonitorServerHost? server, bool startInTray)
     {
         _server = server;
         _startInTray = startInTray;
-        // Monitorが起動したServerだけを再起動できる。接続専用起動では他者のServerに触れない。
+        // Monitorが起動したServerだけを操作できる。接続専用起動では他者のServerに触れない。
         restartServerMenuItem.Visible = server is not null;
-    }
-
-    internal ToolStripMenuItem RestartServerMenuItem => restartServerMenuItem;
-
-    private async void RestartServerMenuItemClick(object? sender, EventArgs e) => await ConfirmAndRestartServerAsync().ConfigureAwait(true);
-
-    /// <summary>確認後にServerを停止して起動し直します。停止・再起動中は終了と再度の再起動を受け付けません。</summary>
-    internal async Task ConfirmAndRestartServerAsync()
-    {
-        if (_server is null || _stopping || _restarting) return;
-        if (!_dialogs.ConfirmServerRestart(
-                this,
-                DisplayLanguage.Text(
-                    "Serverを再起動しますか？再起動が終わるまで、MCPクライアントとMonitorはServerへ接続できません。",
-                    "Restart Server? MCP clients and Monitor cannot connect to Server until the restart completes."),
-                Text))
-        {
-            return;
-        }
-
-        _restarting = true;
-        restartServerMenuItem.Enabled = false;
-        exitMenuItem.Enabled = false;
-        try
-        {
-            connectionStatusLabel.Text = DisplayLanguage.Text("Serverを再起動中…", "Restarting Server…");
-            await _server.RestartAsync().ConfigureAwait(true);
-            if (IsDisposed) return;
-            connectionStatusLabel.Text = DisplayLanguage.Text("Serverを再起動しました。", "Server restarted.");
-            trayIcon.ShowBalloonTip(4000, Text, connectionStatusLabel.Text, ToolTipIcon.Info);
-        }
-        catch (Exception exception)
-        {
-            if (IsDisposed) return;
-            connectionStatusLabel.Text = DisplayLanguage.Text(
-                "Serverを再起動できませんでした。Monitorを終了して起動し直し、解消しない場合はログを管理者へ共有してください。",
-                "Could not restart Server. Exit and reopen Monitor, and share the log with an administrator if the problem continues.");
-            _errors.Report(exception, this, connectionStatusLabel.Text, showDialog: true);
-        }
-        finally
-        {
-            _restarting = false;
-            if (!IsDisposed)
-            {
-                restartServerMenuItem.Enabled = true;
-                exitMenuItem.Enabled = true;
-            }
-        }
+        UpdateMcpMenu();
     }
 
     internal void ConfigureRuntime(MonitorSettings settings, MonitorSettingsStore store, MonitorUpdateClient updater, bool skipUpdate)
@@ -103,12 +56,12 @@ public partial class MonitorForm
             e.Cancel = true;
             HideToTray();
         }
-        else if (_restarting && e.CloseReason == CloseReason.UserClosing)
+        else if (_serverBusy && e.CloseReason == CloseReason.UserClosing)
         {
-            // 再起動の完了前に終了すると、新しいServerが停止されずに残る可能性がある。
+            // 起動・停止・再起動の完了前に終了すると、Serverが停止されずに残る可能性がある。
             e.Cancel = true;
         }
-        else if (_server is not null && !_server.HasExited && e.CloseReason == CloseReason.UserClosing)
+        else if (_server is not null && _server.IsRunning && e.CloseReason == CloseReason.UserClosing)
         {
             e.Cancel = true;
             if (_stopping) return;
@@ -227,6 +180,7 @@ public partial class MonitorForm
         openMenuItem.Text = DisplayLanguage.Text("Monitorを開く", "Open Monitor");
         settingsMenuItem.Text = DisplayLanguage.Text("設定", "Settings");
         restartServerMenuItem.Text = DisplayLanguage.Text("Serverを再起動", "Restart Server");
+        ApplyMcpMenuText();
         exitMenuItem.Text = DisplayLanguage.Text("終了", "Exit");
         Text = "Hataori Monitor " + typeof(MonitorForm).Assembly.GetName().Version;
     }

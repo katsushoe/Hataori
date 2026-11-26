@@ -73,14 +73,23 @@ internal static class Program
                 var services = new ServiceCollection();
                 services.AddHttpClient("updates", client => client.Timeout = TimeSpan.FromMinutes(2))
                     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+                // MCPサーバーのHealth確認はloopback専用のため、プロキシを使わない。
+                services.AddHttpClient("health")
+                    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false, UseProxy = false });
                 using var provider = services.BuildServiceProvider();
                 using var http = provider.GetRequiredService<IHttpClientFactory>().CreateClient("updates");
+                using var healthHttp = provider.GetRequiredService<IHttpClientFactory>().CreateClient("health");
                 using var server = new UserServerProcess();
                 var ownsServer = !args.Contains("--connect-only", StringComparer.Ordinal) &&
                     MonitorUpdateInstaller.IsInstalledMonitor(AppContext.BaseDirectory, layout.RootPath);
                 if (ownsServer) server.Start(layout);
                 using var form = new MonitorForm(pipeName, new MonitorControlClient(), errors);
                 form.ConfigureHost(ownsServer ? server : null, logon);
+                form.ConfigureMcpServer(new McpServerController(
+                    ownsServer ? server : null,
+                    Path.Combine(layout.BinPath, "server", "Hataori.Server.exe"),
+                    McpServerHealth.ResolveHealthUriFromFile(configuration),
+                    healthHttp));
                 form.ConfigureRuntime(settings, store, new MonitorUpdateClient(http, endpoint), args.Contains("--skip-update", StringComparer.OrdinalIgnoreCase));
                 using var restoreTimer = new System.Windows.Forms.Timer { Interval = 400 };
                 restoreTimer.Tick += (_, _) =>

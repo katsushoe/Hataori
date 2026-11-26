@@ -228,6 +228,8 @@ try
     fatalLogger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Hataori.Server.Fatal");
     app.UseHostFiltering();
     app.MapMcp(startupOptions.McpPath);
+    // トレイの状態ランプが使う軽量な死活確認。DBや外部接続には触れない。
+    app.MapGet("/health", () => Results.Json(HealthResponse.Create()));
     if (ownedByMonitor)
     {
         // Redirected stdin closes when Monitor exits, even when Windows terminates the parent.

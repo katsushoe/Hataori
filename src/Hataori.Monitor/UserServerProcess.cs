@@ -3,10 +3,13 @@ using Hataori.Application;
 
 namespace Hataori.Monitor;
 
-/// <summary>Monitorが所有するServerの停止・再起動操作です。</summary>
+/// <summary>Monitorが所有するServerの起動・停止・再起動操作です。</summary>
 internal interface IMonitorServerHost
 {
-    bool HasExited { get; }
+    /// <summary>Monitorが起動したServerプロセスが現在稼働しているかを返します。</summary>
+    bool IsRunning { get; }
+
+    void Start();
 
     Task StopAsync();
 
@@ -20,13 +23,19 @@ internal sealed class UserServerProcess : IMonitorServerHost, IDisposable
     private Process? _process;
     private InstallationLayout? _layout;
 
-    public bool HasExited => _process?.HasExited == true;
-    public int? ExitCode => HasExited ? _process?.ExitCode : null;
+    public bool IsRunning => _process is { HasExited: false };
 
     public void Start(InstallationLayout layout)
     {
         _layout = layout;
-        if (_process is { HasExited: false }) return;
+        Start();
+    }
+
+    /// <summary>前回と同じ配置でServerを起動します。稼働中なら何もしません。</summary>
+    public void Start()
+    {
+        var layout = _layout ?? throw new InvalidOperationException("Hataori Server has not been started by Monitor.");
+        if (IsRunning) return;
         _process?.Dispose();
         var executable = Path.Combine(layout.BinPath, "server", "Hataori.Server.exe");
         var start = new ProcessStartInfo(executable)
@@ -40,10 +49,16 @@ internal sealed class UserServerProcess : IMonitorServerHost, IDisposable
         _process = Process.Start(start) ?? throw new IOException("Could not start Hataori Server.");
     }
 
+    /// <summary>標準入力を閉じてServerへ正常終了を求めます。終了は待ちません。</summary>
+    public void RequestStop()
+    {
+        if (IsRunning) _process!.StandardInput.Close();
+    }
+
     public async Task StopAsync()
     {
-        if (_process is null || _process.HasExited) return;
-        _process.StandardInput.Close();
+        if (!IsRunning) return;
+        _process!.StandardInput.Close();
         using var timeout = new CancellationTokenSource(StopTimeout);
         try
         {
@@ -58,14 +73,14 @@ internal sealed class UserServerProcess : IMonitorServerHost, IDisposable
     /// <summary>Serverを正常停止してから同じ配置で起動し直します。停止できない場合は起動しません。</summary>
     public async Task RestartAsync()
     {
-        var layout = _layout ?? throw new InvalidOperationException("Hataori Server has not been started by Monitor.");
+        if (_layout is null) throw new InvalidOperationException("Hataori Server has not been started by Monitor.");
         await StopAsync().ConfigureAwait(false);
-        Start(layout);
+        Start();
     }
 
     public void Dispose()
     {
-        if (_process is { HasExited: false }) _process.StandardInput.Close();
+        if (IsRunning) _process!.StandardInput.Close();
         _process?.Dispose();
     }
 }

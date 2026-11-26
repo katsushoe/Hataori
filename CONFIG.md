@@ -59,6 +59,19 @@ String; values `ja-JP` (Japanese) or `en-US` (English), omitted key defaults to 
 
 If the file cannot be read or validated, Monitor preserves it, reports the error, and uses defaults with automatic updates disabled for that launch. Open Settings and Save to replace the invalid file. Invalid values or failed writes leave the previous settings unchanged.
 
+### Tray "MCP server" menu
+
+The tray menu's **MCP server** submenu contains a status row with a lamp, **Check status**, **Start**, and **Stop**; the lamp is also shown on the **MCP server** item. Status comes from `http://<host>:<port>/health` built from `server.mcpHost`/`server.mcpPort` with a 2-second timeout (`http://127.0.0.1:45440/health` when the setting is unreadable or not loopback), and is rechecked each time the submenu opens.
+
+| State | Condition | Lamp |
+|---|---|---|
+| Running | Health returns 2xx with `status` `ok` (version shown) | Green RGB(40,190,70) |
+| Not responding | A process with the installed `bin\server\Hataori.Server.exe` path exists but Health does not answer | Yellow RGB(240,170,30) |
+| Error | Health returns an HTTP error or a non-`ok` status, or Start/Stop did not finish in time | Red RGB(215,50,45) |
+| Stopped | No process and no Health response | Gray RGB(150,150,150) |
+| Unknown | Not checked yet | Gray |
+
+**Start** is disabled while running; it starts Server and polls Health every 0.5 seconds for up to 20 seconds. **Stop** is disabled while stopped; after confirmation it requests a graceful shutdown and forcibly ends the process after 10 seconds. Stopping disconnects every Codex and Claude Code session that uses Hataori until Server starts again. Start and Stop are available only when Monitor started Server.
 ## Main Settings
 
 The Server loads settings in this effective order, with later sources overriding earlier sources:

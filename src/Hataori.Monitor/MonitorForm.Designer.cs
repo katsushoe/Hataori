@@ -14,6 +14,14 @@ partial class MonitorForm
     private ContextMenuStrip trayMenu = null!;
     private ToolStripMenuItem openMenuItem = null!;
     private ToolStripMenuItem settingsMenuItem = null!;
+    private ToolStripSeparator mcpServerSeparatorTop = null!;
+    private ToolStripMenuItem mcpServerMenuItem = null!;
+    private McpStatusMenuItem mcpStatusLabel = null!;
+    private ToolStripSeparator mcpStatusSeparator = null!;
+    private ToolStripMenuItem mcpCheckMenuItem = null!;
+    private ToolStripMenuItem mcpStartMenuItem = null!;
+    private ToolStripMenuItem mcpStopMenuItem = null!;
+    private ToolStripSeparator mcpServerSeparatorBottom = null!;
     private ToolStripMenuItem restartServerMenuItem = null!;
     private ToolStripMenuItem exitMenuItem = null!;
     private Button cancelTaskButton = null!;
@@ -51,6 +59,7 @@ partial class MonitorForm
         if (disposing)
         {
             _notifyIcon.Dispose();
+            _mcpLed.Dispose();
             _windowIcon.Dispose();
         }
     }
@@ -67,6 +76,14 @@ partial class MonitorForm
         trayMenu = new ContextMenuStrip(components);
         openMenuItem = new ToolStripMenuItem();
         settingsMenuItem = new ToolStripMenuItem();
+        mcpServerSeparatorTop = new ToolStripSeparator();
+        mcpServerMenuItem = new ToolStripMenuItem();
+        mcpStatusLabel = new McpStatusMenuItem();
+        mcpStatusSeparator = new ToolStripSeparator();
+        mcpCheckMenuItem = new ToolStripMenuItem();
+        mcpStartMenuItem = new ToolStripMenuItem();
+        mcpStopMenuItem = new ToolStripMenuItem();
+        mcpServerSeparatorBottom = new ToolStripSeparator();
         restartServerMenuItem = new ToolStripMenuItem();
         exitMenuItem = new ToolStripMenuItem();
         cancelTaskButton = new Button();
@@ -107,7 +124,13 @@ partial class MonitorForm
         settingsButton.Click += SettingsButtonClick;
         updateButton.AutoSize = true;
         updateButton.Click += UpdateButtonClick;
-        trayMenu.Items.AddRange([openMenuItem, settingsMenuItem, restartServerMenuItem, exitMenuItem]);
+        trayMenu.Items.AddRange([openMenuItem, settingsMenuItem, restartServerMenuItem, mcpServerSeparatorTop, mcpServerMenuItem, mcpServerSeparatorBottom, exitMenuItem]);
+        trayMenu.Opening += TrayMenuOpening;
+        mcpServerMenuItem.DropDownItems.AddRange([mcpStatusLabel, mcpStatusSeparator, mcpCheckMenuItem, mcpStartMenuItem, mcpStopMenuItem]);
+        mcpServerMenuItem.DropDownOpening += McpServerMenuDropDownOpening;
+        mcpCheckMenuItem.Click += McpCheckMenuItemClick;
+        mcpStartMenuItem.Click += McpStartMenuItemClick;
+        mcpStopMenuItem.Click += McpStopMenuItemClick;
         openMenuItem.Click += OpenMenuItemClick;
         settingsMenuItem.Click += SettingsButtonClick;
         restartServerMenuItem.Visible = false;
