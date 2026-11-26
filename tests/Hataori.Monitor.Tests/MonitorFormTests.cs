@@ -125,6 +125,60 @@ public sealed class MonitorFormTests
         });
     }
 
+    [Fact]
+    public void Restart_server_menu_is_shown_only_for_a_server_started_by_monitor()
+    {
+        RunOnSta(() =>
+        {
+            using var form = CreateForm(new FakeMonitorControlClient(Snapshot("active")), new FakeMonitorDialogs());
+            form.ConfigureHost(null, startInTray: false);
+            Assert.False(form.RestartServerMenuItem.Available);
+            form.ConfigureHost(new FakeServerHost(), startInTray: false);
+            Assert.True(form.RestartServerMenuItem.Available);
+        });
+    }
+
+    [Fact]
+    public void Confirmed_restart_stops_and_starts_server_once_and_blocks_concurrent_requests()
+    {
+        RunOnStaAsync(async () =>
+        {
+            var dialogs = new FakeMonitorDialogs { ConfirmResult = true };
+            var host = new FakeServerHost { Pending = new TaskCompletionSource() };
+            using var form = CreateForm(new FakeMonitorControlClient(Snapshot("active")), dialogs);
+            form.ConfigureHost(host, startInTray: false);
+
+            var restart = form.ConfirmAndRestartServerAsync();
+            Assert.False(form.RestartServerMenuItem.Enabled);
+            await form.ConfirmAndRestartServerAsync();
+            host.Pending.SetResult();
+            var deadline = DateTime.UtcNow.AddSeconds(10);
+            while (!restart.IsCompleted && DateTime.UtcNow < deadline) System.Windows.Forms.Application.DoEvents();
+            await restart;
+
+            Assert.Equal(1, host.Restarts);
+            Assert.Single(dialogs.ServerRestartConfirmations);
+            Assert.True(form.RestartServerMenuItem.Enabled);
+        });
+    }
+
+    [Fact]
+    public void Declined_restart_does_not_touch_server()
+    {
+        RunOnStaAsync(async () =>
+        {
+            var dialogs = new FakeMonitorDialogs { ConfirmResult = false };
+            var host = new FakeServerHost();
+            using var form = CreateForm(new FakeMonitorControlClient(Snapshot("active")), dialogs);
+            form.ConfigureHost(host, startInTray: false);
+
+            await form.ConfirmAndRestartServerAsync();
+
+            Assert.Equal(0, host.Restarts);
+            Assert.Single(dialogs.ServerRestartConfirmations);
+        });
+    }
+
     private static MonitorForm CreateForm(FakeMonitorControlClient client, FakeMonitorDialogs dialogs) =>
         new("test-pipe", client, new MonitorErrorHandler(new MonitorFileLogger()), dialogs);
 
@@ -210,5 +264,28 @@ public sealed class MonitorFormTests
         }
 
         public void ShowCancellationFailure(IWin32Window owner, string message, string title) => Failures.Add(message);
+
+        public List<string> ServerRestartConfirmations { get; } = [];
+
+        public bool ConfirmServerRestart(IWin32Window owner, string message, string title)
+        {
+            ServerRestartConfirmations.Add(message);
+            return ConfirmResult;
+        }
+    }
+
+    private sealed class FakeServerHost : IMonitorServerHost
+    {
+        public TaskCompletionSource? Pending { get; init; }
+        public int Restarts { get; private set; }
+        public bool HasExited => false;
+
+        public Task StopAsync() => Task.CompletedTask;
+
+        public Task RestartAsync()
+        {
+            Restarts++;
+            return Pending?.Task ?? Task.CompletedTask;
+        }
     }
 }

@@ -14,6 +14,7 @@ partial class MonitorForm
     private ContextMenuStrip trayMenu = null!;
     private ToolStripMenuItem openMenuItem = null!;
     private ToolStripMenuItem settingsMenuItem = null!;
+    private ToolStripMenuItem restartServerMenuItem = null!;
     private ToolStripMenuItem exitMenuItem = null!;
     private Button cancelTaskButton = null!;
     private Button cancelRunButton = null!;
@@ -66,6 +67,7 @@ partial class MonitorForm
         trayMenu = new ContextMenuStrip(components);
         openMenuItem = new ToolStripMenuItem();
         settingsMenuItem = new ToolStripMenuItem();
+        restartServerMenuItem = new ToolStripMenuItem();
         exitMenuItem = new ToolStripMenuItem();
         cancelTaskButton = new Button();
         cancelRunButton = new Button();
@@ -105,9 +107,11 @@ partial class MonitorForm
         settingsButton.Click += SettingsButtonClick;
         updateButton.AutoSize = true;
         updateButton.Click += UpdateButtonClick;
-        trayMenu.Items.AddRange([openMenuItem, settingsMenuItem, exitMenuItem]);
+        trayMenu.Items.AddRange([openMenuItem, settingsMenuItem, restartServerMenuItem, exitMenuItem]);
         openMenuItem.Click += OpenMenuItemClick;
         settingsMenuItem.Click += SettingsButtonClick;
+        restartServerMenuItem.Visible = false;
+        restartServerMenuItem.Click += RestartServerMenuItemClick;
         exitMenuItem.Click += ExitMenuItemClick;
         trayIcon.Text = "Hataori Monitor";
         trayIcon.ContextMenuStrip = trayMenu;
