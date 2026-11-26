@@ -56,7 +56,7 @@ public sealed class MonitorControlClient : IMonitorControlClient
             await using var pipe = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
             await pipe.ConnectAsync(timeoutSource.Token).ConfigureAwait(false);
             await using var writer = new StreamWriter(pipe, new UTF8Encoding(false), leaveOpen: true) { AutoFlush = true };
-            using var reader = new StreamReader(pipe, Encoding.UTF8, false, leaveOpen: true);
+            using var reader = new StreamReader(pipe, Encoding.UTF8, false, 64 * 1024, leaveOpen: true);
             await writer.WriteLineAsync(JsonSerializer.Serialize(request, JsonOptions)).ConfigureAwait(false);
             var line = await reader.ReadLineAsync(timeoutSource.Token).ConfigureAwait(false);
             var response = JsonSerializer.Deserialize<ControlResponse>(line ?? string.Empty, JsonOptions)

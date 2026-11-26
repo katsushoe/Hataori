@@ -29,6 +29,9 @@ public sealed class HataoriServerWorker : BackgroundService
     /// <summary>この時間を超えたControl Pipe要求を警告として記録します。Monitorの要求タイムアウト（5秒）より短く設定します。</summary>
     private static readonly TimeSpan SlowRequestThreshold = TimeSpan.FromSeconds(1);
 
+    /// <summary>Control Pipeのカーネルバッファとストリームバッファの大きさです。</summary>
+    internal const int ControlPipeBufferSize = 64 * 1024;
+
     private readonly ITaskRepository _repository;
     private readonly IConversationSessionRepository _sessionRepository;
     private readonly IAgentRunRepository _runRepository;
@@ -141,7 +144,8 @@ public sealed class HataoriServerWorker : BackgroundService
 
     private async Task AcceptClientAsync(CancellationToken cancellationToken)
     {
-        await using var pipe = new NamedPipeServerStream(_options.ControlPipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+        // Monitorのスナップショット（約100KB）を少ない往復で渡すため、パイプとストリームのバッファを広げる。
+        await using var pipe = new NamedPipeServerStream(_options.ControlPipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly, ControlPipeBufferSize, ControlPipeBufferSize);
         await pipe.WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
         var timer = Stopwatch.StartNew();
         var command = "(unread)";
@@ -149,8 +153,8 @@ public sealed class HataoriServerWorker : BackgroundService
         var payloadLength = 0;
         try
         {
-            using var reader = new StreamReader(pipe, Encoding.UTF8, false, leaveOpen: true);
-            await using var writer = new StreamWriter(pipe, new UTF8Encoding(false), leaveOpen: true) { AutoFlush = true };
+            using var reader = new StreamReader(pipe, Encoding.UTF8, false, ControlPipeBufferSize, leaveOpen: true);
+            await using var writer = new StreamWriter(pipe, new UTF8Encoding(false), ControlPipeBufferSize, leaveOpen: true) { AutoFlush = true };
             var line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
             readTime = timer.Elapsed;
             var request = JsonSerializer.Deserialize<ControlRequest>(line ?? string.Empty, JsonOptions) ?? throw new JsonException("Control request is empty.");
