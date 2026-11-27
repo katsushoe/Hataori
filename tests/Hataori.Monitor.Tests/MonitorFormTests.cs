@@ -385,7 +385,7 @@ public sealed class MonitorFormTests
         return directory;
     }
     private static MonitorForm CreateForm(FakeMonitorControlClient client, FakeMonitorDialogs dialogs) =>
-        new("test-pipe", client, new MonitorErrorHandler(new MonitorFileLogger()), dialogs);
+        new("test-pipe", client, TestMonitorLogs.CreateErrorHandler(), dialogs);
 
     private static void SelectRow(DataGridView grid, int index) => grid.CurrentCell = grid.Rows[index].Cells[0];
 

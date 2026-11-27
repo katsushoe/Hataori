@@ -8,10 +8,21 @@ public sealed class MonitorFileLogger : ILogger
 {
     private readonly object _sync = new();
 
-    /// <summary>ユーザー専用のMonitorログファイルパスを取得します。</summary>
-    public string LogPath { get; } = Path.Combine(
-        MonitorSettingsStore.UserDirectory, "logs",
-        $"hataori-monitor-{DateTimeOffset.Now:yyyyMMdd}.log");
+    /// <summary>ユーザー専用の標準ログディレクトリ（<c>%LOCALAPPDATA%\Hataori\Monitor\logs</c>）へ書き込みます。</summary>
+    public MonitorFileLogger()
+        : this(Path.Combine(MonitorSettingsStore.UserDirectory, "logs"))
+    {
+    }
+
+    /// <summary>指定したディレクトリへ書き込みます。テストが実際のMonitorログを汚さないために使います。</summary>
+    public MonitorFileLogger(string directory)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(directory);
+        LogPath = Path.Combine(directory, $"hataori-monitor-{DateTimeOffset.Now:yyyyMMdd}.log");
+    }
+
+    /// <summary>Monitorログファイルのパスを取得します。</summary>
+    public string LogPath { get; }
 
     /// <inheritdoc />
     public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;

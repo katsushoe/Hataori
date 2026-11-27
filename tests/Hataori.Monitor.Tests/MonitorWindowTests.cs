@@ -14,7 +14,7 @@ public sealed class MonitorWindowTests
         {
             CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(language);
             using var form = new MonitorSettingsForm(new MonitorSettings { Language = language, RefreshSeconds = 12, AutoUpdate = false },
-                new MonitorSettingsStore(Path.Combine(Path.GetTempPath(), "hataori-test-settings.json")), new MonitorErrorHandler(new MonitorFileLogger()));
+                new MonitorSettingsStore(Path.Combine(Path.GetTempPath(), "hataori-test-settings.json")), TestMonitorLogs.CreateErrorHandler());
             form.Opacity = 0;
             form.Show();
             form.PerformLayout();
@@ -40,7 +40,7 @@ public sealed class MonitorWindowTests
             RunOnSta(() =>
             {
                 var store = new MonitorSettingsStore(Path.Combine(directory, "settings.json"));
-                var errors = new MonitorErrorHandler(new MonitorFileLogger());
+                var errors = TestMonitorLogs.CreateErrorHandler();
                 using (var form = new MonitorSettingsForm(new MonitorSettings(), store, errors))
                 {
                     form.Opacity = 0;
@@ -60,6 +60,22 @@ public sealed class MonitorWindowTests
                 }
                 Assert.Equal(17, store.Load("ja-JP").RefreshSeconds);
             });
+        }
+        finally { if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true); }
+    }
+
+    [Fact]
+    public void File_logger_writes_to_the_given_directory_and_defaults_to_the_user_log_directory()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "hataori-logger-tests", Guid.NewGuid().ToString("N"));
+        try
+        {
+            var logger = new MonitorFileLogger(directory);
+            new MonitorErrorHandler(logger).Report(new InvalidOperationException("test"), null, "guidance", showDialog: false);
+            Assert.StartsWith(directory, logger.LogPath, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("test", File.ReadAllText(logger.LogPath));
+            Assert.StartsWith(Path.Combine(MonitorSettingsStore.UserDirectory, "logs"), new MonitorFileLogger().LogPath, StringComparison.OrdinalIgnoreCase);
+            Assert.StartsWith(Path.GetTempPath(), TestMonitorLogs.CreateLogger().LogPath, StringComparison.OrdinalIgnoreCase);
         }
         finally { if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true); }
     }
