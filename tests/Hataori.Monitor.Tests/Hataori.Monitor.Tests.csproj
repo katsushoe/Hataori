@@ -16,5 +16,6 @@
   <ItemGroup>
     <Using Include="Xunit" />
     <ProjectReference Include="..\..\src\Hataori.Monitor\Hataori.Monitor.csproj" />
+    <ProjectReference Include="..\Hataori.Monitor.TestServerStub\Hataori.Monitor.TestServerStub.csproj" />
   </ItemGroup>
 </Project>
