@@ -1,8 +1,9 @@
 # PROGRESS.md Version
-2026.11.27
+2026.11.28
 
 # 変更履歴
 
+- 2026.11.28: MonitorからのAgent Runキャンセルを実機確認（ユーザー承認のもと）。DBをSQLiteの`.backup`で`data\hataori.db.bak-agentrun-test-20261128030200`へ退避（整合性ok）後、待機中の使い捨てRun `monitor-acceptance-run-20261128` を`agent_runs`へ1件直接追加。自動実行は無効のため起動せず。Monitorで確認画面のRun ID一致を確認してキャンセルし、一覧とDBで`cancelled`（開始時刻・プロセスIDなし）、`quick_check` okを確認。Monitor受入手順（表示・更新・Task／Agent Runキャンセル）がすべて合格し、TODO.mdの項目を完了。Monitorの受入軸はトレイからの画面復帰と更新MSIの自動更新が未確認のため据え置き。残作業3を完了。
 - 2026.11.27: 3.2.9.0でMonitorの自動更新後に一覧の選択が先頭へ戻り、キャンセルボタンが無効のままになる問題を修正。原因は、更新中（`_refreshing`）にボタンの可否を判定し、更新後に判定し直していなかったことと、一覧の差し替えで選択を引き継いでいなかったこと。Task ID・Run IDで選択行を、スクロール位置も保持し、選択行が消えた場合は先頭行を選ぶ。Monitorテスト92件（追加2件）を含む315件合格（1件スキップ）。ユーザー単位MSI `Hataori-3.2.9.0-user-x64.msi`（SHA-256 `e9bbcce27b7637246006dd4d5b477f45839d8eddc6ef2910f90a78b7bc0a2b83`）を`E:\Hataori`へ導入（終了コード0、設定不変、`/health` ok）し、WMIで起動。実機で、4行目の実行中Taskが自動更新後も選択されたまま「Taskをキャンセル」が有効なことを確認（キャンセルはしていない）。残作業3を完了。
 - 2026.11.27: Monitorの実機受入確認を実施（ユーザーご本人のComputerUse許可のもと、Monitorウィンドウのみ操作）。表示（Server running、Itoguruma connected、MCP running、SQLite connected）、手動・自動更新、使い捨てTask `monitor-acceptance-disposable-20261127` のMonitorからのキャンセル（確認画面のTask ID一致、`Cancelled from Monitor.`）は合格。Agent Runのキャンセルは`activation.enabled`がfalseで使い捨てRunを作れないため未実施。自動更新のたびに一覧の選択が先頭へ戻り「Taskをキャンセル」が無効表示になる操作性の問題を確認し、残作業へ追加。記録は`docs/validation/2026-11-03-monitor-live-acceptance.md`。受入軸は一部合格のため据え置き。
 - 2026.11.27: 実プロセスを使う`UserServerProcess`・`McpServerController`の自動テスト7件を追加（起動・標準入力を閉じた正常停止・再起動での別プロセス化・Healthが正常になるまでの起動と停止・プロセスのみで応答なし・HTTPエラー・停止要求を無視した場合の10秒後の強制終了・同名の別インストールを数えないこと）。テスト専用の代用Server `tests/Hataori.Monitor.TestServerStub` を一時インストール先へ`Hataori.Server.exe`として配置し、実機のServerに影響しないことを確認。Monitorテスト90件を含む313件合格（1件スキップ）。常駐ホストの自動テスト軸を50→100とし75%→88%、全体は96%→98%（10カテゴリ合計976%、平均97.6%）、Phase 1は98%で据え置き。2026.11.27列を追加（グラフ`progress/progress-chart.svg`は未更新）。残作業3を完了。
@@ -169,8 +170,7 @@ Phase 1（基盤・必須運用機能）: **98%**
 
 1. 3.2.7.0のControl Pipeタイムアウト修正（件数制限とバッファ拡大）と、ジョブ外起動での長時間稼働を数日観察し、タイムアウト・無ログ停止が再発しないことを確認する（2026.11.26に原因を特定・修正済み）。
 2. トレイからの画面復帰と、実際のログオンからのMonitor・Server自動起動を確認する。
-3. MonitorからのAgent Runキャンセルを実機確認する（2026.11.27に表示・更新・Taskキャンセルは合格。Agent Runは`activation.enabled`がfalseで使い捨てRunを作れず未実施。手順: `docs/validation/2026-11-03-monitor-live-acceptance.md`）。
-4. 更新MSIによるMonitorの自動更新と、更新後のMonitor再起動を実機で確認する。
+3. 更新MSIによるMonitorの自動更新と、更新後のMonitor再起動を実機で確認する。
 Itoguruma 0.3.45での受信・ACKは2026.11.25に専用検証Projectで実機確認済みです（`ItogurumaLiveLeaseTests`）。
 
 2026.11.24のSolution Releaseテストは263件すべて合格しました。

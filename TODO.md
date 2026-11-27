@@ -69,7 +69,7 @@
 - [X] 利用者向け文書とRelease配布手順を整備する。
 - [X] Itoguruma、MCP、Agent resume、Windows Serviceを実環境で受入試験する。
 - [X] Monitor回帰テスト追加後の全Solution Releaseテスト217件を実行し、全件合格を記録する（`docs/validation/2026-11-03-release-test-attempt.md`）。
-- [ ] 起動中のHataori ServiceへMonitorを接続し、表示・更新とテスト専用Task／Agent Runのキャンセルを確認して記録する（手順: `docs/validation/2026-11-03-monitor-live-acceptance.md`）。2026.11.27に表示・更新・Taskキャンセルは合格。Agent Runキャンセルは未実施。
+- [x] 起動中のHataori ServerへMonitorを接続し、表示・更新とテスト専用Task／Agent Runのキャンセルを確認して記録する（手順: `docs/validation/2026-11-03-monitor-live-acceptance.md`）。2026.11.27に表示・更新・Taskキャンセル、2026.11.28にAgent Runキャンセルが合格（完了: 2026.11.28）。
 
 # 優先タスク
 
@@ -89,7 +89,7 @@
 - [X] ADR 0010の検証方針に沿ってMonitorのWinForms表示・更新・Task／Agent Runキャンセル操作の回帰テストを追加し、Windows上で再現できる検証結果を`docs/validation/2026-11-01-monitor-regression.md`へ記録する。
 - [X] 進捗率の4軸算定基準を定義し、Itoguruma・Monitor・CLI・テストを含む10カテゴリの得点と総合・Phase 1率を再計算する（根拠は`PROGRESS.md`）。
 - [X] Monitor回帰テスト追加後の全Solution Releaseテスト217件を実行し、全件合格を記録する（`docs/validation/2026-11-03-release-test-attempt.md`）。
-- [ ] 起動中のHataori ServiceへMonitorを接続し、表示・更新とテスト専用Task／Agent Runのキャンセルを確認して記録する（手順: `docs/validation/2026-11-03-monitor-live-acceptance.md`）。2026.11.27に表示・更新・Taskキャンセルは合格。Agent Runキャンセルは未実施。
+- [x] 起動中のHataori ServerへMonitorを接続し、表示・更新とテスト専用Task／Agent Runのキャンセルを確認して記録する（手順: `docs/validation/2026-11-03-monitor-live-acceptance.md`）。2026.11.27に表示・更新・Taskキャンセル、2026.11.28にAgent Runキャンセルが合格（完了: 2026.11.28）。
 
 # フェーズ計画
 
