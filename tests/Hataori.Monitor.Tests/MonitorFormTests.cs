@@ -66,6 +66,50 @@ public sealed class MonitorFormTests
     }
 
     [Fact]
+    public void Automatic_refresh_keeps_the_selected_task_and_enables_cancel_without_reselecting()
+    {
+        RunOnStaAsync(async () =>
+        {
+            var snapshot = MultiTaskSnapshot(("task-a", "completed"), ("task-b", "active"), ("task-c", "completed"));
+            var client = new FakeMonitorControlClient(snapshot, snapshot, snapshot);
+            using var form = CreateForm(client, new FakeMonitorDialogs());
+            await form.RefreshSnapshotAsync();
+            SelectRow(form.TaskGrid, 1);
+            form.UpdateActionButtons();
+            Assert.True(form.CancelTaskButton.Enabled);
+
+            await form.RefreshSnapshotAsync();
+
+            Assert.Equal("task-b", form.TaskGrid.CurrentRow!.Cells["TaskId"].Value);
+            Assert.True(form.CancelTaskButton.Enabled);
+
+            await form.RefreshSnapshotAsync();
+
+            Assert.Equal("task-b", form.TaskGrid.CurrentRow!.Cells["TaskId"].Value);
+            Assert.True(form.CancelTaskButton.Enabled);
+        });
+    }
+
+    [Fact]
+    public void Refresh_falls_back_to_default_selection_when_the_selected_task_disappears()
+    {
+        RunOnStaAsync(async () =>
+        {
+            var client = new FakeMonitorControlClient(
+                MultiTaskSnapshot(("task-a", "active"), ("task-b", "completed")),
+                MultiTaskSnapshot(("task-a", "active")));
+            using var form = CreateForm(client, new FakeMonitorDialogs());
+            await form.RefreshSnapshotAsync();
+            SelectRow(form.TaskGrid, 1);
+
+            await form.RefreshSnapshotAsync();
+
+            Assert.Equal("task-a", form.TaskGrid.CurrentRow!.Cells["TaskId"].Value);
+            Assert.True(form.CancelTaskButton.Enabled);
+        });
+    }
+
+    [Fact]
     public void Cancel_task_button_confirms_sends_id_and_refreshes_the_view()
     {
         RunOnStaAsync(async () =>
@@ -389,6 +433,13 @@ public sealed class MonitorFormTests
 
     private static void SelectRow(DataGridView grid, int index) => grid.CurrentCell = grid.Rows[index].Cells[0];
 
+    private static MonitorSnapshot MultiTaskSnapshot(params (string TaskId, string Status)[] tasks) => new(
+        tasks.Select(task => new MonitorTask("workspace-1", task.TaskId, "Task " + task.TaskId, "agent-1", "conversation-1", task.Status, "Working", 10, DateTimeOffset.UtcNow)).ToArray(),
+        [],
+        [],
+        [],
+        0,
+        new MonitorSystemStatus("healthy", "connected", "available", "healthy"));
     private static MonitorSnapshot Snapshot(string taskStatus, params string[] runStatuses) => new(
         [new MonitorTask("workspace-1", "task-1", "Test task", "agent-1", "conversation-1", taskStatus, "Working", 42, DateTimeOffset.UtcNow)],
         [new MonitorAgentStatus("agent-1", "conversation-1", "active", 1)],

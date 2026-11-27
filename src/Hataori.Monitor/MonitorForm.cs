@@ -78,17 +78,16 @@ public partial class MonitorForm : Form
         {
             var snapshot = await _client.GetSnapshotAsync(_pipeName, RequestTimeout, _lifetime.Token).ConfigureAwait(true);
             if (IsDisposed) return;
-            taskGrid.DataSource = snapshot.Tasks.Select(task => new { task.TaskId, task.WorkspaceId, task.TaskName, task.AgentId, task.ProgressPercent, task.CurrentWork, task.LastActivityAtUtc, task.ConversationId, task.Status }).ToArray();
+            Rebind(taskGrid, "TaskId", snapshot.Tasks.Select(task => new { task.TaskId, task.WorkspaceId, task.TaskName, task.AgentId, task.ProgressPercent, task.CurrentWork, task.LastActivityAtUtc, task.ConversationId, task.Status }).ToArray());
             agentGrid.DataSource = snapshot.Agents.ToArray();
             sessionGrid.DataSource = snapshot.Sessions.Select(session => new { session.ConversationId, session.AgentId, session.NativeSessionId, session.Status, session.LastUsedAtUtc }).ToArray();
-            runGrid.DataSource = snapshot.Runs.Select(run => new { run.RunId, run.WorkspaceId, run.AgentId, run.ConversationId, run.Status, run.QueuedAtUtc, run.StartedAtUtc, run.EndedAtUtc, run.Error }).ToArray();
+            Rebind(runGrid, "RunId", snapshot.Runs.Select(run => new { run.RunId, run.WorkspaceId, run.AgentId, run.ConversationId, run.Status, run.QueuedAtUtc, run.StartedAtUtc, run.EndedAtUtc, run.Error }).ToArray());
             queueValueLabel.Text = snapshot.QueueCount.ToString(System.Globalization.CultureInfo.CurrentCulture);
             serverValueLabel.Text = snapshot.System.Server;
             itogurumaValueLabel.Text = snapshot.System.Itoguruma;
             mcpValueLabel.Text = snapshot.System.Mcp;
             sqliteValueLabel.Text = snapshot.System.Sqlite;
             connectionStatusLabel.Text = DisplayLanguage.Text($"接続中: {_pipeName} / {DateTimeOffset.Now:T}", $"Connected: {_pipeName} / {DateTimeOffset.Now:T}");
-            UpdateActionButtons();
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
         catch (Exception exception)
@@ -104,6 +103,41 @@ public partial class MonitorForm : Form
         finally
         {
             _refreshing = false;
+            // 更新中はキャンセル操作を無効にしているため、更新が終わった後に選択行で可否を判定し直す。
+            if (!IsDisposed) UpdateActionButtons();
+        }
+    }
+
+    /// <summary>
+    /// 一覧を新しいデータで置き換え、選択していた行（キー列の値で特定）とスクロール位置を保ちます。
+    /// 選択していた行がなくなった場合は既定の選択（先頭行）になります。
+    /// </summary>
+    private static void Rebind(DataGridView grid, string keyProperty, object[] rows)
+    {
+        var selectedKey = TryGetSelectedValue(grid, keyProperty, out var key) ? key : null;
+        var column = grid.CurrentCell?.ColumnIndex ?? 0;
+        var firstVisible = grid.Rows.Count > 0 ? grid.FirstDisplayedScrollingRowIndex : -1;
+        grid.DataSource = rows;
+        if (grid.Rows.Count == 0) return;
+        if (selectedKey is not null)
+        {
+            foreach (DataGridViewRow row in grid.Rows)
+            {
+                var value = row.DataBoundItem?.GetType().GetProperty(keyProperty)?.GetValue(row.DataBoundItem)?.ToString();
+                if (!string.Equals(value, selectedKey, StringComparison.Ordinal)) continue;
+                grid.CurrentCell = row.Cells[Math.Min(column, row.Cells.Count - 1)];
+                break;
+            }
+        }
+
+        // 選択していた行がなくなった場合は、表示状態に関係なく先頭行を選ぶ。
+        if (grid.CurrentCell is null && grid.Rows[0].Cells.Count > 0) grid.CurrentCell = grid.Rows[0].Cells[0];
+
+        // 選択の復元で表示位置が動かないよう、最後に元のスクロール位置へ戻す。
+        if (firstVisible >= 0)
+        {
+            try { grid.FirstDisplayedScrollingRowIndex = Math.Min(firstVisible, grid.Rows.Count - 1); }
+            catch (InvalidOperationException) { }
         }
     }
 
