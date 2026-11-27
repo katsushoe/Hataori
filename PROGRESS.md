@@ -3,6 +3,7 @@
 
 # 変更履歴
 
+- 2026.11.28: Control Pipeタイムアウトと無言停止の再発観察を完了。3.2.7.0導入（2026.11.26 23:58）から2026.11.28 08:00までの約32時間で、Monitorの応答タイムアウトは意図した停止中の2件（3.2.8.0で抑止済み）のみ、遅い要求（1～2秒、Monitorの待ち時間5秒未満）は11件。ServerとMonitorの停止・起動は、導入作業とトレイからの停止→起動確認による7回すべてが開始・停止ログ付きで、ログなしの停止は0件。残作業1を完了。残作業2件、進捗率は全体98%、Phase 1 98%で据え置き。
 - 2026.11.28: MonitorからのAgent Runキャンセルを実機確認（ユーザー承認のもと）。DBをSQLiteの`.backup`で`data\hataori.db.bak-agentrun-test-20261128030200`へ退避（整合性ok）後、待機中の使い捨てRun `monitor-acceptance-run-20261128` を`agent_runs`へ1件直接追加。自動実行は無効のため起動せず。Monitorで確認画面のRun ID一致を確認してキャンセルし、一覧とDBで`cancelled`（開始時刻・プロセスIDなし）、`quick_check` okを確認。Monitor受入手順（表示・更新・Task／Agent Runキャンセル）がすべて合格し、TODO.mdの項目を完了。Monitorの受入軸はトレイからの画面復帰と更新MSIの自動更新が未確認のため据え置き。残作業3を完了。
 - 2026.11.27: 3.2.9.0でMonitorの自動更新後に一覧の選択が先頭へ戻り、キャンセルボタンが無効のままになる問題を修正。原因は、更新中（`_refreshing`）にボタンの可否を判定し、更新後に判定し直していなかったことと、一覧の差し替えで選択を引き継いでいなかったこと。Task ID・Run IDで選択行を、スクロール位置も保持し、選択行が消えた場合は先頭行を選ぶ。Monitorテスト92件（追加2件）を含む315件合格（1件スキップ）。ユーザー単位MSI `Hataori-3.2.9.0-user-x64.msi`（SHA-256 `e9bbcce27b7637246006dd4d5b477f45839d8eddc6ef2910f90a78b7bc0a2b83`）を`E:\Hataori`へ導入（終了コード0、設定不変、`/health` ok）し、WMIで起動。実機で、4行目の実行中Taskが自動更新後も選択されたまま「Taskをキャンセル」が有効なことを確認（キャンセルはしていない）。残作業3を完了。
 - 2026.11.27: Monitorの実機受入確認を実施（ユーザーご本人のComputerUse許可のもと、Monitorウィンドウのみ操作）。表示（Server running、Itoguruma connected、MCP running、SQLite connected）、手動・自動更新、使い捨てTask `monitor-acceptance-disposable-20261127` のMonitorからのキャンセル（確認画面のTask ID一致、`Cancelled from Monitor.`）は合格。Agent Runのキャンセルは`activation.enabled`がfalseで使い捨てRunを作れないため未実施。自動更新のたびに一覧の選択が先頭へ戻り「Taskをキャンセル」が無効表示になる操作性の問題を確認し、残作業へ追加。記録は`docs/validation/2026-11-03-monitor-live-acceptance.md`。受入軸は一部合格のため据え置き。
@@ -166,11 +167,10 @@ Phase 1（基盤・必須運用機能）: **98%**
 
 2026.11.24: 機織り機の正面図を描いたアプリアイコン（`assets/icon`）をMonitorのexe・ウィンドウ・トレイとMSIの「アプリ」一覧表示へ組み込み、通知領域での表示を目視確認しました。ユーザー単位版3.2.1.0の変更（`f780acf`）と、Itoguruma 0.3.44の登録・リースAPI対応（3.2.2.0、`5be9a29`）をcommitし、`develop`へpush済みです。2026.11.25時点で`E:\Hataori`は3.2.3.0で稼働し、`doctor` healthy、Itoguruma 0.3.45への接続と受信・ACKを確認済みです。HataoriはMoyaiとGithubieへ登録済みで、2026.11.25からMoyai経由のGit操作が再び使えています（2026.11.24はGithubie 2.2.2.0更新後の固定ハッシュ値不一致のためGithubie経由）。
 
-2026.11.27: 3.2.9.0を`E:\Hataori`へ導入し、ジョブ外で起動しています。残作業は優先順に次のとおりです。
+2026.11.28: 3.2.9.0を`E:\Hataori`で稼働中（ジョブ外起動）。Control Pipeタイムアウトと無言停止は約32時間の観察で再発なしです。残作業は優先順に次のとおりです。
 
-1. 3.2.7.0のControl Pipeタイムアウト修正（件数制限とバッファ拡大）と、ジョブ外起動での長時間稼働を数日観察し、タイムアウト・無ログ停止が再発しないことを確認する（2026.11.26に原因を特定・修正済み）。
-2. トレイからの画面復帰と、実際のログオンからのMonitor・Server自動起動を確認する。
-3. 更新MSIによるMonitorの自動更新と、更新後のMonitor再起動を実機で確認する。
+1. トレイからの画面復帰と、実際のログオンからのMonitor・Server自動起動を確認する。
+2. 更新MSIによるMonitorの自動更新と、更新後のMonitor再起動を実機で確認する。
 Itoguruma 0.3.45での受信・ACKは2026.11.25に専用検証Projectで実機確認済みです（`ItogurumaLiveLeaseTests`）。
 
 2026.11.24のSolution Releaseテストは263件すべて合格しました。
