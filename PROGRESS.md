@@ -3,6 +3,7 @@
 
 # 変更履歴
 
+- 2026.11.27: Monitorの実機受入確認を実施（ユーザーご本人のComputerUse許可のもと、Monitorウィンドウのみ操作）。表示（Server running、Itoguruma connected、MCP running、SQLite connected）、手動・自動更新、使い捨てTask `monitor-acceptance-disposable-20261127` のMonitorからのキャンセル（確認画面のTask ID一致、`Cancelled from Monitor.`）は合格。Agent Runのキャンセルは`activation.enabled`がfalseで使い捨てRunを作れないため未実施。自動更新のたびに一覧の選択が先頭へ戻り「Taskをキャンセル」が無効表示になる操作性の問題を確認し、残作業へ追加。記録は`docs/validation/2026-11-03-monitor-live-acceptance.md`。受入軸は一部合格のため据え置き。
 - 2026.11.27: 実プロセスを使う`UserServerProcess`・`McpServerController`の自動テスト7件を追加（起動・標準入力を閉じた正常停止・再起動での別プロセス化・Healthが正常になるまでの起動と停止・プロセスのみで応答なし・HTTPエラー・停止要求を無視した場合の10秒後の強制終了・同名の別インストールを数えないこと）。テスト専用の代用Server `tests/Hataori.Monitor.TestServerStub` を一時インストール先へ`Hataori.Server.exe`として配置し、実機のServerに影響しないことを確認。Monitorテスト90件を含む313件合格（1件スキップ）。常駐ホストの自動テスト軸を50→100とし75%→88%、全体は96%→98%（10カテゴリ合計976%、平均97.6%）、Phase 1は98%で据え置き。2026.11.27列を追加（グラフ`progress/progress-chart.svg`は未更新）。残作業3を完了。
 - 2026.11.27: Monitorのテストが実際のMonitorログ（`%LOCALAPPDATA%\Hataori\Monitor\logs`）へ書き込む問題を修正。`MonitorFileLogger`に出力先ディレクトリを指定するコンストラクターを追加し、テストは一時フォルダ（`%TEMP%\hataori-monitor-tests\logs`）へ出力。テスト実行の前後で実際のMonitorログの大きさ・更新日時が変わらないことを確認。Monitorテスト83件（追加1件）を含むテスト合格。製品の動作は変わらないため版更新・実機導入なし。残作業2を完了。
 - 2026.11.27: 残作業を再確認。3.2.8.0（`2ee39ab`）を`develop`へpush済み（Moyai停止中のためGithubie経由、その後Moyai 2.1.0.2で同期を確認）。残作業6件、進捗率は全体96%、Phase 1 98%で据え置き。
@@ -167,8 +168,9 @@ Phase 1（基盤・必須運用機能）: **98%**
 
 1. 3.2.7.0のControl Pipeタイムアウト修正（件数制限とバッファ拡大）と、ジョブ外起動での長時間稼働を数日観察し、タイムアウト・無ログ停止が再発しないことを確認する（2026.11.26に原因を特定・修正済み）。
 2. トレイからの画面復帰と、実際のログオンからのMonitor・Server自動起動を確認する。
-3. 起動中のServerへMonitorを接続し、表示・更新とテスト専用Task／Agent Runのキャンセルを確認して記録する（手順: `docs/validation/2026-11-03-monitor-live-acceptance.md`）。
-4. 更新MSIによるMonitorの自動更新と、更新後のMonitor再起動を実機で確認する。
+3. Monitorの自動更新（3秒ごと）で一覧の選択が先頭へ戻り、「Taskをキャンセル」「Agent Runを停止」が無効表示になる問題を直す（選択中のTask ID・Run IDを更新後も保持する）。
+4. MonitorからのAgent Runキャンセルを実機確認する（2026.11.27に表示・更新・Taskキャンセルは合格。Agent Runは`activation.enabled`がfalseで使い捨てRunを作れず未実施。手順: `docs/validation/2026-11-03-monitor-live-acceptance.md`）。
+5. 更新MSIによるMonitorの自動更新と、更新後のMonitor再起動を実機で確認する。
 Itoguruma 0.3.45での受信・ACKは2026.11.25に専用検証Projectで実機確認済みです（`ItogurumaLiveLeaseTests`）。
 
 2026.11.24のSolution Releaseテストは263件すべて合格しました。

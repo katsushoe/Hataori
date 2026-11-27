@@ -5,7 +5,7 @@
 - Date: 2026-11-03 (JST)
 - Hataori Service preflight: `Running`, startup type `Automatic`.
 - Installed Monitor executable: `%INSTALL_ROOT%\bin\monitor\Hataori.Monitor.exe` exists.
-- Live UI verification: Not started; explicit user authorization for ComputerUse is pending.
+- Live UI verification: Performed on 2026-11-27 (JST) with the user's explicit ComputerUse authorization (Hataori Monitor window only).
 - Cancellation scope: Use only a uniquely identified disposable test Task and a disposable Agent Run. Do not cancel existing user work.
 
 ## Acceptance procedure
@@ -18,4 +18,10 @@
 
 ## Result
 
-Pending explicit user authorization for the UI operations and creation/cancellation of disposable test records. No UI was opened and no test Task or Agent Run was created during preflight.
+### 2026-11-27 (Hataori 3.2.8.0, user-session edition at `E:\Hataori`)
+
+1. Display: Monitor 3.2.8.0 opened without an error dialog. Status line `接続中: hataori-control / 14:58:15`; the Task list showed active and completed Tasks. The status tab showed Hataori Server `running`, Itoguruma `connected`, MCP `running`, SQLite `connected`, queue `0`. Pass.
+2. Refresh: Manual **更新** changed the status time to 14:58:28 and loaded the list; automatic refresh followed at 14:58:33, 14:58:42 and 14:58:54 while Server kept running. Pass.
+3. Task cancellation: Created the disposable active Task `monitor-acceptance-disposable-20261127` (`[TEST] Monitor acceptance disposable task (cancel me)`, agent `claude-code-acceptance`) through Hataori MCP. Selected only that row, pressed **Taskをキャンセル**, confirmed the dialog that named exactly that Task ID, and the row showed `cancelled` after the next refresh. Hataori MCP `task_get` returned `Cancelled` with result `Cancelled from Monitor.`. Pass.
+4. Agent Run cancellation: Not performed. `activation.enabled` is `false` in the installed configuration and the Agent Run list is empty, so a disposable Agent Run cannot be created without enabling activation, which could start user work. Remains pending per step 5.
+5. Observation: After each automatic refresh (every 3 seconds) the Task grid rebinds, the selection returns to the first row, and **Taskをキャンセル** is shown disabled until a row is clicked again. Cancellation worked when the row was selected and the button pressed before the next refresh. Recorded as a usability issue to fix.
