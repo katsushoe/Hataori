@@ -1,8 +1,16 @@
 # TODO.md Version
-2026.09.26
+2026.11.03
 
 # 変更履歴
 
+- 2026.11.03: Monitor回帰テスト後のSolution Releaseテスト217件がすべて合格し、テスト残件を完了。
+- 2026.11.03: Releaseテストをプロジェクト別に実行し215件合格。CLIの名前付きパイプテスト2件がsandbox内でハングし、Solution全体の完了確認は継続。
+- 2026.11.01: 進捗率の4軸算定基準を定義し、10カテゴリの得点と総合・Phase 1率を再計算。未確認の実サービスMonitor操作と全Solutionテスト実行をP2へ追加。
+- 2026.11.01: ADR 0010に沿ったMonitor専用WinForms回帰テストを追加し、Windows上で表示データ・更新・Task／Agent Runキャンセルの5テストを検証。詳細は`docs/validation/2026-11-01-monitor-regression.md`。残る進捗率算定基準の整理は別P2で継続。
+- 2026.11.01: 進捗率の根拠を調査。ADR 0010がMonitor表示の自動テストを検証対象に含めている一方、Monitor専用テストがないことを確認し、回帰テスト追加をP2へ登録。Itoguruma・CLIの具体的未完了機能は確認できず、旧数値の算定基準も不明なため、評価根拠の整理を別P2として残す。
+- 2026.10.01: Claude Code 2.1.233でPostToolUse hook発火と`layer-reviewer`起動の実機検証を完了。関連実装TODOの詳細をPROGRESS.mdへ移管。
+- 2026.09.30: `KotodamaSpecGuard` 0.1.0をprivate GitHub Repositoryへcommit・push済みと確認。残件をClaude Code実機hook検証の1件へ整理。
+- 2026.09.27: Hataori 3.1.22.0をGitHub Releaseとして公開。Hataori側の実装・配布を完了し、残件を`KotodamaSpecGuard`のGitHub公開とClaude Code実機hook検証へ整理。
 - 2026.09.26: Hataori 3.1.22.0としてClaude Codeプラグイン有効化診断をMSI化し、実機Major Upgradeを検証。
 - 2026.09.25: `doctor`へClaude Codeプラグイン有効化診断を追加し、Hataori側の実装項目を完了。
 - 2026.09.24: `kotodama-spec-guard` 0.1.0の本体を別リポジトリ`KotodamaSpecGuard`へ実装（仕様書Markdown書込時のPostToolUse hook、`layer-reviewer`、手動スキル、テスト6件）。GitHub公開・実行時検証・Hataori側有効化確認は未完了。
@@ -55,20 +63,13 @@
 
 ## 後でやる
 
-- [ ] 契約（What）／実装（How）の混同を防ぐ正式なClaude Codeプラグイン（仮称 `kotodama-spec-guard`）を実装する。即時着手せず、後日優先順位を決めて将来バージョンで対応する（時期・対象バージョンは未定）。
-  - 2026.09.24状況: プラグイン本体0.1.0を別リポジトリ`F:\Workspace\Projects\KotodamaSpecGuard`へ実装済み。発火条件は「仕様書Markdown（ファイル名に『仕様』／単語`spec`、または`spec`・`仕様書`ディレクトリ配下の`.md`）へのWrite／Edit／MultiEdit」に決定。
-  - [ ] `KotodamaSpecGuard`をGitHubプライベートリポジトリとして作成し、Githubie／Moyaiへ登録してコミット・pushする。
-    - 2026.09.24: Githubie／Moyaiにリポジトリ作成機能がないため、両プロジェクトへ機能追加CR（`CRs\inbox\Githubie\CR-2026-09-24-repository-create.md`、`CRs\inbox\Moyai\CR-2026-09-24-repository-create.md`）をItogurumaで送信済み。対応待ち。
-  - [ ] Claude Code実行時にhook発火から`layer-reviewer`起動までを実機確認する（2026.09.24はCLIのOAuth期限切れで未確認。プラグイン読込とAgent／Skill登録は確認済み）。
-  - [X] Hataori側でClaude Code設定の`enabledPlugins`を読み取り、対象プラグインの有効化を確認する`doctor`チェックを実装する（設定は書き換えない）。
-  - 背景: Kotodama仕様書の契約セクションにサーバ処理フロー、アルゴリズム選定、ヘルパーツール提案が混在した。追記時のレビューをHataori配下の全プロジェクトへ一貫して適用する。
-  - 責務分離: プラグイン側がレビュー内容、hook／subagent定義、配布・バージョン管理を担い、Hataori側は対象プロジェクトでの有効化確認に限定する。
-  - 不採用: Hataoriが起動前に対象ディレクトリの `settings.json` やagent定義を自動書き込みする方式。オーケストレーション層と拡張構成層の責務が混在するため。
-  - 検討事項: `layer-reviewer` のチェック内容・プロンプト、`PostToolUse`（Write想定）の条件・対象ファイル、バージョニング、全管理プロジェクトへの一括有効化方法。
-  - 配布方針: 公開マーケットプレイスを必須とせず、katsushoe個人のプライベートリポジトリを利用する構成を想定する。
-  - 参照: Kotodama `namespace=Hataori`、`claimId=53`（方針）、`claimId=55`（即時実装せず将来対応）。
+（進捗率の算定基準・再計算とSolution Releaseテストは完了。実機受入確認が1件残っています。）
+- [X] ADR 0010の検証方針に沿ってMonitorのWinForms表示・更新・Task／Agent Runキャンセル操作の回帰テストを追加し、Windows上で再現できる検証結果を`docs/validation/2026-11-01-monitor-regression.md`へ記録する。
+- [X] 進捗率の4軸算定基準を定義し、Itoguruma・Monitor・CLI・テストを含む10カテゴリの得点と総合・Phase 1率を再計算する（根拠は`PROGRESS.md`）。
 - [X] 利用者向け文書とRelease配布手順を整備する。
 - [X] Itoguruma、MCP、Agent resume、Windows Serviceを実環境で受入試験する。
+- [X] Monitor回帰テスト追加後の全Solution Releaseテスト217件を実行し、全件合格を記録する（`docs/validation/2026-11-03-release-test-attempt.md`）。
+- [x] 起動中のHataori ServerへMonitorを接続し、表示・更新とテスト専用Task／Agent Runのキャンセルを確認して記録する（手順: `docs/validation/2026-11-03-monitor-live-acceptance.md`）。2026.11.27に表示・更新・Taskキャンセル、2026.11.28にAgent Runキャンセルが合格（完了: 2026.11.28）。
 
 # 優先タスク
 
@@ -85,6 +86,10 @@
 
 - [X] 文書、配布、インストール手順を完成させる。
 - [X] VirtualBox Windows 11隔離環境でMSI Uninstallと設定・データ・ログ保持を実機検証する。
+- [X] ADR 0010の検証方針に沿ってMonitorのWinForms表示・更新・Task／Agent Runキャンセル操作の回帰テストを追加し、Windows上で再現できる検証結果を`docs/validation/2026-11-01-monitor-regression.md`へ記録する。
+- [X] 進捗率の4軸算定基準を定義し、Itoguruma・Monitor・CLI・テストを含む10カテゴリの得点と総合・Phase 1率を再計算する（根拠は`PROGRESS.md`）。
+- [X] Monitor回帰テスト追加後の全Solution Releaseテスト217件を実行し、全件合格を記録する（`docs/validation/2026-11-03-release-test-attempt.md`）。
+- [x] 起動中のHataori ServerへMonitorを接続し、表示・更新とテスト専用Task／Agent Runのキャンセルを確認して記録する（手順: `docs/validation/2026-11-03-monitor-live-acceptance.md`）。2026.11.27に表示・更新・Taskキャンセル、2026.11.28にAgent Runキャンセルが合格（完了: 2026.11.28）。
 
 # フェーズ計画
 

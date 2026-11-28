@@ -2,6 +2,8 @@
 
 [English](COMMANDS.md) | [日本語](COMMANDS.ja.md)
 
+3.2.0.0以降は `hataori monitor` でトレイとServerをログオンユーザーの権限で起動します。Windowsログオン時にもトレイが起動します。以下のWindows Serviceコマンドは旧3.1系の管理用です。
+
 この文書はHataori CLI、Service制御、連携確認、JSON戻り値、終了Code、安全要件の正本です。
 
 ## Command Groups
@@ -568,7 +570,7 @@ Command: [`doctor`](#hataori-doctor)、[`logs`](#hataori-logs)、[`monitor`](#ha
 - 目的: 状態表示とTask／Agent Runキャンセル操作を備えたHataori Monitorを起動します。
 - 構文: `hataori monitor [--monitor <exe>] [--pipe <name>]`。
 - 引数: 実行fileは標準配置または`HATAORI_MONITOR_PATH`です。
-- 処理・戻り値: ShellでMonitorを起動し`status: "started"`とresolved `path`を返します。
+- 処理・戻り値: ShellでMonitorを起動し`status: "started"`とresolved `path`を返します。Monitorは実行中のTask、実行中のConversation Session、待機中・実行中のAgent Runをすべて表示し、それ以外は各一覧で新しい順に200件まで表示します。
 - 例: `hataori monitor --pipe hataori-control`。
 - 安全: 不審なoverride実行fileを指定しないでください。
 

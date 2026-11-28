@@ -32,7 +32,7 @@ dotnet test Hataori.sln --configuration Release --no-build
 ./scripts/Build-Installer.ps1
 ```
 
-Server、CLI、Monitorを自己完結型`win-x64` single-fileとしてpublishし、WiX installerプロジェクトをbuildし、生成されたMSIのpathとSHA-256 hashを表示します。MSIは`artifacts/installer/Hataori-<version>-x64.msi`へ出力され、Git管理対象外です。
+Server、CLI、Monitorを自己完結型`win-x64` single-fileとしてpublishし、WiX installerプロジェクトをbuildし、生成されたMSIのpathとSHA-256 hashを表示します。MSIは`artifacts/installer/Hataori-<version>-user-x64.msi`へ出力され、Git管理対象外です。
 
 ## 4. 実機で検証する
 
@@ -40,7 +40,7 @@ Server、CLI、Monitorを自己完結型`win-x64` single-fileとしてpublishし
 
 - WiX ICE検証とMSI build自体が警告0、エラー0で完了していること。
 - `msiexec /i`（または既存Installへの Major Upgrade）がExit Code 0で完了すること。
-- Hataori Serviceが再起動し、`Running`になること。
+- MonitorとServerがログオンユーザーで起動し、ログオン時の起動登録がMonitorを指すこと。
 - `hataori version`が新しいVersionを返すこと。
 - `hataori mcp status`が`connected: true`と想定通りの`tool_count`を返すこと。
 - 変更に関連する`hataori doctor`のチェックが合格すること（各チェックの検証内容は`SECURITY.md`と`docs/installation.md`を参照。`server`のようにServiceと同一アカウントが必要なチェックは、そのアカウント以外では`skipped: true`になるのが正しい挙動）。
@@ -61,7 +61,7 @@ git push origin v<version>
 ## 6. GitHub Releaseを公開する
 
 ```powershell
-gh release create v<version> "artifacts/installer/Hataori-<version>-x64.msi" `
+gh release create v<version> "artifacts/installer/Hataori-<version>-user-x64.msi" `
   --title "Hataori <version>" `
   --notes-file <release-note-fileへのpath>
 ```
@@ -71,7 +71,7 @@ Release noteには次を含めます（プロジェクトの作業言語で記�
 - 変更内容の要約（commit logの羅列ではなく機能単位の要約）。
 - 実施した検証（build・test結果、MSI build結果、実機確認項目）。
 - MSIのSHA-256 hash（利用者がダウンロードを検証できるように）。
-- Upgrade手順（`msiexec.exe /i Hataori-<version>-x64.msi INSTALL_ROOT="..."`）と、`config`・`logs`・`data`がUpgrade後も保持される旨。
+- Upgrade手順（`msiexec.exe /i Hataori-<version>-user-x64.msi INSTALL_ROOT="..."`）と、`config`・`logs`・`data`がUpgrade後も保持される旨。
 
 手順4の実機検証記録がRelease noteの一次情報源です。Release noteはその要約であり、別途調査するものではありません。
 

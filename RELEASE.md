@@ -32,7 +32,7 @@ Both must complete with 0 warnings, 0 errors, and all tests passing before conti
 ./scripts/Build-Installer.ps1
 ```
 
-This publishes the server, CLI, and Monitor as self-contained `win-x64` single-file executables, builds the WiX installer project, and prints the resulting MSI path and SHA-256 hash. The MSI is written to `artifacts/installer/Hataori-<version>-x64.msi` and is not tracked by Git.
+This publishes the server, CLI, and Monitor as self-contained `win-x64` single-file executables, builds the WiX installer project, and prints the resulting MSI path and SHA-256 hash. The MSI is written to `artifacts/installer/Hataori-<version>-user-x64.msi` and is not tracked by Git.
 
 ## 4. Validate on a Real Machine
 
@@ -40,7 +40,7 @@ Perform an administrator-elevated install or Major Upgrade against a real instal
 
 - WiX ICE validation and the MSI build itself completed with 0 warnings, 0 errors.
 - `msiexec /i` (or Major Upgrade over an existing install) exits 0.
-- The Hataori service restarts and reaches `Running`.
+- Monitor and Server start under the signed-in user account, and the logon entry points to Monitor.
 - `hataori version` reports the new version.
 - `hataori mcp status` reports `connected: true` and the expected `tool_count`.
 - `hataori doctor` checks relevant to the change pass (see `SECURITY.md` and `docs/installation.md` for what each check verifies; a check that requires the same account as the service, such as `server`, is expected to report `skipped: true` outside that account).
@@ -61,7 +61,7 @@ Use the exact `<version>` from `Directory.Build.props` (for example `v3.0.3.0`).
 ## 6. Publish the GitHub Release
 
 ```powershell
-gh release create v<version> "artifacts/installer/Hataori-<version>-x64.msi" `
+gh release create v<version> "artifacts/installer/Hataori-<version>-user-x64.msi" `
   --title "Hataori <version>" `
   --notes-file <path-to-release-notes>
 ```
@@ -71,7 +71,7 @@ Release notes should summarize, in the repository's working language:
 - What changed (functional summary, not a commit log dump).
 - Validation performed (build/test result, MSI build result, real-machine checks).
 - The MSI SHA-256 hash, so users can verify the download.
-- Upgrade instructions (`msiexec.exe /i Hataori-<version>-x64.msi INSTALL_ROOT="..."`) and a note that `config`, `logs`, and `data` are preserved across Upgrade.
+- Upgrade instructions (`msiexec.exe /i Hataori-<version>-user-x64.msi INSTALL_ROOT="..."`) and a note that `config`, `logs`, and `data` are preserved across Upgrade.
 
 The validation document from step 4 is the primary source for this content; the release notes are a condensed, user-facing version of it, not a separate investigation.
 

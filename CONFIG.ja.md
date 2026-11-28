@@ -9,7 +9,8 @@
 | File | 標準配置 | 作成主体 | 用途 |
 | :--- | :--- | :--- | :--- |
 | 通常設定 | `%INSTALL_ROOT%\config\hataori.json` | MSI、利用者、または`hataori config init` | 秘密情報を含まないアプリ言語、Server、Agent、Retry、Log、Maintenance、Hook設定。 |
-| Service秘密設定 | `%INSTALL_ROOT%\config\hataori.service.json` | `hataori service setup` | `LocalSystem` Windows Service用Itoguruma token。 |
+| ユーザー秘密設定 | `%INSTALL_ROOT%\config\hataori.user.json` | 旧版移行手順 | 対象ユーザー、SYSTEM、Administratorsに制限した任意のItoguruma認証。 |
+| Monitor設定 | `%LOCALAPPDATA%\Hataori\Monitor\settings.json` | Monitorの設定画面 | Server設定から独立したユーザー単位の設定。 |
 
 相対`databasePath`、log、hook pathは`%INSTALL_ROOT%`を基準に解決します。`HATAORI_CONFIG_PATH`へ絶対pathを指定すると別の通常設定fileを使用できます。
 
@@ -20,22 +21,75 @@
 - `hataori service setup`は`hataori.service.json`を作成または置換し、ACLを`SYSTEM`と`Administrators`だけに制限します。
 - tokenの実値をsample、Source Control、log、chatへ記載しないでください。
 
+## Monitor Settings
+
+Windowsのスタートメニューで **Hataori Monitor** を開き、画面上部の **設定** ボタン、またはトレイアイコンの右クリックメニューの **設定** を選びます。**保存** で設定を原子的に保存し、**キャンセル** なら変更しません。保存先は設定画面に表示します。Server設定や認証情報は編集しません。MSIのアップグレード・アンインストール後も設定は保持します。
+
+全キーは任意です。Server用環境変数による上書きは適用しません。
+
+| キー | 型 | 既定値 | 有効値 |
+| :--- | :--- | :--- | :--- |
+| `close_to_tray` | boolean | `true` | `true`、`false` |
+| `start_minimized` | boolean | `false` | `true`、`false` |
+| `auto_update` | boolean | `true` | `true`、`false` |
+| `refresh_seconds` | integer | `3` | 1～300 |
+| `language` | string | `ja-JP`。初回画面は通常設定の言語を継承 | `ja-JP`、`en-US` |
+
+### close_to_tray
+
+booleanで、既定値・省略時は`true`です。例: `{"close_to_tray":true}`。閉じるボタンでトレイへ格納します。`false`なら閉じるボタンでMonitorを終了します。最小化は常にトレイへ格納します。**終了** とWindows終了時は通常どおり終了します。同じユーザー・セッション・インストール先・接続先で再起動すると既存のMonitor画面を開きます。
+
+### start_minimized
+
+booleanで、既定値・省略時は`false`です。例: `{"start_minimized":true}`。次回起動時に画面をトレイへ格納して起動します。Windowsログオン時の自動起動登録は行いません。
+
+### auto_update
+
+booleanで、既定値・省略時は`true`です。例: `{"auto_update":false}`。次回Monitor起動時に新しい正式版MSIを確認し、公式URL・サイズ・APIのSHA-256を検証して自動インストールします。更新先は`src/Hataori.Monitor/monitor-update.json`から組み込み、利用者が任意のダウンロード先へ変更する設定は提供しません。標準の`bin/monitor`配置へMSIでインストールした環境だけで更新できます。無効時も **アプリの更新** ボタンで手動確認できます。ユーザー単位MSIでServer・CLI・Monitorを通常権限で更新します。インストール失敗後は既存のMonitorを再起動し、更新確認を1回省略します。Windowsを自動再起動しません。終了コード3010では手動再起動を案内します。
+
+起動時の取得失敗はトレイ通知とログへ記録し、Monitorは引き続き使用できます。手動確認の失敗はダイアログで案内します。オフライン、MSI・digest欠落、非公開Release、API制限、不正メタデータは回復可能なエラーです。他アプリの認証情報は読みません。更新ファイルとインストールログは`%LOCALAPPDATA%\Hataori\Monitor\updates`に残します。古いディレクトリは更新処理がないときだけ削除してください。20分の期限後もWindows Installerが動作中なら強制終了せず、その完了を待ってからMonitorを開いてください。
+
+### refresh_seconds
+
+integerで、既定値・省略時は`3`、有効範囲は1～300です。例: `{"refresh_seconds":10}`。保存直後に反映し、画面表示中・トレイ格納中のスナップショット更新間隔へ適用します。
+
+### language
+
+stringで、`ja-JP`（日本語）または`en-US`（英語）、キー省略時は`ja-JP`です。例: `{"language":"en-US"}`。Monitor設定ファイルがまだない初回は通常設定の`application.language`を継承します。保存済みのMonitor言語を優先し、保存直後に反映します。Serverの言語は変更しません。
+
+設定を読み込めない、または検証に失敗した場合は元ファイルを保持し、エラーを案内して、その起動に限り自動更新を無効にした既定設定を使います。設定画面を開いて保存すると不正なファイルを置き換えます。不正値や書き込み失敗時は前の設定を保持します。
+
+### トレイの「MCPサーバー」メニュー
+
+トレイメニューの **MCPサーバー** に、状態行（ランプ付き）、**状態を確認**、**起動**、**停止** があります。ランプは **MCPサーバー** 項目にも表示します。状態は `server.mcpHost`／`server.mcpPort` から求めた `http://<host>:<port>/health` へタイムアウト2秒で問い合わせて判定します（設定が読めない、またはloopback以外なら `http://127.0.0.1:45440/health`）。サブメニューを開くたびに確認し直します。
+
+| 状態 | 判定 | ランプ |
+|---|---|---|
+| 稼働中 | Healthが2xxかつ `status` が `ok`（版を表示） | 緑 RGB(40,190,70) |
+| 応答なし | インストール先の `bin\server\Hataori.Server.exe` と同じパスのプロセスはあるがHealthが無応答 | 黄 RGB(240,170,30) |
+| エラー | HealthがHTTPエラーや `ok` 以外を返した、または起動・停止が期限内に完了しなかった | 赤 RGB(215,50,45) |
+| 停止中 | プロセスもHealth応答もない | 灰 RGB(150,150,150) |
+| 未確認 | まだ確認していない | 灰 |
+
+**起動** は稼働中は無効で、Serverを起動して最大20秒、0.5秒ごとにHealthを確認します。**停止** は停止中は無効で、確認後に正常終了を求め、10秒で終わらなければ強制終了します。停止すると、再び起動するまでHataoriを使うCodexとClaude Codeのすべてのセッションが切断されます。起動・停止はMonitorがServerを起動した場合だけ使えます。
 ## Main Settings
 
 Serverは次の順で設定を読み、後のsourceが前を上書きします。
 
 1. .NET Host既定設定。
 2. `HATAORI_CONFIG_PATH`または標準pathで選択した通常`hataori.json`。
-3. Windows Service実行時の`hataori.service.json`。
+3. インストール先の設定フォルダーにある任意の`hataori.user.json`。
 4. `HATAORI_`接頭辞の環境変数。JSON階層には`__`を使います。例: `HATAORI_SERVER__MCPPORT=45440`。
+
+標準のItoguruma接続先 `http://127.0.0.1:47631/mcp` では、Windows資格情報マネージャーにログオンユーザーのItoguruma資格情報があれば、Serverが直接読み取って優先します。設定ファイルや環境変数には複製しません。
 
 Server設定を読むCLI commandは通常JSONの後に`HATAORI_`環境変数を適用します。対応commandでは`--config`で通常JSONを選択します。CLI専用path変数は[コマンド](COMMANDS.ja.md)を参照してください。
 
-既定file内の各sectionはServer起動に必要です。`hooks`だけは無効として省略できます。`itoguruma.authenticationToken`は意図的に通常fileへ含めず、Serviceでは秘密設定fileから取得します。
+既定file内の各sectionはServer起動に必要です。`hooks`だけは無効として省略できます。`itoguruma.authenticationToken`は意図的に通常fileへ含めず、ユーザー版は保護されたユーザー秘密設定またはユーザー環境変数から取得します。
 
 ## Profile Settings
 
-Hataoriには名前付きprofile fileがありません。通常file path、環境変数override、Windows Service実行かどうかでruntime設定を分けます。MCPは認証なし・loopback限定で、Itoguruma認証は別のoutbound client設定です。
+Hataoriには名前付きprofile fileがありません。通常file path、環境変数override、任意のユーザー秘密設定で実行時の設定を分けます。MCPは認証なし・loopback限定で、Itoguruma認証は別のoutbound client設定です。
 
 ## Settings Reference
 
@@ -86,7 +140,7 @@ Hataoriには名前付きprofile fileがありません。通常file path、環�
 
 ### `itoguruma`
 
-子項目: [`endpoint`](#itogurumaendpoint)、[`authenticationToken`](#itogurumaauthenticationtoken)、[`agentId`](#itogurumaagentid)、[`agentType`](#itogurumaagenttype)、[`connectionTimeoutSeconds`](#itogurumaconnectiontimeoutseconds)、[`pollIntervalSeconds`](#itogurumapollintervalseconds)、[`maxReconnectAttempts`](#itogurumamaxreconnectattempts)、[`receiveBatchSize`](#itogurumareceivebatchsize)、[`leaseSeconds`](#itogurumaleaseseconds)。
+子項目: [`endpoint`](#itogurumaendpoint)、[`authenticationToken`](#itogurumaauthenticationtoken)、[`agentId`](#itogurumaagentid)、[`agentType`](#itogurumaagenttype)、[`projectId`](#itogurumaprojectid)、[`connectionTimeoutSeconds`](#itogurumaconnectiontimeoutseconds)、[`pollIntervalSeconds`](#itogurumapollintervalseconds)、[`maxReconnectAttempts`](#itogurumamaxreconnectattempts)、[`receiveBatchSize`](#itogurumareceivebatchsize)、[`leaseSeconds`](#itogurumaleaseseconds)。
 
 #### `itoguruma.endpoint`
 
@@ -106,14 +160,23 @@ Hataoriには名前付きprofile fileがありません。通常file path、環�
 
 - 型/必須: 空でないstring、必須。
 - 既定値: `hataori`。省略時は検証に失敗します。
-- 動作: Hataori Service自身が返信を送信するときの送信元IDです。監視対象プロジェクトを限定しません。監視対象は`activation.workspaces`の各root直下から自動検出されます。
+- 動作: Hataori Server自身が返信を送信するときの送信元IDであり、メッセージのリースと確認（ACK）を行う受信者IDです。監視対象プロジェクトを限定しません。監視対象は`activation.workspaces`の各root直下から自動検出されます。`projectId`と同じ値の場合は、そのProject Inboxを送信元・受信者として使い、`register_agent`を呼びません。異なる場合は`projectId`に属するエージェントとして登録します。
 - 例: `"agentId": "hataori"`。
 
 #### `itoguruma.agentType`
 
 - 型/必須: 空でないstring、必須。
 - 既定値: `hataori`。省略時は検証に失敗します。
+- 動作: `agentId`が`projectId`と異なる場合だけ使うエージェント種別です。Itogurumaは`project_inbox`をここで受け付けません。
 - 例: `"agentType": "hataori"`。
+
+#### `itoguruma.projectId`
+
+- 型/必須: string、任意。
+- 既定値: 省略時`hataori`。
+- 制約: ItogurumaのProject ID形式（英小文字で始まり、英小文字・数字・アンダースコアだけ）。
+- 動作: Hataori自身が属するItogurumaのProjectです。接続時、このProjectが未登録の場合だけProject Inboxを登録します。自動検出したプロジェクトも同様に、未登録のInboxだけをディレクトリ名を表示名として登録し、登録済みの表示名は変更しません。無効化されたProjectと、Project ID形式に合わないディレクトリ名のプロジェクトは受信しません。
+- 例: `"projectId": "hataori"`。
 
 #### `itoguruma.connectionTimeoutSeconds`
 

@@ -9,7 +9,8 @@ This document is the source of truth for Hataori configuration files, precedence
 | File | Standard location | Owner | Purpose |
 | :--- | :--- | :--- | :--- |
 | Main settings | `%INSTALL_ROOT%\config\hataori.json` | MSI, user, or `hataori config init` | Non-secret application language, Server, agent, retry, logging, maintenance, and hook settings. |
-| Service secret settings | `%INSTALL_ROOT%\config\hataori.service.json` | `hataori service setup` | Itoguruma token for the `LocalSystem` Windows Service. |
+| User secret settings | `%INSTALL_ROOT%\config\hataori.user.json` | Legacy migration | Optional Itoguruma credentials restricted to the intended user, SYSTEM, and Administrators. |
+| Monitor settings | `%LOCALAPPDATA%\Hataori\Monitor\settings.json` | Monitor Settings dialog | Per-user preferences, independent of Server configuration. |
 
 Relative `databasePath`, log, and hook paths are resolved from `%INSTALL_ROOT%`. An explicitly supplied `HATAORI_CONFIG_PATH` may point to another absolute main settings file.
 
@@ -20,22 +21,75 @@ Relative `databasePath`, log, and hook paths are resolved from `%INSTALL_ROOT%`.
 - `hataori service setup` creates or replaces `hataori.service.json` and restricts its ACL to `SYSTEM` and `Administrators`.
 - Do not hand-create a token value in examples, source control, logs, or chat.
 
+## Monitor Settings
+
+Open **Hataori Monitor** from the Windows Start menu, then click **Settings** in its toolbar or right-click its tray icon and select **Settings**. Click **Save** to persist settings atomically; **Cancel** leaves them unchanged. The dialog displays the settings file location. Server configuration and credentials are not edited here. The settings file is retained by MSI upgrade and uninstall.
+
+All keys below are optional. No Server environment overrides apply to this file.
+
+| Key | Type | Default | Allowed values |
+| :--- | :--- | :--- | :--- |
+| `close_to_tray` | boolean | `true` | `true`, `false` |
+| `start_minimized` | boolean | `false` | `true`, `false` |
+| `auto_update` | boolean | `true` | `true`, `false` |
+| `refresh_seconds` | integer | `3` | 1–300 |
+| `language` | string | `ja-JP`; initial dialog inherits main application language | `ja-JP`, `en-US` |
+
+### close_to_tray
+
+Boolean; default/omitted `true`. Example: `{"close_to_tray":true}`. Closing the window hides it to the tray; `false` exits Monitor on close. Minimizing always hides it. **Exit** and Windows shutdown terminate normally. A second launch reopens the existing Monitor for the same user/session/installation/pipe.
+
+### start_minimized
+
+Boolean; default/omitted `false`. Example: `{"start_minimized":true}`. Starts Monitor hidden in the tray on the next launch. It does not register Windows logon startup.
+
+### auto_update
+
+Boolean; default/omitted `true`. Example: `{"auto_update":false}`. Checks for a newer official stable MSI at the next Monitor startup and installs it automatically after verifying the official URL, size, and API SHA-256 digest. The update feed is embedded from `src/Hataori.Monitor/monitor-update.json`; it is not a user-selectable download source. Only MSI installations in the standard `bin/monitor` layout can install updates. **Update application** checks manually even when this option is disabled. The user MSI updates Server, CLI and Monitor in the current user session. An installer failure restarts the existing Monitor and skips one update check. No automatic Windows reboot occurs. Exit code 3010 requests a manual reboot.
+
+Startup download failures show a tray warning, are logged, and leave Monitor usable; manual checks show an error dialog. Offline access, missing digest/MSI, private releases, API limits, and invalid metadata are recoverable errors. No other application's credentials are read. Updates and installer logs remain in `%LOCALAPPDATA%\Hataori\Monitor\updates`; remove old directories only while no update is running. An installer still active after the 20-minute deadline is not killed; wait for Windows Installer to finish before reopening Monitor.
+
+### refresh_seconds
+
+Integer; default/omitted `3`, range 1–300 inclusive. Example: `{"refresh_seconds":10}`. Applies immediately on Save and controls snapshot refresh in both visible and hidden states.
+
+### language
+
+String; values `ja-JP` (Japanese) or `en-US` (English), omitted key defaults to `ja-JP`. Example: `{"language":"en-US"}`. On first use, before the Monitor file exists, the dialog inherits `application.language` from the main configuration; a saved Monitor language takes precedence and applies immediately without changing Server's language.
+
+If the file cannot be read or validated, Monitor preserves it, reports the error, and uses defaults with automatic updates disabled for that launch. Open Settings and Save to replace the invalid file. Invalid values or failed writes leave the previous settings unchanged.
+
+### Tray "MCP server" menu
+
+The tray menu's **MCP server** submenu contains a status row with a lamp, **Check status**, **Start**, and **Stop**; the lamp is also shown on the **MCP server** item. Status comes from `http://<host>:<port>/health` built from `server.mcpHost`/`server.mcpPort` with a 2-second timeout (`http://127.0.0.1:45440/health` when the setting is unreadable or not loopback), and is rechecked each time the submenu opens.
+
+| State | Condition | Lamp |
+|---|---|---|
+| Running | Health returns 2xx with `status` `ok` (version shown) | Green RGB(40,190,70) |
+| Not responding | A process with the installed `bin\server\Hataori.Server.exe` path exists but Health does not answer | Yellow RGB(240,170,30) |
+| Error | Health returns an HTTP error or a non-`ok` status, or Start/Stop did not finish in time | Red RGB(215,50,45) |
+| Stopped | No process and no Health response | Gray RGB(150,150,150) |
+| Unknown | Not checked yet | Gray |
+
+**Start** is disabled while running; it starts Server and polls Health every 0.5 seconds for up to 20 seconds. **Stop** is disabled while stopped; after confirmation it requests a graceful shutdown and forcibly ends the process after 10 seconds. Stopping disconnects every Codex and Claude Code session that uses Hataori until Server starts again. Start and Stop are available only when Monitor started Server.
 ## Main Settings
 
 The Server loads settings in this effective order, with later sources overriding earlier sources:
 
 1. .NET host defaults.
 2. The main `hataori.json` selected by `HATAORI_CONFIG_PATH` or the standard path.
-3. `hataori.service.json` when running as a Windows Service.
+3. Optional `hataori.user.json` in the installation configuration directory.
 4. Environment variables with the `HATAORI_` prefix; use `__` for JSON nesting, for example `HATAORI_SERVER__MCPPORT=45440`.
+
+For the standard Itoguruma endpoint `http://127.0.0.1:47631/mcp`, Server uses the signed-in user's Itoguruma credential in Windows Credential Manager when present. Server reads it directly and does not copy it into configuration or the environment.
 
 CLI commands that load Server settings use the main JSON followed by `HATAORI_` environment variables. `--config` selects the main JSON for commands that accept it. CLI-only path variables are documented in [Commands](COMMANDS.md).
 
-All sections in the default file are required for Server startup except `hooks`, which is optional when hooks are disabled by omission. The default file intentionally omits `itoguruma.authenticationToken`; Service mode obtains it from the service secret file.
+All sections in the default file are required for Server startup except `hooks`, which is optional when hooks are disabled by omission. The default file intentionally omits `itoguruma.authenticationToken`; The user edition obtains it from the protected user file or the documented user environment override.
 
 ## Profile Settings
 
-Hataori has no named profile file. Runtime variants are selected by the main file path, environment overrides, and whether the process runs as the Windows Service. MCP access is unauthenticated and loopback-only; Itoguruma authentication is a separate outbound-client setting.
+Hataori has no named profile file. Runtime variants are selected by the main file path, environment overrides, and the optional user credential file. MCP access is unauthenticated and loopback-only; Itoguruma authentication is a separate outbound-client setting.
 
 ## Settings Reference
 
@@ -86,7 +140,7 @@ Children: [`databasePath`](#serverdatabasepath), [`controlPipeName`](#servercont
 
 ### `itoguruma`
 
-Children: [`endpoint`](#itogurumaendpoint), [`authenticationToken`](#itogurumaauthenticationtoken), [`agentId`](#itogurumaagentid), [`agentType`](#itogurumaagenttype), [`connectionTimeoutSeconds`](#itogurumaconnectiontimeoutseconds), [`pollIntervalSeconds`](#itogurumapollintervalseconds), [`maxReconnectAttempts`](#itogurumamaxreconnectattempts), [`receiveBatchSize`](#itogurumareceivebatchsize), and [`leaseSeconds`](#itogurumaleaseseconds).
+Children: [`endpoint`](#itogurumaendpoint), [`authenticationToken`](#itogurumaauthenticationtoken), [`agentId`](#itogurumaagentid), [`agentType`](#itogurumaagenttype), [`projectId`](#itogurumaprojectid), [`connectionTimeoutSeconds`](#itogurumaconnectiontimeoutseconds), [`pollIntervalSeconds`](#itogurumapollintervalseconds), [`maxReconnectAttempts`](#itogurumamaxreconnectattempts), [`receiveBatchSize`](#itogurumareceivebatchsize), and [`leaseSeconds`](#itogurumaleaseseconds).
 
 #### `itoguruma.endpoint`
 
@@ -106,14 +160,23 @@ Children: [`endpoint`](#itogurumaendpoint), [`authenticationToken`](#itogurumaau
 
 - Type/required: non-empty string, required.
 - Default: `hataori`; omission fails validation.
-- Behavior: sender ID used by the Hataori Service for replies. It does not limit monitored projects; those are discovered under each root in `activation.workspaces`.
+- Behavior: sender ID used by Hataori Server for replies, and the consumer ID that owns message leases and acknowledgements. It does not limit monitored projects; those are discovered under each root in `activation.workspaces`. When it equals `projectId`, Hataori uses that project inbox as sender and consumer and does not call `register_agent`; otherwise it registers this ID as an agent of `projectId`.
 - Example: `"agentId": "hataori"`.
 
 #### `itoguruma.agentType`
 
 - Type/required: non-empty string, required.
 - Default: `hataori`; omission fails validation.
+- Behavior: agent type used only when `agentId` differs from `projectId`. Itoguruma rejects `project_inbox` here.
 - Example: `"agentType": "hataori"`.
+
+#### `itoguruma.projectId`
+
+- Type/required: string, optional.
+- Default: `hataori` when omitted.
+- Constraint: Itoguruma project ID format: starts with a lowercase letter and contains only lowercase letters, digits, and underscores.
+- Behavior: Hataori's own Itoguruma project. On connection Hataori registers its project inbox only when the project is not registered yet. Discovered projects are handled the same way: missing inboxes are registered with the directory name as display name, existing display names are kept, disabled projects and directory names outside the project ID format are not polled.
+- Example: `"projectId": "hataori"`.
 
 #### `itoguruma.connectionTimeoutSeconds`
 

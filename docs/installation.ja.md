@@ -2,6 +2,16 @@
 
 [English](installation.md) | [日本語](installation.ja.md)
 
+## 3.2.0.0以降のユーザー単位インストール
+
+`Hataori-<version>-user-x64.msi` はWindowsサービスを登録しません。Windowsにログオンすると、ユーザーの `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` からMonitorが通常権限で起動し、通知領域に常駐します。Monitorは同じユーザーでServerを起動します。「終了」またはログオフでServerも停止します。
+
+新規インストールの既定先は `%LOCALAPPDATA%\Hataori` です。旧サービス版を固定場所で使っている場合は、旧版MSIを手元に保持し、管理者のPowerShellで `installer/Initialize-UserInstall.ps1` に `-InstallRoot`、対象ユーザーの `-UserSid`、新規の保護されたバックアップ先を `-BackupDirectory` で指定します。スクリプトは設定とSQLiteのバックアップを検証し、旧サービス版を削除してから対象ユーザーに書き込みを許可します。Itoguruma認証の値は表示せずにユーザー用ファイルへ複製します。
+
+同じユーザーの通常権限でユーザー単位MSIを実行し、既存の場所を使う場合は `INSTALL_ROOT` に同じパスを指定します。スタートメニューの **Hataori Monitor** からすぐに起動できます。AIエージェントやスクリプトから起動する場合は、実行環境のジョブ（Windowsのジョブオブジェクト）が終了するとMonitorとServerがログを残さず強制終了されるため、`Start-Process` ではなくWMIで起動してください（例: `Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = '"<INSTALL_ROOT>\bin\monitor\Hataori.Monitor.exe" --startup' }`）。セットアップ後の自動更新ではユーザー単位MSIだけを使います。移行後に旧版へ戻す必要がある場合は、先にユーザー版を削除し、管理者がインストール先の書き込み権限をサービス向けに戻してから旧MSIを使います。
+
+以下は3.1系までの旧サービス版の手順です。
+
 HataoriのWindows標準成果物はx64 MSIです。MSIはServer、CLI、Monitor、Windows Service、CLIのシステムPATH、Monitorのスタートメニューショートカットを管理します。
 
 ## 標準構成

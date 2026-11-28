@@ -42,7 +42,7 @@ Invoke-DotNet -DotNetArguments (@('publish', (Join-Path $repositoryRoot 'src\Hat
 Invoke-DotNet -DotNetArguments (@('publish', (Join-Path $repositoryRoot 'src\Hataori.Monitor\Hataori.Monitor.csproj')) + $publishProperties + @('--output', (Join-Path $publishRoot 'monitor')))
 Invoke-DotNet -DotNetArguments @('build', $installerProject, '--configuration', $Configuration, "-p:PublishRoot=$publishRoot", "-p:ProductVersion=$version")
 
-$msiPath = Join-Path $artifactsRoot "installer\Hataori-$version-x64.msi"
+$msiPath = Join-Path $artifactsRoot "installer\Hataori-$version-user-x64.msi"
 if (-not (Test-Path -LiteralPath $msiPath)) {
     throw "MSI was not created at '$msiPath'."
 }

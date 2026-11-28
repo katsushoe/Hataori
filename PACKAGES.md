@@ -1,8 +1,10 @@
 # PACKAGES.md Version
 
-2026.08.18
+2026.11.22
 
 # Change History
+
+- 2026.11.22: Added the Monitor update HTTP client dependency.
 
 - 2026.08.18: Added the Japanese translation link.
 - 2026.08.17
@@ -31,8 +33,8 @@ No repository `nuget.config` is present. Restore therefore uses the NuGet source
 | Package | Version | Projects | Purpose | Update policy |
 | :--- | :--- | :--- | :--- | :--- |
 | `Microsoft.Data.Sqlite` | `9.0.8` | Infrastructure | SQLite persistence | Keep on the supported .NET 9 servicing line; run repository and migration tests. |
-| `Microsoft.Extensions.Hosting.WindowsServices` | `9.0.8` | Server | Windows Service lifetime integration | Keep aligned with the .NET 9 runtime packages. |
 | `Microsoft.Extensions.Logging.Abstractions` | `9.0.8` | Monitor | Monitor logging abstraction | Keep aligned with the .NET 9 runtime packages. |
+| `Microsoft.Extensions.Http` | `9.0.8` | Monitor | Factory-managed update HTTP client | Verify timeouts, redirects, and integrity checks when updating. |
 | `ModelContextProtocol` | `2.0.0` | Infrastructure | MCP client transport | Review protocol and API compatibility before updating. |
 | `ModelContextProtocol.AspNetCore` | `2.0.0` | Server | Streamable HTTP MCP server | Update with `ModelContextProtocol`; verify initialize, `tools/list`, and tool calls. |
 | `coverlet.collector` | `6.0.2` | All test projects | Coverage collection | Development-only; verify test discovery. |

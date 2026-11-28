@@ -6,8 +6,18 @@ using Hataori.Application.Control;
 
 namespace Hataori.Monitor;
 
+/// <summary>MonitorがControl Pipeへ送る状態取得・管理要求の境界です。</summary>
+public interface IMonitorControlClient
+{
+    Task<MonitorSnapshot> GetSnapshotAsync(string pipeName, TimeSpan timeout, CancellationToken cancellationToken);
+
+    Task<ControlResponse> CancelTaskAsync(string pipeName, string taskId, TimeSpan timeout, CancellationToken cancellationToken);
+
+    Task<ControlResponse> CancelRunAsync(string pipeName, string runId, TimeSpan timeout, CancellationToken cancellationToken);
+}
+
 /// <summary>MonitorからローカルControl Pipeへ監視・管理要求を送信します。</summary>
-public sealed class MonitorControlClient
+public sealed class MonitorControlClient : IMonitorControlClient
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -46,7 +56,7 @@ public sealed class MonitorControlClient
             await using var pipe = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
             await pipe.ConnectAsync(timeoutSource.Token).ConfigureAwait(false);
             await using var writer = new StreamWriter(pipe, new UTF8Encoding(false), leaveOpen: true) { AutoFlush = true };
-            using var reader = new StreamReader(pipe, Encoding.UTF8, false, leaveOpen: true);
+            using var reader = new StreamReader(pipe, Encoding.UTF8, false, 64 * 1024, leaveOpen: true);
             await writer.WriteLineAsync(JsonSerializer.Serialize(request, JsonOptions)).ConfigureAwait(false);
             var line = await reader.ReadLineAsync(timeoutSource.Token).ConfigureAwait(false);
             var response = JsonSerializer.Deserialize<ControlResponse>(line ?? string.Empty, JsonOptions)

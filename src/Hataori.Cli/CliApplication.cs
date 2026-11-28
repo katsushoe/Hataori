@@ -433,10 +433,6 @@ public static class CliApplication
                 ?? throw new InvalidOperationException(DisplayLanguage.Text("Claude Code設定がありません。", "Claude Code configuration is missing."));
             await CheckExecutableAsync(driver.ExecutablePath, cancellationToken).ConfigureAwait(false);
         }).ConfigureAwait(false);
-        await AddDoctorCheckAsync(checks, "windows_service", async () =>
-        {
-            await new WindowsServiceManager(new SystemProcessRunner()).ExecuteAsync("status", "Hataori", null, cancellationToken).ConfigureAwait(false);
-        }).ConfigureAwait(false);
         await AddDoctorCheckAsync(checks, "hooks", async () =>
         {
             var hookOptions = configuration.GetRequiredSection(HookOptions.SectionName).Get<HookOptions>()

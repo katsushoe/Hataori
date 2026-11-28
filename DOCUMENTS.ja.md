@@ -15,11 +15,11 @@
 | :--- | :--- | :--- |
 | `.` | Yes | Solution、入口文書、進捗・計画の正本。 |
 | `src/` | Yes | Core、Application、Infrastructure、Server、CLI、Monitorの実装。 |
-| `tests/` | Yes | 自動テスト。 |
+| `tests/` | Yes | 自動テスト。Monitor専用のWindows WinForms回帰テスト`Hataori.Monitor.Tests`を含む。 |
 | `installer/` | Yes | WiX x64 MSI定義。 |
 | `scripts/` | Yes | publish・MSI生成・文書リンク検証スクリプト。 |
 | `docs/adr/` | Yes | アーキテクチャ判断の正本。 |
-| `docs/validation/` | Yes | 実環境検証結果。 |
+| `docs/validation/` | Yes | 実環境検証結果。Monitor WinForms回帰テストの再現可能な記録を含む。 |
 | `progress/` | Yes | 進捗グラフ。 |
 | `**/bin/`、`**/obj/` | No | build・publish生成物。 |
 

@@ -1,8 +1,55 @@
 # PROGRESS.md Version
-2026.09.26
+2026.11.28
 
 # 変更履歴
 
+- 2026.11.28: 最新列に常駐ホスト100%・全体99%を反映し、進捗グラフを同期。GitHubの最新正式Releaseは `v3.1.22.0` と再確認し、実機の自動更新確認を残作業1件とした。
+
+- 2026.11.28: 残作業を再確認。更新MSIによる自動更新は、Monitorの更新先がGitHubの最新正式Release（`releases/latest`、現在`v3.1.22.0`）であり、導入済みの3.2.10.0より新しい正式Releaseがないため、現状では実機確認できないことを確認。確認には3.2.x以降の正式Releaseの公開（ユーザーご本人の承認が必要）が前提。グラフ（`progress/progress-chart.svg`）が2026.11.27列以降未更新であることを残作業へ追加し2件。進捗率は全体99%（表は次の列で反映）、Phase 1 98%で据え置き。
+- 2026.11.28: Windows再起動（19:31）後のログオンで、Monitorが`HKCU\…\Run`の`--startup`によりexplorer.exeから19:34に自動起動し、Serverを子プロセスとして起動したことを確認（どちらもジョブ外、`/health` ok、`doctor` healthy）。トレイ格納状態からの画面復帰は、2回目の起動による復帰処理（同一プロセスのウィンドウ再表示）で確認済みで、トレイアイコンのダブルクリック自体はComputerUseの左クリック制限のため未操作。なお実機は3.2.10.0（アイコン変更）で稼働しており、作業ツリーに担当不明の未コミット変更（`Directory.Build.props`、`assets/icon/*`、`MonitorIconTests.cs`）がある。
+- 2026.11.28: 3.2.10.0で、トレイアイコンのダブルクリックによりMonitor画面が開くことをユーザーご本人の操作で確認。同日確認済みの実際のログオンからの自動起動と合わせ、常駐ホストの受入確認軸を50→100とし88%→100%。Monitorは更新MSIによる自動更新が未確認のため88%で据え置き。全体は10カテゴリ合計988%で98.8%→99%（次の列で反映）、Phase 1は98%で据え置き。残作業は1件。
+- 2026.11.28: 担当不明だった3.2.10.0のアイコン変更（機織り機の線画から、16×16の格子上に枠と3×3の点を置いた織物のドット絵へ変更。正本はSVG、`build_icon.py`がSVGからPNGと9サイズのICOを最近傍拡大で生成）をユーザーご本人の判断で採用。`build_icon.py`で再生成し、ICOの全フレームがPNGと画素一致することを確認（再生成でファイルの大きさは変わったが、正本SVGからの出力）。Releaseビルド警告0・エラー0、テスト317件合格（1件スキップ、Monitor 93件にトレイ用16×16の点9個を数えるテストを含む）。実機は導入済みの3.2.10.0のため再導入なし。残作業を2件へ更新。進捗率は据え置き。
+- 2026.11.28: 残作業を再確認。ログオン時の自動起動確認を完了扱いとし、担当不明の3.2.10.0アイコン変更の採否判断を追加して3件。HataoriのActiveタスクに当該変更の担当はない。進捗率は全体98%、Phase 1 98%で据え置き。
+- 2026.11.28: Control Pipeタイムアウトと無言停止の再発観察を完了。3.2.7.0導入（2026.11.26 23:58）から2026.11.28 08:00までの約32時間で、Monitorの応答タイムアウトは意図した停止中の2件（3.2.8.0で抑止済み）のみ、遅い要求（1～2秒、Monitorの待ち時間5秒未満）は11件。ServerとMonitorの停止・起動は、導入作業とトレイからの停止→起動確認による7回すべてが開始・停止ログ付きで、ログなしの停止は0件。残作業1を完了。残作業2件、進捗率は全体98%、Phase 1 98%で据え置き。
+- 2026.11.28: MonitorからのAgent Runキャンセルを実機確認（ユーザー承認のもと）。DBをSQLiteの`.backup`で`data\hataori.db.bak-agentrun-test-20261128030200`へ退避（整合性ok）後、待機中の使い捨てRun `monitor-acceptance-run-20261128` を`agent_runs`へ1件直接追加。自動実行は無効のため起動せず。Monitorで確認画面のRun ID一致を確認してキャンセルし、一覧とDBで`cancelled`（開始時刻・プロセスIDなし）、`quick_check` okを確認。Monitor受入手順（表示・更新・Task／Agent Runキャンセル）がすべて合格し、TODO.mdの項目を完了。Monitorの受入軸はトレイからの画面復帰と更新MSIの自動更新が未確認のため据え置き。残作業3を完了。
+- 2026.11.27: 3.2.9.0でMonitorの自動更新後に一覧の選択が先頭へ戻り、キャンセルボタンが無効のままになる問題を修正。原因は、更新中（`_refreshing`）にボタンの可否を判定し、更新後に判定し直していなかったことと、一覧の差し替えで選択を引き継いでいなかったこと。Task ID・Run IDで選択行を、スクロール位置も保持し、選択行が消えた場合は先頭行を選ぶ。Monitorテスト92件（追加2件）を含む315件合格（1件スキップ）。ユーザー単位MSI `Hataori-3.2.9.0-user-x64.msi`（SHA-256 `e9bbcce27b7637246006dd4d5b477f45839d8eddc6ef2910f90a78b7bc0a2b83`）を`E:\Hataori`へ導入（終了コード0、設定不変、`/health` ok）し、WMIで起動。実機で、4行目の実行中Taskが自動更新後も選択されたまま「Taskをキャンセル」が有効なことを確認（キャンセルはしていない）。残作業3を完了。
+- 2026.11.27: Monitorの実機受入確認を実施（ユーザーご本人のComputerUse許可のもと、Monitorウィンドウのみ操作）。表示（Server running、Itoguruma connected、MCP running、SQLite connected）、手動・自動更新、使い捨てTask `monitor-acceptance-disposable-20261127` のMonitorからのキャンセル（確認画面のTask ID一致、`Cancelled from Monitor.`）は合格。Agent Runのキャンセルは`activation.enabled`がfalseで使い捨てRunを作れないため未実施。自動更新のたびに一覧の選択が先頭へ戻り「Taskをキャンセル」が無効表示になる操作性の問題を確認し、残作業へ追加。記録は`docs/validation/2026-11-03-monitor-live-acceptance.md`。受入軸は一部合格のため据え置き。
+- 2026.11.27: 実プロセスを使う`UserServerProcess`・`McpServerController`の自動テスト7件を追加（起動・標準入力を閉じた正常停止・再起動での別プロセス化・Healthが正常になるまでの起動と停止・プロセスのみで応答なし・HTTPエラー・停止要求を無視した場合の10秒後の強制終了・同名の別インストールを数えないこと）。テスト専用の代用Server `tests/Hataori.Monitor.TestServerStub` を一時インストール先へ`Hataori.Server.exe`として配置し、実機のServerに影響しないことを確認。Monitorテスト90件を含む313件合格（1件スキップ）。常駐ホストの自動テスト軸を50→100とし75%→88%、全体は96%→98%（10カテゴリ合計976%、平均97.6%）、Phase 1は98%で据え置き。2026.11.27列を追加（グラフ`progress/progress-chart.svg`は未更新）。残作業3を完了。
+- 2026.11.27: Monitorのテストが実際のMonitorログ（`%LOCALAPPDATA%\Hataori\Monitor\logs`）へ書き込む問題を修正。`MonitorFileLogger`に出力先ディレクトリを指定するコンストラクターを追加し、テストは一時フォルダ（`%TEMP%\hataori-monitor-tests\logs`）へ出力。テスト実行の前後で実際のMonitorログの大きさ・更新日時が変わらないことを確認。Monitorテスト83件（追加1件）を含むテスト合格。製品の動作は変わらないため版更新・実機導入なし。残作業2を完了。
+- 2026.11.27: 残作業を再確認。3.2.8.0（`2ee39ab`）を`develop`へpush済み（Moyai停止中のためGithubie経由、その後Moyai 2.1.0.2で同期を確認）。残作業6件、進捗率は全体96%、Phase 1 98%で据え置き。
+- 2026.11.27: 3.2.8.0で、トレイの「MCPサーバー」メニューからServerを停止している間と、起動・停止・再起動の実行中は、Monitorがスナップショットを取得せずタイムアウトをエラー記録しないよう変更（接続欄には停止中と起動方法を表示）。メニューから起動するか、別の手段で起動されて状態確認で稼働中になると取得を再開。Monitorテスト82件（追加2件）を含む303件合格（1件スキップ）。ユーザー単位MSI `Hataori-3.2.8.0-user-x64.msi`（SHA-256 `dd598210964bcbd9c54a2c604b5a6207d3de4b3b79d1fdb033862b1ffe0d2e2a`）を`E:\Hataori`へ導入（終了コード0、設定不変、`/health` ok）し、WMIで起動。残作業2を完了。
+- 2026.11.27: 残作業を再確認。トレイからの停止→起動確認を完了し、停止中のMonitorのタイムアウト記録の抑止を追加して7件。進捗率は全体96%、Phase 1 98%で据え置き（Monitorの受入確認は一部のみのため88%のまま）。
+- 2026.11.27: トレイの「MCPサーバー」メニューで停止→起動を実機確認（操作はユーザーご本人、確認はClaude Code）。00:21:07にServerが正常停止のログを記録して終了し、00:21:22に再起動、00:21:23に`127.0.0.1:45440`で待受開始、`/health` ok 3.2.7.0。再起動後のServerもジョブ外で稼働。停止中の約15秒にMonitorがスナップショット取得のタイムアウトを2件エラー記録（意図した停止中の記録で、抑止は改善候補）。ComputerUseではタスクバーが左クリックのみのためトレイの右クリックは不可だった。残作業2を完了。
+- 2026.11.27: 残作業を再確認。3.2.7.0は2026.11.26 23:58の起動から停止なく稼働し、00:11時点でControl Pipeの遅い要求・Monitorのタイムアウトは0件。00:11にItogurumaへの接続拒否（再接続上限到達、縮退運転で再試行）を記録したが、Itoguruma側の停止によるもので、Hataoriの不具合ではない。残作業7件、進捗率は全体96%、Phase 1 98%で据え置き。
+- 2026.11.27: 3.2.7.0でControl Pipeの書き込み遅延を修正。3.2.6.0導入後も1秒超の要求が4分半で19件あり、内訳の大半が書き込み（1～2秒）だったため、約12万文字の応答を約1KB単位で往復していたことが原因と判断。パイプのカーネルバッファとServer・Monitor・CLIのストリームバッファを64KBへ拡大。ユーザー単位MSI `Hataori-3.2.7.0-user-x64.msi`（SHA-256 `49e273e12c8bdff32b004a5a3df6b8f55b5ddbb2fb754973eab613f07c47967c`）を`E:\Hataori`へ導入（終了コード0、設定不変、`/health` ok）し、WMIで起動。起動後4分間で遅い要求0件、Monitorのタイムアウト0件。テスト304件合格（1件スキップ）。進捗率は据え置き。
+- 2026.11.26: 3.2.6.0でMonitorのControl Pipeタイムアウトを修正。原因はMonitorが3秒ごとに全Task 823件（約46万文字）を取得し、応答に0.6～3.9秒かかっていたこと（Monitorの待ち時間5秒）。担当者不明だった未コミット修正（実行中は全件、終了済みは新しい200件に制限、1秒超の要求を内訳付きで警告記録）をユーザー承認のうえレビューして採用し、実機で応答0.09～0.38秒・約12万文字（207件）を確認。無ログ停止の原因は、AIエージェントのツールから`Start-Process`で起動したMonitor・Serverが呼び出し元のWindowsジョブオブジェクトに属し、ジョブ終了時にまとめて強制終了されていたこと（実機で`IsProcessInJob`により確認）。WMI（`Win32_Process.Create`）で起動すればジョブ外で動くことを確認し、手順を`docs/installation*.md`へ記載。ユーザー単位MSI `Hataori-3.2.6.0-user-x64.msi`（SHA-256 `397a4aa944a47beeabef14500b7839c837142ffda54301b2b2706a4a7d693c63`）を`E:\Hataori`へ導入（終了コード0、設定不変、`/health` ok、`doctor` healthy）。Releaseビルド警告0・エラー0、テスト304件合格（1件スキップ）。進捗率は据え置き。
+- 2026.11.26: 残作業を再整理。3.2.4.0・3.2.5.0のトレイメニュー追加と導入を完了扱いとし、19:55の無ログ停止の再発、別作業の未コミット変更の確認、テストのログ出力先を追加して7件へ更新。進捗率は全体96%、Phase 1 98%で据え置き。
+- 2026.11.26: 3.2.5.0（トレイに全製品共通仕様の「MCPサーバー」サブメニューと4状態ランプ、状態確認・起動・停止を追加。Serverに`GET /health`を追加）。Releaseビルド警告0・エラー0、Solution Releaseテスト303件合格（1件スキップ）、ランプ4色とメニュー描画を画像で確認。ユーザー単位MSI `Hataori-3.2.5.0-user-x64.msi`（SHA-256 `6c51c512e588a5cefa9f8fa3ac642c849509ffc395de46d828cb8b69f7651e29`）を`E:\Hataori`へ上書きインストール（終了コード0、`config\hataori.json`のハッシュ不変）。Monitor起動でServerが起動し、`/health`が`ok`・3.2.5.0、`doctor` healthyを確認。トレイからの停止→起動の実機操作は未確認。Serverが19:55に終了ログなしで停止した事象を再観測（原因未調査）。進捗率は据え置き。
+- 2026.11.26: 3.2.4.0（Monitorトレイメニューに「Serverを再起動」を追加、commit `045040e`）。Releaseビルド警告0・エラー0、Solution Releaseテスト266件合格（1件スキップ）。ユーザー単位MSI `Hataori-3.2.4.0-user-x64.msi`（SHA-256 `5a465bfb1f9062dd543085f9109f753d5b4087b61f49219d8f081bdb10cf4ed3`）を`E:\Hataori`へ上書きインストール（終了コード0、`config\hataori.json`のハッシュ不変）。Monitor起動でServerが起動し、`doctor` healthy、MCP `get_version`で3.2.4.0を確認。トレイからの再起動操作は未確認。進捗率は据え置き。
+- 2026.11.25: 残作業を再確認。3.2.3.0は2026.11.24 22:23の起動から約13時間停止なく稼働しているが、MonitorのControl Pipe応答タイムアウトが05時台5件・11時台12件再発（Server側は応答遅延後の`Pipe is broken`）。残作業1をタイムアウト原因の調査・修正として更新。Moyai経由のGit操作が再び利用可能。進捗率は全体96%、Phase 1 98%で据え置き。
+- 2026.11.25: Itoguruma 0.3.45で受信・ACKを実機確認。専用検証Project `hataori_lease_test` を`McpItogurumaClient`で登録し、送信→`get_messages`でリース（`lease_id`取得）→`ack_message`でACK成功→再取得で0件を確認（`ItogurumaLiveLeaseTests`、`HATAORI_ITOGURUMA_LIVE_TEST=1`のときだけ実行）。実機の`activation.enabled=false`は変更せず、他Projectの受信箱には触れていない。検証後に履歴・エージェント登録・Projectを削除。Itoguruma連携88%→100%、全体95%→96%、Phase 1 95%→98%。
+- 2026.11.25: 3.2.3.0のMonitor・Serverが2026.11.24 22:23の起動から約6.5時間停止せず稼働し、その間MonitorのControl Pipe応答タイムアウト0件、Serverログの書き込みは22:26以降なし（警告によるログ増加の停止を確認）。残作業を6件で据え置き。進捗率は全体95%、Phase 1 95%で据え置き（更新周期内のため列は追加しない）。
+- 2026.11.24: 3.2.3.0のユーザー単位MSIを`E:\Hataori`へ上書きインストール（終了コード0、設定ファイルのハッシュ不変）。起動後1分間のServerログで「not found in cache」警告0件、エラー・警告0件、Itoguruma 0.3.45への接続成功、`doctor` healthyを確認し、ログ警告の残作業を完了。なお22:03ごろMonitor・Serverが終了ログなしで停止しており（Server log 22:03:30で途絶）、17:46以降はMonitorにControl Pipe応答タイムアウトが散発。原因は未調査で残作業へ追加。進捗率は据え置き。
+- 2026.11.24: Itoguruma接続時にMCPのツール一覧を一度取得し、`tools/call`のたびに出ていた「Tool '...' not found in cache」警告を止める修正を実装。Release build警告0・エラー0、Solution Releaseテスト263件合格。実機ログでの停止確認は次のMSI更新時に行う。進捗率は据え置き。
+- 2026.11.24: 残作業を再整理。3.2.1.0・3.2.2.0の変更と記録を`develop`へpush済み（HEAD `9afa532`）のため完了扱いとし、残りを6件へ更新。進捗率は全体95%、Phase 1 95%で据え置き。
+- 2026.11.24: 3.2.2.0のユーザー単位MSIを`E:\Hataori`へ上書きインストール（終了コード0、設定ファイルのハッシュ不変）。ログオン時と同じ`--startup`でMonitorを起動し、ServerがMonitorから起動、`doctor` healthy、Itoguruma 0.3.44への接続成功を確認。3.2.1.0では当日`register_agent`の失敗が15,819回記録されていたが、3.2.2.0では接続エラーなし。実機設定は`activation.enabled=false`のため、メッセージの受信・ACKは実行されず未確認。通知領域に新しい機織り機アイコンが表示されることを利用者が目視で確認。
+- 2026.11.24: Itoguruma 0.3.44の登録・リースAPIへ対応（3.2.2.0）。Project Inboxは未登録時だけ`register_project_inbox`で登録し、既存の表示名を保持。無効化ProjectとProject ID規則外のディレクトリは受信対象外。`get_messages`へ受信者IDを渡し、返された`lease_id`で`ack_message`。Hataori自身は`itoguruma.projectId`（既定`hataori`）のInboxを送信元・受信者として使う。Release build警告0・エラー0、Solution Releaseテスト263件合格。Itogurumaは88%（実機受信・ACKは未確認）、全体95%、Phase 1 95%。
+- 2026.11.24: 機織り機（正面図）のアプリアイコンをMonitorのexe・ウィンドウ・トレイとMSIの`ARPPRODUCTICON`へ組み込み、commit `b1f220c`として`develop`へ選択commit（未push）。Monitorテスト41件合格、Debugビルド警告0・エラー0、MSIのIcon表登録を確認。HataoriをMoyai／Githubieへ登録。2026.11.24列を追加し、ユーザー単位版3.2.1.0とItoguruma 0.3.44のAPI変更を反映して再採点。同日、Release build警告0・エラー0、Solution Releaseテスト253件（Core 17、Infrastructure 49、CLI 54、Server 92、Monitor 41）全件合格を確認し、テストを100%へ戻した（全体99%→90%、Phase 1 98%→85%）。
+- 2026.11.23: Hataori 3.2.1.0をユーザー単位MSIで `E:\Hataori` に導入。旧Windowsサービスを削除し、設定・SQLiteの検証済みバックアップを保持。ログオン起動コマンドの登録と実行、Monitor／Serverの同一ユーザー・同一セッションでの起動、同ユーザーからの制御パイプ、MCP 28ツール、SQLite整合性を確認。Releaseテスト245件、WiXビルド警告0・エラー0。実ログオンと通知領域のアイコン表示・復帰は未確認。Itoguruma 0.3.44への認証は成功するが、メッセージ連携は新しい登録・リースAPIへの対応が必要。
+
+- 2026.11.22: GithubieがHataoriの登録パスをE:\Workspace\Projects\Hataoriへ変更（CR完了）。3.1.23.0の変更をcommit `1308baf`としてGithubie経由で`develop`へpush（`a85af49`を含む）。`**/TestResults/`を.gitignoreへ追加。E:\Hataoriへの移行と実機更新はCodexタスクが進行中。進捗率は据え置き。
+- 2026.11.22: Githubie登録パス修正のCR `CR-2026-11-22-hataori-local-root-reparse-point.md`を起票しItogurumaで送信（message ID `3cabdb84ce9843ec88c84a374010203e`）。C:\Hataoriでの実機更新タスクは取消され、E:\Hataoriへの移行と3.1.23.0実機更新はCodexタスク`hataori-live-migration-e-31230-20261122`が担当。進捗率は据え置き。
+- 2026.11.22: 3.1.23.0（Monitorトレイ常駐・起動時自動MSI更新・設定画面）をClaude Codeが引き継ぎ検証。Release build警告0・エラー0、Solution Releaseテスト245件（Core 17、Infrastructure 49、CLI 54、Server 92、Monitor 33）合格、WiX MSI `Hataori-3.1.23.0-x64.msi`（SHA-256 `8e6b3123a88e9853ea8854f62a4be2c95abad7df36efafaff0b59f8e871bffde`）生成。更新先設定は実行ファイルへ埋め込み済み。実機Major Upgrade・UAC取消・サービス復帰・更新後再起動は未確認。Githubieが旧登録パスの再解析ポイントを拒否するためcommit・pushは未実施。進捗率は据え置き。
+- 2026.11.03: Monitor実機確認の事前読取でHataori ServiceがRunning／Automatic、標準配置のMonitor実行ファイルが存在することを確認。GUI表示・更新・キャンセル操作は未実施で、AGENTS.mdのComputerUse規則に基づく明示許可待ち。実行手順とテスト専用データの条件を`docs/validation/2026-11-03-monitor-live-acceptance.md`に記録。進捗率は据え置き。
+- 2026.11.03: Monitor回帰テスト追加後のSolution Releaseテストを完了。Core 17、Infrastructure 49、CLI 54、Server 92、Monitor 5件の計217件が合格。テストカテゴリを88%から100%へ再評価し、全体は98.8%→99%、Phase 1は97.6%→98%。検証記録は`docs/validation/2026-11-03-release-test-attempt.md`。
+- 2026.11.03: Monitor回帰テスト追加後のReleaseテストをプロジェクト別に実行。Core 17、Infrastructure 49、Server 92、Monitor 5、CLI 52が合格。CLIの名前付きパイプを使う2件はsandbox内でハングし未確認。全Solution外部実行はworkspace credits不足で自動承認審査が開始できず、集計完了には至らない。記録は`docs/validation/2026-11-03-release-test-attempt.md`。受入軸は据え置き、全体98%・Phase 1 98%。
+- 2026.11.01: 実装・自動テスト・受入確認・文書の4軸（各25点）の算定基準を定義し、現行証跡で10カテゴリを再評価。Monitorとテストは受入確認が部分証拠のため各88%、他8カテゴリは100%。全体97.6%→98%、Phase 1 97.6%→98%。P2の算定基準・再計算を完了。
+- 2026.11.01: Monitor専用のWindows STA WinFormsテスト5件を追加。Snapshot表示・データ更新、Task／Agent Run状態によるキャンセル可否、確認・拒否・失敗応答の操作を自動検証し、Windows環境で5/5件合格。検証記録は`docs/validation/2026-11-01-monitor-regression.md`。この時点では進捗率算定基準の整理を次作業として残した。
+- 2026.11.01: 進捗率の根拠を仕様・テスト・受入記録と照合。Itogurumaは実機でBearer接続、受信後永続化・ACK、Replyと同一idempotency key再送を検証し、Worker／structured-contentの自動テストもある。CLIは各コマンド群の自動テストと実機検証がある。これらに具体的な未完了機能は見つからない一方、MonitorはADR 0010がWinForms表示を含む自動テストを検証対象としているが、専用test projectがなく、後続の実機記録もInstall／Version確認中心。Monitor回帰テストと機能別進捗の算定基準定義をTODOのP2に登録。既存率の元の配点根拠は残っていないため数値を推測で変えず、全体99%・Phase 1 99%およびグラフは据え置き。
+- 2026.10.01: Claude Code 2.1.233で`KotodamaSpecGuard`をセッション限定で読み込み、仕様書MarkdownへのWrite後のPostToolUse hook発火、`layer-reviewer`起動、実装混入0件・要確認0件を実機確認。検証用ファイルは削除し、永続設定・既存プロジェクトファイルは変更なし。
+- 2026.10.01: `KotodamaSpecGuard`の公開・Hataori側診断実装が完了済みで、残作業はClaude Code実行時のhook発火から`layer-reviewer`起動までの実機確認1件であることを再確認。機能進捗率に変更はなく、更新周期内のため進捗表・グラフは据え置き。
+- 2026.09.30: `KotodamaSpecGuard` 0.1.0のprivate GitHub Repositoryへのcommit・push完了を反映。残作業をClaude Code実機hook検証の1件へ整理。
+- 2026.09.27: 3.1.22.0をGitHub Releaseとして公開。`develop`から`main`へのPR #18をマージし、`v3.1.22.0`とx64 MSIを公開。残作業を外部プラグインのGitHub公開・Claude Code実機hook検証の2件へ整理。
 - 2026.09.26: 3.1.22.0をRelease対象として検証。`doctor`のClaude Codeプラグイン有効化診断、Release build、212テスト、WiX MSI、`C:\Hataori`実機Major Upgrade、Service・CLI・MCP・DB整合性を確認。
 - 2026.09.25: `doctor`へ読み取り専用の`claude_plugins`診断を追加。対象プラグインIDとClaude Code設定pathを構成可能にし、Releaseテスト212件と文書リンク65件を検証。
 - 2026.09.24: `kotodama-spec-guard` 0.1.0の本体を別リポジトリへ実装した状況を残作業へ反映。
@@ -52,37 +99,99 @@
 - プロジェクト全体は、下表10機能の単純平均を整数四捨五入します。
 - Phase 1は、仕様書のCore、Itoguruma、Session / Activation、Task、Monitorの単純平均です。
 
+### 進捗率算定基準（2026.11.01）
+
+各カテゴリを4つの証拠軸で評価し、各軸を同じ25点として扱います。対象範囲はリポジトリの仕様・TODO・機能チェックリストに記載された主要機能です。要求のない品質特性や未記録の将来構想は採点に加えません。
+
+| 証拠軸 | 100点 | 50点 | 0点 |
+| :--- | :--- | :--- | :--- |
+| 実装・範囲 | 対象カテゴリの主要項目が実装済みで、未完了の主要TODOがない。 | 主要経路はあるが、主要項目が一部未実装。 | 主要機能が未実装、または実装証拠がない。 |
+| 自動テスト | 主要な正常系・失敗系を含むテストがあり、対象動作を追跡できる。 | テストはあるが、主要動作または失敗系に未確認部分がある。 | テストがない、または結果を確認できない。 |
+| 受入確認 | 主要な実行・運用シナリオの合格証跡がある。 | 一部シナリオのみ、またはテストダブルによる確認に限られる。 | 合格証跡がない、または失敗が未解決。 |
+| 利用・運用文書 | 利用者向けまたは運用者向けの必要な手順・制約が文書化されている。 | 文書はあるが、主要手順または制約が不足している。 | 必要な文書がない、または内容を確認できない。 |
+
+カテゴリ率は4軸の平均を整数四捨五入します。総合率は10カテゴリ、Phase 1はCore／Itoguruma／Session・Activation／Task／Monitorの5カテゴリの平均を整数四捨五入します。未確認は完了扱いにせず、受入確認を部分証拠として採点します。
+
+テストカテゴリのみ、実装・範囲軸を「各主要レイヤーのテストプロジェクトがSolutionに登録されている」、自動テスト軸を「主要経路に対応するテストがある」、受入確認軸を「最新のテスト追加後に全テストを一括実行している」、文書軸を「再実行コマンドと結果を記録している」と読み替えます。
+
 ## 履歴
 
 ### ≪Hataori≫
 
-| 機能 | 2026.08.16 | 2026.08.18 | 2026.08.25 | 2026.08.26 | 2026.08.31 | 2026.09.02 |
-| :--- | ---: | ---: | ---: | ---: | ---: | ---: |
-| **グループ全体** | **94%** | **96%** | **96%** | **96%** | **97%** | **99%** |
-| Server / Core / SQLite | 88% | 88% | 88% | 88% | 88% | 100% |
-| Itoguruma連携 | 98% | 98% | 98% | 98% | 98% | 98% |
-| Session / Activation | 100% | 100% | 100% | 100% | 100% | 100% |
-| Task管理 | 95% | 95% | 95% | 95% | 97% | 100% |
-| CLI | 97% | 98% | 98% | 98% | 98% | 99% |
-| Windows Service | 100% | 100% | 100% | 100% | 100% | 100% |
-| Monitor | 95% | 95% | 95% | 95% | 96% | 98% |
-| 運用・復旧 | 97% | 99% | 100% | 100% | 100% | 100% |
-| 文書・配布 | 75% | 90% | 90% | 90% | 95% | 100% |
-| テスト | 96% | 96% | 97% | 97% | 99% | 99% |
+| 機能 | 2026.08.16 | 2026.08.18 | 2026.08.25 | 2026.08.26 | 2026.08.31 | 2026.09.02 | 2026.09.27 | 2026.09.30 | 2026.11.01 | 2026.11.03 | 2026.11.24 | 2026.11.27 |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| **グループ全体** | **94%** | **96%** | **96%** | **96%** | **97%** | **99%** | **99%** | **99%** | **98%** | **99%** | **96%** | **99%** |
+| Server / Core / SQLite | 88% | 88% | 88% | 88% | 88% | 100% | 100% | 100% | 100% | 100% | 100% | 100% |
+| Itoguruma連携 | 98% | 98% | 98% | 98% | 98% | 98% | 98% | 98% | 100% | 100% | 100% | 100% |
+| Session / Activation | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% |
+| Task管理 | 95% | 95% | 95% | 95% | 97% | 100% | 100% | 100% | 100% | 100% | 100% | 100% |
+| CLI | 97% | 98% | 98% | 98% | 98% | 99% | 99% | 99% | 100% | 100% | 100% | 100% |
+| 常駐ホスト（旧Windows Service） | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 75% | 100% |
+| Monitor | 95% | 95% | 95% | 95% | 96% | 98% | 98% | 98% | 88% | 88% | 88% | 88% |
+| 運用・復旧 | 97% | 99% | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% |
+| 文書・配布 | 75% | 90% | 90% | 90% | 95% | 100% | 100% | 100% | 100% | 100% | 100% | 100% |
+| テスト | 96% | 96% | 97% | 97% | 99% | 99% | 99% | 99% | 88% | 100% | 100% | 100% |
+
+2026.11.01以降の列は本基準で算定した値です。それより前の列は当時の算定方法が残っていないため、記録値として維持しており、新基準の値との直接比較には使いません。「常駐ホスト」行は、2026.11.03列まではWindows Service、2026.11.24列からはADR 0024のユーザー単位常駐（Monitorがログオン時に起動し、同じユーザーでServerを起動する方式）を評価しています。
+
+### 2026.11.24列の証拠別採点
+
+2026.11.03列から根拠が変わった4カテゴリだけを再採点し、他の6カテゴリは2026.11.03列の得点を据え置いています。
+
+| カテゴリ | I | T | A | D | 得点 | 確認した主な証拠 |
+| :--- | ---: | ---: | ---: | ---: | ---: | :--- |
+| Itoguruma連携 | 100 | 100 | 100 | 100 | 100% | 3.2.2.0で登録・リースAPIへ対応（`McpItogurumaClient`、`ItogurumaConnectionWorker`）。`ItogurumaConnectionWorkerTests`でInbox登録・表示名保持・無効Project除外・lease IDでのACK・lease ID欠落時の拒否を検証。`CONFIG.md`に`projectId`と受信者IDを記載。`E:\Hataori`でItoguruma 0.3.45への接続を確認し、2026.11.25に専用検証Projectで送信・リース・ACK・ACK後0件を実機確認（`ItogurumaLiveLeaseTests`） |
+| 常駐ホスト（旧Windows Service） | 100 | 100 | 50 | 100 | 88% | `UserServerProcess`とログオン起動登録を実装済み。2026.11.27に代用Serverプロセスを使う起動・正常停止・再起動・Health確認・強制終了・別インストール除外の自動テスト7件を追加。2026.11.23に`E:\Hataori`で同一ユーザー・同一セッション起動を確認。実際のログオンからの起動は未確認。手順は`docs/installation.md` |
+| Monitor | 100 | 100 | 50 | 100 | 88% | トレイ常駐・自動MSI更新・設定画面・アプリアイコンを実装し、Monitorテスト41件合格。3.2.2.0で通知領域の新しいアイコン表示を目視確認済み。トレイからの復帰、実サービス接続での更新・キャンセル操作、更新MSIによる自動更新は未確認 |
+| テスト | 100 | 100 | 100 | 100 | 100% | アイコンテスト8件の追加後、2026.11.24にSolution Releaseテスト253件（Core 17、Infrastructure 49、CLI 54、Server 92、Monitor 41）を一括実行し全件合格 |
+
+### 2026.11.03列の証拠別採点
+
+I=実装・範囲、T=自動テスト、A=受入確認、D=利用・運用文書です。各値は前掲基準の0／50／100点で、4軸の平均を四捨五入しています。
+
+| カテゴリ | I | T | A | D | 得点 | 確認した主な証拠 |
+| :--- | ---: | ---: | ---: | ---: | ---: | :--- |
+| Server / Core / SQLite | 100 | 100 | 100 | 100 | 100% | `tests/Hataori.Core.Tests`、`tests/Hataori.Server.Tests`、3.1.22.0のbuild・test・SQLite integrity記録 |
+| Itoguruma連携 | 100 | 100 | 100 | 100 | 100% | `ItogurumaConnectionWorkerTests`、`ItogurumaStructuredContentDeserializerTests`、`2026-08-16-real-machine.md`のBearer受信・永続化ACK・Reply冪等再送 |
+| Session / Activation | 100 | 100 | 100 | 100 | 100% | `ConversationSessionTests`、`ActivationManagerTests`、`2026-08-16-real-machine.md`の同一Session resume |
+| Task管理 | 100 | 100 | 100 | 100 | 100% | `HataoriTaskTests`、`TaskMcpToolsTests`、Workspace／Task関連Release検証記録 |
+| CLI | 100 | 100 | 100 | 100 | 100% | `tests/Hataori.Cli.Tests`、`2026-09-26-installer-3.1.22.0.md`、`COMMANDS.md` |
+| Windows Service | 100 | 100 | 100 | 100 | 100% | `WindowsServiceManagerTests`、`WindowsServiceSetupServiceTests`、3.1.21.0／3.1.22.0のService・MSI検証、Installation文書 |
+| Monitor | 100 | 100 | 50 | 100 | 88% | `Hataori.Monitor.Tests` 5件合格と`DrawToBitmap`。Service Running／AutomaticとMonitor実行ファイル配置は事前確認済み。画面上の更新・キャンセル受入は未記録 |
+| 運用・復旧 | 100 | 100 | 100 | 100 | 100% | `StartupRecoveryServiceTests`、Reply Retryテスト、3.0.4.0のService復旧・`2026-08-16-real-machine.md`のGraceful Shutdown |
+| 文書・配布 | 100 | 100 | 100 | 100 | 100% | 利用者文書・Release手順、Documentation Links workflow、3.1.21.0隔離Install／Uninstall、3.1.22.0 MSI検証 |
+| テスト | 100 | 100 | 100 | 100 | 100% | Core 17、Infrastructure 49、CLI 54、Server 92、Monitor 5件、計217件がReleaseで合格。詳細は`docs/validation/2026-11-03-release-test-attempt.md` |
+
+受入確認50点は未完了機能の断定ではなく、指定した証跡粒度を満たしていないことを示します。Monitorは実サービス接続での操作が未確認のため88%です。全Solution Releaseテストは217件がすべて合格したため、テストカテゴリは100%です。
 
 ## 現在フェーズ
 
-Phase 1（基盤・必須運用機能）: **99%**
+Phase 1（基盤・必須運用機能）: **98%**
 
-算定: Core 100%、Itoguruma 98%、Session / Activation 100%、Task 100%、Monitor 98%の単純平均（99.2%）です。
+算定: Core 100%、Itoguruma 100%、Session / Activation 100%、Task 100%、Monitor 88%の単純平均（97.6%）を四捨五入しています。全体は99%（10カテゴリ合計988%の平均98.8%を四捨五入）です。最新列（2026.11.27）には、2026.11.28の実機確認に基づき常駐ホスト100%を反映しました。
 
 ## 現在の完了状態と残作業
 
-3.1.22.0で`doctor`のClaude Codeプラグイン有効化診断を追加しました。Release構成build警告0件・エラー0件、自動テスト212件合格、WiX MSI build成功、`C:\Hataori`へのMajor Upgrade成功、Windows Service Running / Automatic、MCP 28 tools、SQLite integrity `ok`を確認しました。
+2026.11.24: 機織り機の正面図を描いたアプリアイコン（`assets/icon`）をMonitorのexe・ウィンドウ・トレイとMSIの「アプリ」一覧表示へ組み込み、通知領域での表示を目視確認しました。ユーザー単位版3.2.1.0の変更（`f780acf`）と、Itoguruma 0.3.44の登録・リースAPI対応（3.2.2.0、`5be9a29`）をcommitし、`develop`へpush済みです。2026.11.25時点で`E:\Hataori`は3.2.3.0で稼働し、`doctor` healthy、Itoguruma 0.3.45への接続と受信・ACKを確認済みです。HataoriはMoyaiとGithubieへ登録済みで、2026.11.25からMoyai経由のGit操作が再び使えています（2026.11.24はGithubie 2.2.2.0更新後の固定ハッシュ値不一致のためGithubie経由）。
+
+2026.11.28: `E:\Hataori`は3.2.10.0（16×16ドット絵の織物アイコン）で稼働中（ジョブ外起動）。Control Pipeタイムアウトと無言停止は約32時間の観察で再発なしです。残作業は優先順に次のとおりです。
+
+1. Monitorの起動時に更新MSIが適用され、更新後のMonitorが再起動することを実機で確認する。2026.11.28にGitHubの最新正式Releaseが `v3.1.22.0` であることを再確認しました。この配布経路での検証には、導入済みの3.2.10.0より新しい正式Releaseが必要です。公開にはユーザーご本人の承認が必要です。
+Itoguruma 0.3.45での受信・ACKは2026.11.25に専用検証Projectで実機確認済みです（`ItogurumaLiveLeaseTests`）。
+
+2026.11.24のSolution Releaseテストは263件すべて合格しました。
+
+2026.11.23: 現在の実機はユーザー版3.2.1.0です。Windowsサービスを削除し、`E:\Hataori` の同一ユーザーでMonitorとServerが稼働しています。通知領域のアイコンとログオン後の実画面確認が残っています。Itogurumaへの認証は成功し、メッセージの登録・受信・ACKは0.3.44のAPIへの対応が必要です。
+
+2026.11.22: 3.1.23.0向けにMonitorのタスクトレイ常駐、起動時の自動MSI更新、設定画面を実装しました。設定はユーザー単位の別ファイルへ原子的に保存し、Server設定は変更しません。Releaseビルドは警告0・エラー0、Solution Releaseテスト245件（Monitor 33件を含む）が全件合格し、WiX MSI `Hataori-3.1.23.0-x64.msi`を生成しました。更新MSIの配布元・サイズ・SHA-256、更新用プロセスへの引き継ぎ、単一起動、既存インストール先の保持を実装しています。UAC取消、実際のMajor Upgrade、サービス復帰、更新後のMonitor再起動は未確認です。Githubieが登録パス内の再解析ポイントを拒否したため、commit・pushは未実施です。登録パスは2026.11.22にGithubieがE:\Workspace\Projects\Hataoriへ変更し、3.1.23.0の変更はcommit `1308baf`として`develop`へpush済みです。実機更新（E:\Hataoriへの移行を含む）はCodexが担当しています。以前の進捗率は過去の評価として保持し、新機能の受入完了率には使いません。
+
+2026.11.03時点で、全体99%・Phase 1 98%です。全体はカテゴリ合計988%の平均98.8%、Phase 1は対象5カテゴリ合計488%の平均97.6%を四捨五入しています。Monitorのみ88%で、実サービス接続での画面更新・Task／Agent Runキャンセルが未確認です。他9カテゴリは100%です。Solution Releaseテスト217件（Core 17、Infrastructure 49、CLI 54、Server 92、Monitor 5）は全件合格しました。事前確認ではHataori ServiceがRunning／Automatic、Monitor実行ファイルが標準配置にあることを確認しました。実画面操作および一時テストTask／Agent Runの作成・キャンセルはAGENTS.mdのComputerUse明示許可後に行います。手順と安全条件は`docs/validation/2026-11-03-monitor-live-acceptance.md`に記録しました。旧評価列は当時の根拠がないため変更していません。
+
+3.1.22.0で`doctor`のClaude Codeプラグイン有効化診断を追加しました。Release構成build警告0件・エラー0件、自動テスト212件合格、WiX MSI build成功、`C:\Hataori`へのMajor Upgrade成功、Windows Service Running / Automatic、MCP 28 tools、SQLite integrity `ok`を確認しました。PR #18で`develop`を`main`へ反映し、`v3.1.22.0`のGitHub Releaseとx64 MSIを公開済みです。
 
 3.1.22.0の実機検証では、既存設定を保持したMajor Upgrade後にCLI 3.1.22.0、Service稼働、MCP接続、`doctor` healthyを確認しました。既存設定には新しい`requiredClaudePlugin`がないため、後方互換動作として`claude_plugins`診断は無効です。新規生成設定では`kotodama-spec-guard@katsushoe-private`を診断します。新規Install／Uninstallは3.1.21.0で検証済みのため今回は実施していません。
 
-将来対応として、契約（What）／実装（How）の混同防止を正式なClaude Codeプラグイン（仮称 `kotodama-spec-guard`）として実装する項目が1件あります。2026.09.24にプラグイン本体0.1.0を別リポジトリ`KotodamaSpecGuard`へ実装しました（テスト6件合格、マニフェスト検証合格）。2026.09.25にHataoriの`doctor`へ読み取り専用の`claude_plugins`診断を実装しました。残作業はGitHub公開と、Claude Code実行時のhook発火確認です。Hataoriの責務は対象プロジェクトでのプラグイン有効化確認に限定し、対象ディレクトリへの設定自動書き込みは行わない方針です。詳細は[TODO.md](TODO.md)の「後でやる」を参照してください。既存機能の進捗率と過去の検証結果は変更しません。
+契約（What）／実装（How）の混同防止プラグイン`kotodama-spec-guard`は、2026.09.24に0.1.0を別リポジトリ`KotodamaSpecGuard`へ実装し、2026.09.28にcommit `0937896`をprivate GitHub Repositoryへpushしました（Nodeテスト6件合格、マニフェスト・hook・agent・skill定義確認済み）。2026.09.25にHataoriの`doctor`へ読み取り専用の`claude_plugins`診断を実装しました。2026.10.01、Claude Code 2.1.233のセッション限定pluginとして検証し、仕様書MarkdownへのWrite後にPostToolUse hookが発火し、`layer-reviewer`が起動して実装混入0件・要確認0件と判定することを確認しました。検証用ファイルは削除し、永続plugin設定や既存プロジェクトファイルは変更していません。プラグイン実装・配布・Hataori有効化診断・実機hook確認は完了です。Hataoriは対象プロジェクトでのプラグイン有効化確認に限定し、対象ディレクトリへの設定自動書き込みは行いません。既存機能の進捗率と過去の検証結果は変更しません。
 
 ## 時系列の進捗・検証メモ
 
@@ -127,6 +236,7 @@ Phase 1（基盤・必須運用機能）: **99%**
 - [x] Server・Service・Task・Agent・Conversation・Queue・Config・DB・診断CLI
 - [x] 構造化ファイルログと`logs` CLI
 - [x] Monitorアプリ、Control Pipeスナップショット、Task／Agent Runキャンセル、`monitor` CLI
+- [x] Monitor WinForms回帰テスト（表示・描画・更新・Task／Agent Runキャンセル、5件）
 - [x] DB Maintenance、Retention purge、VACUUM、stale Task expiry
 - [x] Codex／Claude Code Lifecycle Hookランナーとdoctor診断
 - [x] 異常終了時のRun・Session・Message起動復旧
@@ -146,7 +256,9 @@ Phase 1（基盤・必須運用機能）: **99%**
 - [x] MCP `list_projects`、未登録Project候補返却、Task登録前Project選択案内（3.1.12.0、2026-08-31）
 - [x] Workspace単位のTask管理、MCP `list_workspaces`、SQLite移行、Monitor・会話Hook連携（3.1.13.0、2026-08-31）
 - [x] Workspace管理v2（Session・Message・Agent Run、SQLite移行、Monitor、CLI filter、2026-08-31）
-- [x] 自動テスト207件
+- [x] 自動テスト212件（2026-09-26 Release検証時点）
+- [x] Monitor WinForms回帰テスト5件（2026-11-01）
+- [x] アプリアイコン（機織り機）のMonitor exe・ウィンドウ・トレイ・MSI表示への組み込み（2026-11-24、commit `b1f220c`）
 
 ## 部分実装
 
