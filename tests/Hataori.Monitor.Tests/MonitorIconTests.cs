@@ -45,13 +45,34 @@ public sealed class MonitorIconTests
         using var icon = MonitorIcon.Load(new Size(128, 128));
         using var bitmap = icon.ToBitmap();
 
-        // 上の経巻（64単位で y=4..13、線幅4.5）の内側・線上と、何も描かない左下隅を見る。
-        var fill = bitmap.GetPixel(64, 17);
-        var outline = bitmap.GetPixel(64, 8);
+        var fill = bitmap.GetPixel(64, 28);
+        var outline = bitmap.GetPixel(64, 20);
         var corner = bitmap.GetPixel(0, 127);
 
         Assert.True(fill is { A: > 250, R: > 245, G: > 245, B: > 245 }, $"fill={fill}");
         Assert.True(outline is { A: > 250, R: < 10, G: < 10, B: < 10 }, $"outline={outline}");
         Assert.True(corner.A < 5, $"corner={corner}");
+    }
+
+    [Fact]
+    public void Load_WhenTrayFrameIsRendered_HasNineSeparateDots()
+    {
+        using var icon = MonitorIcon.Load(new Size(16, 16));
+        using var bitmap = icon.ToBitmap();
+        var dots = 0;
+        for (var y = 3; y <= 12; y++)
+        {
+            for (var x = 3; x <= 12; x++)
+            {
+                if (bitmap.GetPixel(x, y).ToArgb() == Color.Black.ToArgb() &&
+                    bitmap.GetPixel(x - 1, y).ToArgb() == Color.White.ToArgb() &&
+                    bitmap.GetPixel(x, y - 1).ToArgb() == Color.White.ToArgb())
+                {
+                    dots++;
+                }
+            }
+        }
+
+        Assert.Equal(9, dots);
     }
 }
